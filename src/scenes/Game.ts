@@ -2,7 +2,7 @@
 import Phaser from 'phaser';
 import {
   CRIT, DROPS, EnemyId, PASSIVE_FX, PASSIVE_MAX_LEVEL, PassiveId, PLAYER, MAX_PASSIVES,
-  SPITTER, WEAPON_MAX_LEVEL, WEAPON_META, PASSIVE_META, WeaponId, dmgScale, xpForLevel,
+  MAX_WEAPONS, SPITTER, WEAPON_MAX_LEVEL, WEAPON_META, PASSIVE_META, WeaponId, dmgScale, xpForLevel,
 } from '../config';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
@@ -11,6 +11,7 @@ import { Effects } from '../systems/effects';
 import { Enemy, EnemyManager } from '../systems/enemies';
 import { WeaponManager } from '../systems/weapons';
 import { Joystick } from '../systems/joystick';
+import { getSettings } from '../core/settings';
 
 export interface Stats {
   dmg: number;
@@ -91,6 +92,8 @@ export class GameScene extends Phaser.Scene {
   private choosing = false;
   private timeScale = 1;
   private hitStopT = 0;
+  /** 局内倍速（1x/2x），经 setSpeed 同步 time/tweens 时钟 */
+  speed: 1 | 2 = 1;
   private bounce = 0;
   private pickCombo = 0;
   private pickComboT = 0;
@@ -154,6 +157,7 @@ export class GameScene extends Phaser.Scene {
 
     this.scene.launch('hud');
     this.running = true;
+    this.setSpeed(getSettings().speed);
     SFX.startBgm();
 
     this.events.on('shutdown', () => {
@@ -168,6 +172,13 @@ export class GameScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
     this.cameras.main.setZoom(Phaser.Math.Clamp(Math.sqrt(w * h) / 760, 0.8, 1.25));
+  }
+
+  /** 切换局内倍速：dt、delayedCall、tween 三套时钟同步 */
+  setSpeed(v: 1 | 2): void {
+    this.speed = v;
+    this.time.timeScale = v;
+    this.tweens.timeScale = v;
   }
 
   // ---------- 属性 ----------
@@ -197,7 +208,7 @@ export class GameScene extends Phaser.Scene {
       this.hitStopT -= dt;
       this.timeScale = this.hitStopT > 0 ? 0.05 : 1;
     }
-    dt *= this.timeScale;
+    dt *= this.timeScale * this.speed;
     this.frame++;
     this.elapsed += dt;
 
@@ -300,7 +311,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (e.isElite) {
       this.hitStop(0.09);
-      this.cameras.main.shake(180, 0.005);
+      if (getSettings().shake) this.cameras.main.shake(180, 0.005);
       this.spawnPickup('chest', e.x, e.y);
     }
     if (e.isBoss) {
@@ -318,11 +329,12 @@ export class GameScene extends Phaser.Scene {
 
   damagePlayer(d: number): void {
     if (this.iframeT > 0 || !this.running) return;
+    if (getSettings().invincible) return; // 调试：无敌
     this.iframeT = PLAYER.iframe;
     this.hp -= d;
     SFX.hurt();
     this.fx.flash(this.player, 0xf08080);
-    this.cameras.main.shake(120, 0.004);
+    if (getSettings().shake) this.cameras.main.shake(120, 0.004);
     if (this.hp <= 0) {
       this.hp = 0;
       this.defeat();
@@ -412,7 +424,9 @@ export class GameScene extends Phaser.Scene {
     if (this.pickComboT <= 0) this.pickCombo = 0;
     const px = this.player.x;
     const py = this.player.y;
-    const m2 = this.stats.magnet * this.stats.magnet;
+    // 调试：全屏拾取范围
+    const magnetR = getSettings().fullPickup ? 1e5 : this.stats.magnet;
+    const m2 = magnetR * magnetR;
     for (const g of this.gems) {
       if (!g.active) continue;
       const dx = px - g.img.x;
@@ -421,7 +435,7 @@ export class GameScene extends Phaser.Scene {
       if (!g.magnet && d2 < m2) g.magnet = true;
       if (g.magnet) {
         const d = Math.sqrt(d2) || 1;
-        const sp = 420 + (this.stats.magnet - d) * 2;
+        const sp = 420 + Math.max(0, this.stats.magnet - d) * 2;
         g.img.x += (dx / d) * sp * dt;
         g.img.y += (dy / d) * sp * dt;
         if (d < 22) {
@@ -571,7 +585,7 @@ export class GameScene extends Phaser.Scene {
         if (w.level < WEAPON_MAX_LEVEL && !w.evolved) {
           cands.push({ offer: { kind: 'weapon', id: meta.id, isNew: false, toLevel: w.level + 1 }, w: 3 });
         }
-      } else if (this.weapons.list.length < 4) {
+      } else if (this.weapons.list.length < MAX_WEAPONS) {
         cands.push({ offer: { kind: 'weapon', id: meta.id, isNew: true, toLevel: 1 }, w: 2.2 });
       }
     }
@@ -715,7 +729,7 @@ export class GameScene extends Phaser.Scene {
     this.running = false;
     this.hitStopT = 0;
     this.game.events.emit('hud:boss', false);
-    this.cameras.main.shake(400, 0.008);
+    if (getSettings().shake) this.cameras.main.shake(400, 0.008);
     this.fx.burst(bx, by, { tex: 'p_confetti', color: PAL.boss, count: 80, speed: 320, life: 1, scale: 1.6, spin: true, grav: 200 });
     this.fx.ring(bx, by, PAL.white, 12, 0.8);
     this.enemies.clearAllSoft();

@@ -161,6 +161,13 @@ const D: Dict = {
   set_shake: ['屏幕震动', 'Screen Shake'],
   set_lang: ['语言', 'Language'],
   set_sound: ['声音', 'Sound'],
+
+  // 调试
+  set_debugTitle: ['调试', 'Debug'],
+  set_debugInfo: ['调试信息', 'Debug Info'],
+  set_invincible: ['无敌', 'Invincible'],
+  set_fullPickup: ['全屏拾取', 'Magnet All'],
+  set_autoPick: ['自动选卡', 'Auto Pick'],
 };
 
 let lang: Lang = (() => {

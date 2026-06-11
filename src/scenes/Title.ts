@@ -41,9 +41,6 @@ export class TitleScene extends UIScene {
     this.add.text(cx, titleZh.y + vp.s(compact ? 44 : 58), getLang() === 'zh' ? 'D A W N F I E L D' : 'a morning-meadow survivors', {
       fontFamily: FONT, fontSize: vp.fs(18) + 'px', fontStyle: 'bold', color: '#B8A878',
     }).setOrigin(0.5).setDepth(2);
-    this.add.text(cx, titleZh.y + vp.s(compact ? 70 : 90), t('subtitle'), {
-      fontFamily: FONT, fontSize: vp.fs(15) + 'px', color: PAL.inkSoft,
-    }).setOrigin(0.5).setDepth(2);
 
     // 主角飘浮 + 小怪溜达
     const heroY = safe.y + safe.h * 0.42;
@@ -99,12 +96,6 @@ export class TitleScene extends UIScene {
         }).setDepth(3);
       });
     }
-
-    // 操作提示
-    const isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    this.add.text(cx, safe.y + safe.h - 14, isMobile ? t('hintMobile') : t('hintDesktop'), {
-      fontFamily: FONT, fontSize: vp.fs(13) + 'px', color: PAL.inkSoft,
-    }).setOrigin(0.5).setDepth(2);
 
     // 飘落花瓣
     this.petalTimer = this.time.addEvent({

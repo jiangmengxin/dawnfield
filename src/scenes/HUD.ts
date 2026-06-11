@@ -1,12 +1,14 @@
 // HUD 覆盖层：状态条、计时、武器栏、升级三选一、宝箱、暂停、Boss 条
 // 双形态：桌面横屏显示构筑信息；手机竖屏精简（构筑详情进暂停面板）
 import Phaser from 'phaser';
-import { FONT, t, toggleLang } from '../i18n';
+import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
-import { PASSIVE_META, WEAPON_META, WeaponId } from '../config';
+import { MAX_PASSIVES, MAX_WEAPONS, PASSIVE_META, WEAPON_META, WeaponId } from '../config';
 import { makeButton, setButtonLabel } from '../ui/widgets';
 import { Viewport } from '../ui/Viewport';
+import { THEME } from '../ui/theme';
+import { getSettings, updateSettings } from '../core/settings';
 import type { GameScene, Offer } from './Game';
 
 export class HUDScene extends Phaser.Scene {
@@ -19,8 +21,9 @@ export class HUDScene extends Phaser.Scene {
   private hpText!: Phaser.GameObjects.Text;
   private bossName!: Phaser.GameObjects.Text;
   private warnText!: Phaser.GameObjects.Text;
+  private debugText!: Phaser.GameObjects.Text;
   private pauseBtn!: Phaser.GameObjects.Container;
-  private muteBtn!: Phaser.GameObjects.Container;
+  private speedBtn!: Phaser.GameObjects.Container;
   private iconRow: Phaser.GameObjects.GameObject[] = [];
   private overlay: Phaser.GameObjects.GameObject[] = [];
   private overlayMode: 'none' | 'levelup' | 'chest' | 'pause' = 'none';
@@ -71,14 +74,26 @@ export class HUDScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '24px', fontStyle: 'bold', color: '#C06870',
       stroke: '#FFFFFF', strokeThickness: 6,
     }).setOrigin(0.5).setDepth(20).setVisible(false);
+    this.debugText = this.add.text(0, 0, '', {
+      fontFamily: FONT, fontSize: '12px', color: PAL.inkSoft,
+      stroke: '#FFFFFF', strokeThickness: 3,
+    }).setOrigin(0, 1).setDepth(20).setVisible(false);
 
-    this.pauseBtn = makeButton(this, 0, 0, 44, 44, '⏸', () => this.togglePause(), { fontSize: 20 });
-    this.muteBtn = makeButton(this, 0, 0, 44, 44, SFX.muted ? '🔇' : '🔊', () => {
-      SFX.setMuted(!SFX.muted);
-      setButtonLabel(this.muteBtn, SFX.muted ? '🔇' : '🔊');
-    }, { fontSize: 18 });
+    // 暂停图标用 Graphics 绘制（emoji 在不同平台字形不一致）
+    this.pauseBtn = makeButton(this, 0, 0, 44, 44, '', () => this.togglePause());
+    const pauseGlyph = this.add.graphics();
+    pauseGlyph.fillStyle(PAL.ink, 1);
+    pauseGlyph.fillRoundedRect(-7.5, -8, 5.5, 16, 2.5);
+    pauseGlyph.fillRoundedRect(2, -8, 5.5, 16, 2.5);
+    (this.pauseBtn as Phaser.GameObjects.Container).add(pauseGlyph);
+    this.speedBtn = makeButton(this, 0, 0, 44, 44, getSettings().speed + 'x', () => {
+      const next = this.gs.speed === 2 ? 1 : 2;
+      this.gs.setSpeed(next);
+      updateSettings({ speed: next });
+      setButtonLabel(this.speedBtn, next + 'x');
+    }, { fontSize: 17 });
     this.pauseBtn.setDepth(12);
-    this.muteBtn.setDepth(12);
+    this.speedBtn.setDepth(12);
 
     // 键盘选卡
     this.input.keyboard!.on('keydown-ONE', () => this.pickByIndex(0));
@@ -122,14 +137,25 @@ export class HUDScene extends Phaser.Scene {
     const cx = safe.x + safe.w / 2;
     const compact = this.compactHud;
 
-    this.timerText.setPosition(cx, safe.y + 14);
+    if (compact) {
+      // 竖屏精简：XP 通栏下方一条对齐的状态行（HP | 计时 | 倍速+暂停 同一中线）
+      // 行中线下移，让按钮与经验条之间留出呼吸空隙
+      const rowY = safe.y + 9 + 29;
+      this.timerText.setOrigin(0.5, 0.5).setFontSize(22).setPosition(cx, rowY);
+      this.pauseBtn.setPosition(safe.x + safe.w - 34, rowY);
+      this.speedBtn.setPosition(safe.x + safe.w - 82, rowY);
+      this.bossName.setPosition(cx, safe.y + 142);
+    } else {
+      this.timerText.setOrigin(0.5, 0).setFontSize(30).setPosition(cx, safe.y + 14);
+      this.pauseBtn.setPosition(safe.x + safe.w - 36, safe.y + 64);
+      this.speedBtn.setPosition(safe.x + safe.w - 36, safe.y + 116);
+      this.bossName.setPosition(cx, safe.y + 96);
+    }
     this.killIcon.setPosition(cx - 24, safe.y + 64).setVisible(!compact);
     this.killText.setPosition(cx - 8, safe.y + 64).setVisible(!compact);
     this.levelText.setPosition(safe.x + safe.w - 14, safe.y + 12).setVisible(!compact);
-    this.pauseBtn.setPosition(safe.x + safe.w - 36, safe.y + (compact ? 60 : 64));
-    this.muteBtn.setPosition(safe.x + safe.w - 36, safe.y + 116).setVisible(!compact);
-    this.bossName.setPosition(cx, safe.y + 96);
     this.warnText.setPosition(cx, safe.y + safe.h * 0.3);
+    this.debugText.setPosition(safe.x + 10, safe.y + safe.h - 8);
     this.buildIconRow();
     if (this.overlayMode !== 'none') {
       // 重新布局开销大，直接关闭重开
@@ -153,10 +179,13 @@ export class HUDScene extends Phaser.Scene {
     g.fillRect(0, safe.y, w, 9);
     g.fillStyle(PAL.xp, 1);
     g.fillRect(0, safe.y, w * xpK, 9);
-    // HP 条（左上）
-    const hpX = safe.x + 14;
-    const hpY = safe.y + 16;
-    const hpW = Math.min(170, safe.w * 0.35);
+    // HP 条（左上；竖屏与计时/按钮同一中线）
+    const compact = this.compactHud;
+    const hpX = safe.x + (compact ? 12 : 14);
+    const hpY = safe.y + (compact ? 30 : 16);
+    // 桌面 HP 条与下方 6 格技能区等宽
+    const slotRowW = MAX_WEAPONS * (32 + 7) - 7;
+    const hpW = compact ? Math.min(130, safe.w * 0.32) : Math.min(slotRowW, safe.w * 0.35);
     const hpK = Phaser.Math.Clamp(this.gs.hp / this.gs.stats.maxHp, 0, 1);
     g.fillStyle(0x5a5248, 0.08);
     g.fillRoundedRect(hpX, hpY, hpW, 16, 8);
@@ -171,6 +200,19 @@ export class HUDScene extends Phaser.Scene {
     const mm = String(Math.floor(sec / 60)).padStart(2, '0');
     const ss = String(sec % 60).padStart(2, '0');
     this.timerText.setText(mm + ':' + ss);
+
+    // 调试信息（设置中开启）
+    const dbg = getSettings();
+    if (dbg.debugInfo) {
+      const flags = (dbg.invincible ? ' 无敌' : '') + (dbg.fullPickup ? ' 全拾' : '');
+      this.debugText.setVisible(true).setText(
+        'FPS ' + Math.round(this.game.loop.actualFps) +
+        ' | 敌 ' + this.gs.enemies.actives.length +
+        ' | ' + this.gs.speed + 'x' + flags,
+      );
+    } else if (this.debugText.visible) {
+      this.debugText.setVisible(false);
+    }
     this.killText.setText(String(this.gs.kills));
     this.levelText.setText(t('level') + ' ' + this.gs.level);
 
@@ -180,7 +222,7 @@ export class HUDScene extends Phaser.Scene {
       if (boss && boss.active) {
         const bw = Math.min(420, safe.w - 80);
         const bx = safe.x + safe.w / 2 - bw / 2;
-        const by = safe.y + 108;
+        const by = safe.y + (compact ? 154 : 108);
         const bk = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
         this.bossName.setText(t('bossName'));
         g.fillStyle(0x5a5248, 0.1);
@@ -195,35 +237,81 @@ export class HUDScene extends Phaser.Scene {
 
   // ---------- 武器/被动图标栏 ----------
 
+  /** 当前构筑 → 槽位条目（不足上限补 null 空槽） */
+  private weaponSlots(): Array<{ icon: string; label: string; gold: boolean } | null> {
+    const out: Array<{ icon: string; label: string; gold: boolean } | null> = [];
+    for (const wpn of this.gs.weapons.list) {
+      const meta = WEAPON_META.find((m) => m.id === wpn.id)!;
+      out.push({ icon: meta.icon, label: wpn.evolved ? '★' : String(wpn.level), gold: wpn.evolved });
+    }
+    while (out.length < MAX_WEAPONS) out.push(null);
+    return out;
+  }
+
+  private passiveSlots(): Array<{ icon: string; label: string; gold: boolean } | null> {
+    const out: Array<{ icon: string; label: string; gold: boolean } | null> = [];
+    for (const [pid, plv] of this.gs.passives) {
+      const meta = PASSIVE_META.find((m) => m.id === pid)!;
+      out.push({ icon: meta.icon, label: String(plv), gold: false });
+    }
+    while (out.length < MAX_PASSIVES) out.push(null);
+    return out;
+  }
+
+  /** 画一行技能槽：圆形令牌样式（图标本身为圆形），空槽常显淡圈，图标等比填入 */
+  private drawSlotRow(
+    x0: number,
+    y: number,
+    size: number,
+    slots: Array<{ icon: string; label: string; gold: boolean } | null>,
+    depth = 11,
+    gap = 7,
+  ): Phaser.GameObjects.GameObject[] {
+    const out: Phaser.GameObjects.GameObject[] = [];
+    const step = size + gap;
+    const r = size / 2;
+    const g = this.add.graphics().setDepth(depth);
+    out.push(g);
+    slots.forEach((s, i) => {
+      const cx = x0 + i * step + r;
+      const cy = y + r;
+      if (s) {
+        // 进化武器外圈描金
+        if (s.gold) {
+          g.lineStyle(2.5, 0xe2b452, 1);
+          g.strokeCircle(cx, cy, r + 1);
+        }
+        // 图标自带白底圆与描边，铺满槽位即是完整令牌
+        const icon = this.add.image(cx, cy, s.icon).setDepth(depth);
+        icon.setDisplaySize(size, size);
+        const lv = this.add.text(cx + r * 0.9, cy + r * 0.95, s.label, {
+          fontFamily: FONT, fontSize: Math.max(10, Math.round(size * 0.34)) + 'px', fontStyle: 'bold',
+          color: s.gold ? '#C8902A' : PAL.inkCss, stroke: '#FFFFFF', strokeThickness: 3,
+        }).setOrigin(1, 1).setDepth(depth + 1);
+        out.push(icon, lv);
+      } else {
+        // 空槽：淡色圆圈占位
+        g.fillStyle(0xfffdf6, 0.45);
+        g.fillCircle(cx, cy, r - 1);
+        g.lineStyle(1.5, PAL.cardEdge, 0.55);
+        g.strokeCircle(cx, cy, r - 1);
+      }
+    });
+    return out;
+  }
+
   private buildIconRow(): void {
     this.iconRow.forEach((o) => o.destroy());
     this.iconRow = [];
-    // 竖屏精简形态不常驻构筑栏（详情见暂停面板）
-    if (this.compactHud) return;
     const safe = this.vp.safe;
-    let x = safe.x + 30;
-    const y = safe.y + 52;
-    for (const wpn of this.gs.weapons.list) {
-      const meta = WEAPON_META.find((m) => m.id === wpn.id)!;
-      const icon = this.add.image(x, y, meta.icon).setScale(0.8).setDepth(11);
-      const lv = this.add.text(x + 10, y + 10, wpn.evolved ? '★' : String(wpn.level), {
-        fontFamily: FONT, fontSize: '12px', fontStyle: 'bold',
-        color: wpn.evolved ? '#C8902A' : PAL.inkCss, stroke: '#FFFFFF', strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(12);
-      this.iconRow.push(icon, lv);
-      x += 38;
-    }
-    x = safe.x + 30;
-    for (const [pid, plv] of this.gs.passives) {
-      const meta = PASSIVE_META.find((m) => m.id === pid)!;
-      const icon = this.add.image(x, y + 38, meta.icon).setScale(0.62).setDepth(11);
-      const lv = this.add.text(x + 8, y + 46, String(plv), {
-        fontFamily: FONT, fontSize: '11px', fontStyle: 'bold', color: PAL.inkCss,
-        stroke: '#FFFFFF', strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(12);
-      this.iconRow.push(icon, lv);
-      x += 30;
-    }
+    const compact = this.compactHud;
+    // 6+6 槽位常显：竖屏对齐 HP 条左缘、槽位更小更紧凑
+    const size = compact ? 26 : 32;
+    const gap = compact ? 4 : 7;
+    const x0 = safe.x + (compact ? 12 : 14);
+    const y = safe.y + (compact ? 56 : 44);
+    this.iconRow.push(...this.drawSlotRow(x0, y, size, this.weaponSlots(), 11, gap));
+    this.iconRow.push(...this.drawSlotRow(x0, y + size + gap, size, this.passiveSlots(), 11, gap));
   }
 
   // ---------- 警告横幅 ----------
@@ -246,6 +334,12 @@ export class HUDScene extends Phaser.Scene {
   private pendingOffers: Offer[] = [];
 
   private showLevelUp(offers: Offer[]): void {
+    // 调试：自动选第一张卡，跳过选卡界面
+    if (getSettings().autoPick && offers.length > 0) {
+      this.gs.applyOffer(offers[0]);
+      this.scene.resume('game');
+      return;
+    }
     this.overlayMode = 'levelup';
     this.pendingOffers = offers;
     const w = this.scale.width;
@@ -435,11 +529,11 @@ export class HUDScene extends Phaser.Scene {
           stroke: '#FFFFFF', strokeThickness: 5, wordWrap: { width: w - 60 },
         }).setOrigin(0.5).setDepth(104);
         this.overlay.push(txt);
-        const ok = makeButton(this, w / 2, h * 0.74, 170, 52, 'OK', () => {
+        const ok = makeButton(this, w / 2, h * 0.74, THEME.btnW, THEME.btnH, 'OK', () => {
           this.closeOverlay();
           this.gs.applyChest(pick);
           this.scene.resume('game');
-        });
+        }, { fontSize: THEME.btnFs });
         ok.setDepth(104);
         this.overlay.push(ok);
       });
@@ -470,52 +564,31 @@ export class HUDScene extends Phaser.Scene {
       stroke: '#FFFFFF', strokeThickness: 7,
     }).setOrigin(0.5).setDepth(101);
 
-    // 构筑摘要：武器 + 被动（竖屏精简形态的详情入口）
-    const wList = this.gs.weapons.list;
-    const pList = [...this.gs.passives];
-    const iconGap = 44;
-    const rowY = h * 0.18 + 52;
-    const wRowW = wList.length * iconGap;
-    wList.forEach((wpn, i) => {
-      const meta = WEAPON_META.find((m) => m.id === wpn.id)!;
-      const ix = w / 2 - wRowW / 2 + iconGap / 2 + i * iconGap;
-      const icon = this.add.image(ix, rowY, meta.icon).setScale(0.9).setDepth(101);
-      const lv = this.add.text(ix + 11, rowY + 11, wpn.evolved ? '★' : String(wpn.level), {
-        fontFamily: FONT, fontSize: '12px', fontStyle: 'bold',
-        color: wpn.evolved ? '#C8902A' : PAL.inkCss, stroke: '#FFFFFF', strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(102);
-      this.overlay.push(icon, lv);
-    });
-    const pRowW = pList.length * 36;
-    pList.forEach(([pid, plv], i) => {
-      const meta = PASSIVE_META.find((m) => m.id === pid)!;
-      const ix = w / 2 - pRowW / 2 + 18 + i * 36;
-      const icon = this.add.image(ix, rowY + 40, meta.icon).setScale(0.66).setDepth(101);
-      const lv = this.add.text(ix + 9, rowY + 49, String(plv), {
-        fontFamily: FONT, fontSize: '11px', fontStyle: 'bold', color: PAL.inkCss,
-        stroke: '#FFFFFF', strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(102);
-      this.overlay.push(icon, lv);
-    });
-    const resume = makeButton(this, w / 2, h * 0.42, 230, 58, t('resume'), () => this.togglePause(), { fontSize: 22 });
-    const sound = makeButton(this, w / 2, h * 0.42 + 76, 230, 50, SFX.muted ? t('soundOff') : t('soundOn'), () => {
+    // 构筑摘要：6+6 槽位（与 HUD 同一渲染，竖屏形态的详情入口）
+    const slotSize = 32;
+    const rowW = MAX_WEAPONS * (slotSize + 7) - 7;
+    const sx = w / 2 - rowW / 2;
+    const rowY = h * 0.18 + 36;
+    this.overlay.push(...this.drawSlotRow(sx, rowY, slotSize, this.weaponSlots(), 101));
+    this.overlay.push(...this.drawSlotRow(sx, rowY + slotSize + 8, slotSize, this.passiveSlots(), 101));
+    // 四个按钮统一规格
+    const bw = THEME.btnW;
+    const bh = THEME.btnH;
+    const gap = 68;
+    const by = h * 0.42;
+    const resume = makeButton(this, w / 2, by, bw, bh, t('resume'), () => this.togglePause(), { fontSize: THEME.btnFs });
+    const sound = makeButton(this, w / 2, by + gap, bw, bh, SFX.muted ? t('soundOff') : t('soundOn'), () => {
       SFX.setMuted(!SFX.muted);
       setButtonLabel(sound, SFX.muted ? t('soundOff') : t('soundOn'));
-      setButtonLabel(this.muteBtn, SFX.muted ? '🔇' : '🔊');
-    }, { fontSize: 18 });
-    const lang = makeButton(this, w / 2, h * 0.42 + 144, 230, 50, t('langBtn'), () => {
-      toggleLang();
-      this.closeOverlay();
-      this.showPauseMenu();
-    }, { fontSize: 18 });
-    const quit = makeButton(this, w / 2, h * 0.42 + 222, 230, 50, t('quit'), () => {
+    }, { fontSize: THEME.btnFs });
+    const quit = makeButton(this, w / 2, by + gap * 2, bw, bh, t('quit'), () => {
       this.closeOverlay();
       this.scene.stop('game');
       this.scene.stop();
       this.game.scene.start('title');
-    }, { fontSize: 18 });
-    [resume, sound, lang, quit].forEach((b) => b.setDepth(101));
-    this.overlay.push(veil, title, resume, sound, lang, quit);
+    }, { fontSize: THEME.btnFs });
+    [resume, sound, quit].forEach((b) => b.setDepth(101));
+    this.overlay.push(veil, title, resume, sound, quit);
   }
 
   // ---------- 通用 ----------

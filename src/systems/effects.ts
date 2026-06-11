@@ -2,6 +2,7 @@
 // 不依赖 Phaser 粒子插件，行为完全可控且对象全池化
 import Phaser from 'phaser';
 import { FONT } from '../i18n';
+import { getSettings } from '../core/settings';
 
 const DEPTH_FX = 1e7;
 
@@ -91,8 +92,9 @@ export class Effects {
     });
   }
 
-  /** 伤害飘字 */
+  /** 伤害飘字（可在设置中关闭） */
   number(x: number, y: number, value: number, crit: boolean): void {
+    if (!getSettings().dmgNumbers) return;
     let txt: Phaser.GameObjects.Text | undefined;
     for (const t of this.texts) {
       if (!t.visible) { txt = t; break; }

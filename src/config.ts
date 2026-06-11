@@ -14,8 +14,8 @@ export const PLAYER = {
 };
 
 export const RUN_SECONDS = 12 * 60;
-export const MAX_WEAPONS = 4;
-export const MAX_PASSIVES = 4;
+export const MAX_WEAPONS = 6;
+export const MAX_PASSIVES = 6;
 export const WEAPON_MAX_LEVEL = 5;
 export const PASSIVE_MAX_LEVEL = 5;
 

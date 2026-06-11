@@ -2,6 +2,7 @@
 import Phaser from 'phaser';
 import { DASHER, EVENTS, ENEMIES, EnemyId, SPITTER, WAVES, dmgScale, hpScale } from '../config';
 import { SFX } from '../audio/sound';
+import { getSettings } from '../core/settings';
 import type { GameScene } from '../scenes/Game';
 
 export class Enemy extends Phaser.GameObjects.Image {
@@ -163,7 +164,7 @@ export class EnemyManager {
         this.g.game.events.emit('hud:boss', true);
         this.g.game.events.emit('hud:warn', 'bossWarn');
         SFX.bossRoar();
-        this.g.cameras.main.shake(500, 0.004);
+        if (getSettings().shake) this.g.cameras.main.shake(500, 0.004);
       }
     }
   }

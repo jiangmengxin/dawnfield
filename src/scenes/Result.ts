@@ -4,6 +4,7 @@ import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { WEAPON_META } from '../config';
 import { makeButton } from '../ui/widgets';
+import { THEME } from '../ui/theme';
 import type { RunResult } from './Game';
 
 export class ResultScene extends Phaser.Scene {
@@ -105,14 +106,14 @@ export class ResultScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(3);
     });
 
-    const retry = makeButton(this, cx, h * 0.82, 220, 58, t('retry'), () => {
+    const retry = makeButton(this, cx, h * 0.82, THEME.btnW, THEME.btnH, t('retry'), () => {
       this.cleanup();
       this.scene.start('game');
-    }, { fontSize: 22 });
-    const menu = makeButton(this, cx, h * 0.82 + 72, 220, 50, t('quit'), () => {
+    }, { fontSize: THEME.btnFs });
+    const menu = makeButton(this, cx, h * 0.82 + 68, THEME.btnW, THEME.btnH, t('quit'), () => {
       this.cleanup();
       this.scene.start('title');
-    }, { fontSize: 18 });
+    }, { fontSize: THEME.btnFs });
     retry.setDepth(2);
     menu.setDepth(2);
   }

@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { WEAPON_META, WeaponId, WEAPON_MAX_LEVEL, PASSIVE_MAX_LEVEL } from '../config';
 import { PAL, RAINBOW } from '../gfx/palette';
 import { SFX } from '../audio/sound';
+import { getSettings } from '../core/settings';
 import type { Enemy } from './enemies';
 import type { GameScene } from '../scenes/Game';
 
@@ -720,7 +721,7 @@ class MineWeapon extends Weapon {
     g.fx.ring(x, y, PAL.mine, r / 42, 0.4);
     g.fx.burst(x, y, { tex: 'p_star', color: PAL.mine, count: this.evolved ? 16 : 10, speed: 200, life: 0.55, scale: 1.1, spin: true });
     g.fx.burst(x, y, { tex: 'p_dot', color: 0xffffff, count: 6, speed: 120, life: 0.3 });
-    g.cameras.main.shake(120, 0.0035);
+    if (getSettings().shake) g.cameras.main.shake(120, 0.0035);
     g.grid.queryCircle(x, y, r, queryOut);
     for (const e of queryOut) {
       const ea = Math.atan2(e.y - y, e.x - x);

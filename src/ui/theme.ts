@@ -22,6 +22,11 @@ export const THEME = {
   // 触控命中区下限（pt）
   hitMin: 44,
 
+  // 标准菜单按钮规格（暂停/结算/确认等成组按钮统一用这一档）
+  btnW: 240,
+  btnH: 54,
+  btnFs: 19,
+
   // 描边
   strokeCard: 2.5,
   strokeAccent: 3,
