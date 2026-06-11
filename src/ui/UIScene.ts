@@ -15,6 +15,9 @@ export abstract class UIScene extends Phaser.Scene {
 
   create(): void {
     this.vp = Viewport.get();
+    // 提到渲染顶层：菜单场景可能在其他活动场景（如暂停中的 game）之上打开，
+    // 而场景注册顺序决定默认渲染层级，不提层会被压在下面看似"卡死"
+    this.scene.bringToTop();
     this.cameras.main.setBackgroundColor(PAL.paperCss);
     this.vp.syncCamera(this);
     this.buildLayout();

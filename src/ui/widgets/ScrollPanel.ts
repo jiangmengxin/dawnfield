@@ -38,22 +38,17 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
     this.barGfx = scene.add.graphics();
     this.add(this.barGfx);
 
-    // 拖动手势（zone 截获面板范围内指针）
-    const zone = scene.add.zone(0, 0, view.w, view.h).setOrigin(0).setInteractive();
-    this.addAt(zone, 0);
-    zone.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      this.dragging = true;
-      this.moved = false;
-      this.lastY = this.toWorld(p).y;
-      this.downY = this.lastY;
-      this.vel = 0;
-    });
+    // 拖动手势走场景级监听：Phaser 默认 topOnly，若用底层 Zone 接收 pointerdown，
+    // 指针落在卡片上时 Zone 收不到事件 → 无法从卡片上起手滚动，且 moved 标记
+    // 不复位会吞掉后续所有点击。场景级 pointerdown 不受遮挡影响。
+    scene.input.on('pointerdown', this.onDown, this);
     scene.input.on('pointermove', this.onMove, this);
     scene.input.on('pointerup', this.onUp, this);
     scene.input.on('wheel', this.onWheel, this);
     scene.events.on('update', this.onUpdate, this);
 
     this.once('destroy', () => {
+      scene.input.off('pointerdown', this.onDown, this);
       scene.input.off('pointermove', this.onMove, this);
       scene.input.off('pointerup', this.onUp, this);
       scene.input.off('wheel', this.onWheel, this);
@@ -90,6 +85,21 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
 
   private get maxScroll(): number {
     return Math.max(0, this.contentH - this.view.h);
+  }
+
+  private onDown(p: Phaser.Input.Pointer): void {
+    const w = this.toWorld(p);
+    const { view } = this;
+    // 每次按下都复位 moved（无论是否在面板内），避免上次拖动残留吞掉点击
+    this.moved = false;
+    if (w.x < view.x || w.x > view.x + view.w || w.y < view.y || w.y > view.y + view.h) {
+      this.dragging = false;
+      return;
+    }
+    this.dragging = true;
+    this.lastY = w.y;
+    this.downY = w.y;
+    this.vel = 0;
   }
 
   private onMove(p: Phaser.Input.Pointer): void {

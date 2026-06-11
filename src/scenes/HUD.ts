@@ -9,6 +9,7 @@ import { makeButton, setButtonLabel } from '../ui/widgets';
 import { Viewport } from '../ui/Viewport';
 import { THEME } from '../ui/theme';
 import { getSettings, updateSettings } from '../core/settings';
+import { go } from '../core/router';
 import type { GameScene, Offer } from './Game';
 
 export class HUDScene extends Phaser.Scene {
@@ -120,6 +121,9 @@ export class HUDScene extends Phaser.Scene {
     this.layout();
     this.scale.on('resize', this.layout, this);
 
+    // 从设置页返回（HUD 被 router 重启）：game 仍暂停，自动重开暂停面板
+    if (this.game.scene.isPaused('game')) this.showPauseMenu();
+
     this.events.on('shutdown', () => {
       this.scale.off('resize', this.layout, this);
       ev.off('hud:levelup', onLevelup);
@@ -144,7 +148,7 @@ export class HUDScene extends Phaser.Scene {
       const rowY = safe.y + 9 + 29;
       this.timerText.setOrigin(0.5, 0.5).setFontSize(22).setPosition(cx, rowY);
       this.pauseBtn.setPosition(safe.x + safe.w - 34, rowY);
-      this.speedBtn.setPosition(safe.x + safe.w - 82, rowY);
+      this.speedBtn.setPosition(safe.x + safe.w - 90, rowY);
       this.bossName.setPosition(cx, safe.y + 142);
     } else {
       this.timerText.setOrigin(0.5, 0).setFontSize(30).setPosition(cx, safe.y + 14);
@@ -582,14 +586,18 @@ export class HUDScene extends Phaser.Scene {
       SFX.setMuted(!SFX.muted);
       setButtonLabel(sound, SFX.muted ? t('soundOff') : t('soundOn'));
     }, { fontSize: THEME.btnFs });
-    const quit = makeButton(this, w / 2, by + gap * 2, bw, bh, t('quit'), () => {
+    const settings = makeButton(this, w / 2, by + gap * 2, bw, bh, t('menu_settings'), () => {
+      // 保持 game 场景暂停，进设置页；返回时 HUD 重启并自动重开暂停面板
+      go(this, 'settings');
+    }, { fontSize: THEME.btnFs });
+    const quit = makeButton(this, w / 2, by + gap * 3, bw, bh, t('quit'), () => {
       this.closeOverlay();
       this.scene.stop('game');
       this.scene.stop();
       this.game.scene.start('title');
     }, { fontSize: THEME.btnFs });
-    [resume, sound, quit].forEach((b) => b.setDepth(101));
-    this.overlay.push(veil, title, resume, sound, quit);
+    [resume, sound, settings, quit].forEach((b) => b.setDepth(101));
+    this.overlay.push(veil, title, resume, sound, settings, quit);
   }
 
   // ---------- 通用 ----------
