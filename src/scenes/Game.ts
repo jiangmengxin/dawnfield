@@ -12,6 +12,7 @@ import { Enemy, EnemyManager } from '../systems/enemies';
 import { WeaponManager } from '../systems/weapons';
 import { Joystick } from '../systems/joystick';
 import { getSettings } from '../core/settings';
+import { Viewport } from '../ui/Viewport';
 
 export interface Stats {
   dmg: number;
@@ -169,9 +170,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateZoom(): void {
-    const w = this.scale.width;
-    const h = this.scale.height;
-    this.cameras.main.setZoom(Phaser.Math.Clamp(Math.sqrt(w * h) / 760, 0.8, 1.25));
+    // 变焦档位按 CSS 尺寸决定，再乘 DPR 映射到物理像素（画布以物理像素渲染）
+    const vp = Viewport.get();
+    this.cameras.main.setZoom(Phaser.Math.Clamp(Math.sqrt(vp.w * vp.h) / 760, 0.8, 1.25) * vp.dpr);
   }
 
   /** 切换局内倍速：dt、delayedCall、tween 三套时钟同步 */

@@ -16,6 +16,7 @@ export abstract class UIScene extends Phaser.Scene {
   create(): void {
     this.vp = Viewport.get();
     this.cameras.main.setBackgroundColor(PAL.paperCss);
+    this.vp.syncCamera(this);
     this.buildLayout();
 
     const offVp = this.vp.onChange(() => {
@@ -40,6 +41,7 @@ export abstract class UIScene extends Phaser.Scene {
   protected abstract buildLayout(): void;
 
   protected rebuild(): void {
+    this.vp.syncCamera(this);
     this.children.removeAll(true);
     this.buildLayout();
   }

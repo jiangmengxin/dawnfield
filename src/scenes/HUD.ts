@@ -133,6 +133,7 @@ export class HUDScene extends Phaser.Scene {
   }
 
   private layout(): void {
+    this.vp.syncCamera(this);
     const safe = this.vp.safe;
     const cx = safe.x + safe.w / 2;
     const compact = this.compactHud;
@@ -170,7 +171,7 @@ export class HUDScene extends Phaser.Scene {
   update(): void {
     if (!this.gs || !this.gs.player) return;
     const safe = this.vp.safe;
-    const w = this.scale.width;
+    const w = this.vp.w;
     const g = this.bars;
     g.clear();
     // XP 条（安全区顶部通栏）
@@ -342,8 +343,8 @@ export class HUDScene extends Phaser.Scene {
     }
     this.overlayMode = 'levelup';
     this.pendingOffers = offers;
-    const w = this.scale.width;
-    const h = this.scale.height;
+    const w = this.vp.w;
+    const h = this.vp.h;
     const veil = this.addVeil();
     const title = this.add.text(w / 2, h * 0.14, t('levelUpTitle'), {
       fontFamily: FONT, fontSize: Math.min(30, w * 0.062) + 'px', fontStyle: 'bold', color: PAL.inkCss,
@@ -475,8 +476,8 @@ export class HUDScene extends Phaser.Scene {
 
   private showChest(pick: WeaponId | null): void {
     this.overlayMode = 'chest';
-    const w = this.scale.width;
-    const h = this.scale.height;
+    const w = this.vp.w;
+    const h = this.vp.h;
     const veil = this.addVeil();
     const title = this.add.text(w / 2, h * 0.2, t('chestTitle'), {
       fontFamily: FONT, fontSize: '28px', fontStyle: 'bold', color: PAL.inkCss,
@@ -556,8 +557,8 @@ export class HUDScene extends Phaser.Scene {
 
   private showPauseMenu(): void {
     this.overlayMode = 'pause';
-    const w = this.scale.width;
-    const h = this.scale.height;
+    const w = this.vp.w;
+    const h = this.vp.h;
     const veil = this.addVeil();
     const title = this.add.text(w / 2, h * 0.18, t('pause'), {
       fontFamily: FONT, fontSize: '36px', fontStyle: 'bold', color: PAL.inkCss,
@@ -595,7 +596,7 @@ export class HUDScene extends Phaser.Scene {
 
   private addVeil(): Phaser.GameObjects.Rectangle {
     // 浅色主题：白色柔光遮罩而非黑色
-    const veil = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0xfaf5ea, 0.72)
+    const veil = this.add.rectangle(0, 0, this.vp.w, this.vp.h, 0xfaf5ea, 0.72)
       .setOrigin(0).setDepth(100).setInteractive();
     return veil;
   }

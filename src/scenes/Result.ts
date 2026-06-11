@@ -5,6 +5,7 @@ import { PAL } from '../gfx/palette';
 import { WEAPON_META } from '../config';
 import { makeButton } from '../ui/widgets';
 import { THEME } from '../ui/theme';
+import { Viewport } from '../ui/Viewport';
 import type { RunResult } from './Game';
 
 export class ResultScene extends Phaser.Scene {
@@ -21,9 +22,14 @@ export class ResultScene extends Phaser.Scene {
 
   create(): void {
     this.cameras.main.setBackgroundColor(PAL.paperCss);
+    const vp = Viewport.get();
+    vp.syncCamera(this);
+    const resync = (): void => vp.syncCamera(this);
+    this.scale.on('resize', resync);
+    this.events.once('shutdown', () => this.scale.off('resize', resync));
     const r = this.data2;
-    const w = this.scale.width;
-    const h = this.scale.height;
+    const w = vp.w;
+    const h = vp.h;
     const cx = w / 2;
 
     if (r.win) {

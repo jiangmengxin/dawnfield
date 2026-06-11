@@ -18,6 +18,12 @@ export class Viewport {
   private insets: SafeInsets = { top: 0, right: 0, bottom: 0, left: 0 };
   private listeners: Array<() => void> = [];
   private debounceTimer: number | null = null;
+  private _dpr = Viewport.dprNow();
+
+  /** 当前设备像素比（封顶 3，防超高 DPR 设备过度耗能） */
+  static dprNow(): number {
+    return Math.min(window.devicePixelRatio || 1, 3);
+  }
 
   static init(game: Phaser.Game): Viewport {
     if (Viewport.inst) return Viewport.inst;
@@ -25,8 +31,14 @@ export class Viewport {
     vp.game = game;
     vp.readInsets();
     game.scale.on('resize', () => vp.scheduleNotify());
-    window.addEventListener('resize', () => vp.scheduleNotify());
-    window.addEventListener('orientationchange', () => vp.scheduleNotify());
+    window.addEventListener('resize', () => {
+      vp.fitToWindow();
+      vp.scheduleNotify();
+    });
+    window.addEventListener('orientationchange', () => {
+      vp.fitToWindow();
+      vp.scheduleNotify();
+    });
     Viewport.inst = vp;
     return vp;
   }
@@ -68,7 +80,7 @@ export class Viewport {
     // 后台标签页等场景下 Phaser 可能尚未同步画布尺寸，先强制刷新
     const app = document.getElementById('app');
     if (app && (Math.abs(this.w - app.clientWidth) > 1 || Math.abs(this.h - app.clientHeight) > 1)) {
-      this.game.scale.refresh();
+      this.fitToWindow();
     }
     this.readInsets();
     this.lastW = this.w;
@@ -77,12 +89,44 @@ export class Viewport {
     [...this.listeners].forEach((f) => f());
   }
 
+  /**
+   * 高分屏适配：画布后备缓冲按物理像素（CSS × DPR）渲染，CSS 尺寸铺满窗口。
+   * 否则浏览器把低分辨率画布拉伸到屏幕，整体发糊。
+   */
+  private fitToWindow(): void {
+    const canvas = this.game.canvas;
+    if (!canvas) return;
+    this._dpr = Viewport.dprNow();
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    // 先定 CSS 尺寸再 resize，让 Phaser refresh 读到正确的画布边界
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    this.game.scale.zoom = 1 / this._dpr;
+    this.game.scale.resize(Math.round(w * this._dpr), Math.round(h * this._dpr));
+  }
+
+  /** 设备像素比；游戏逻辑坐标一律为 CSS 像素，乘 dpr 才是物理像素 */
+  get dpr(): number {
+    return this._dpr;
+  }
+
+  /**
+   * 场景主相机按 DPR 放大渲染：逻辑坐标(CSS px) → 物理像素。
+   * 全屏 UI 场景在 create 与每次视口变化后调用。
+   */
+  syncCamera(scene: Phaser.Scene): void {
+    const cam = scene.cameras.main;
+    cam.setZoom(this._dpr);
+    cam.centerOn(this.w / 2, this.h / 2);
+  }
+
   get w(): number {
-    return this.game.scale.width;
+    return this.game.scale.width / this._dpr;
   }
 
   get h(): number {
-    return this.game.scale.height;
+    return this.game.scale.height / this._dpr;
   }
 
   get portrait(): boolean {

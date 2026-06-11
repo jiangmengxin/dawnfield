@@ -4,6 +4,7 @@ import { FONT } from '../../i18n';
 import { PAL } from '../../gfx/palette';
 import { Rect, inset } from '../layout';
 import { THEME } from '../theme';
+import { Viewport } from '../Viewport';
 
 export interface ModalHandle {
   close(): void;
@@ -34,8 +35,9 @@ export class Modal {
   }
 
   static open(scene: Phaser.Scene, opts: ModalOpts): ModalHandle {
-    const sw = scene.scale.width;
-    const sh = scene.scale.height;
+    const vp = Viewport.get();
+    const sw = vp.w;
+    const sh = vp.h;
     const pw = Math.min(opts.w ?? 420, sw - 32);
     const ph = Math.min(opts.h ?? 380, sh - 48);
 

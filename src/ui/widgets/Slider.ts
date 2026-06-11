@@ -60,9 +60,10 @@ export class Slider extends Phaser.GameObjects.Container {
   }
 
   private applyPointer(p: Phaser.Input.Pointer, onChange: (v: number) => void): void {
-    // 世界坐标 → 本地（Slider 可能在 Container 内）
+    // 指针(物理像素) → 世界坐标（消化相机 DPR 缩放）→ 本地（Slider 可能在 Container 内）
+    const wp = p.positionToCamera(this.scene.cameras.main) as Phaser.Math.Vector2;
     const m = this.getWorldTransformMatrix();
-    const local = m.applyInverse(p.x, p.y);
+    const local = m.applyInverse(wp.x, wp.y);
     this.value = Phaser.Math.Clamp(local.x / this.trackW + 0.5, 0, 1);
     this.redraw();
     onChange(this.value);

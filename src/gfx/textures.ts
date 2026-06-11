@@ -1,16 +1,28 @@
 // 纹理工厂：零外部资源，全部用 Canvas 2D 程序化绘制
 import { PAL, RAINBOW, cssOf } from './palette';
+import { Viewport } from '../ui/Viewport';
 
 type Ctx = CanvasRenderingContext2D;
 
+// 超采样倍率：纹理按 TEX_SCALE 倍像素绘制，覆盖 相机 DPR × 局内变焦(≤1.25) 的放大采样，
+// 否则 1x 光栅图被放大会发糊。createAllTextures 时按设备 DPR 确定。
+let TEX_SCALE = 2;
+
 function makeTex(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: Ctx, w: number, h: number) => void): void {
-  const tex = scene.textures.createCanvas(key, w, h);
+  const ss = TEX_SCALE;
+  const tex = scene.textures.createCanvas(key, Math.ceil(w * ss), Math.ceil(h * ss));
   if (!tex) throw new Error('createCanvas failed: ' + key);
   const ctx = tex.context as Ctx;
   ctx.save();
+  ctx.scale(ss, ss);
   draw(ctx, w, h);
   ctx.restore();
   tex.refresh();
+  // 高密度像素、逻辑尺寸 w×h：渲染端按 source.resolution 折算（与 Text 同机制），
+  // setTrim 把 realWidth/Height 标回逻辑尺寸，调用方 setScale/setDisplaySize 语义不变
+  const frame = tex.get();
+  frame.source.resolution = ss;
+  frame.setTrim(w, h, 0, 0, w, h);
 }
 
 // ---------- 绘制辅助 ----------
@@ -117,6 +129,9 @@ function petalShape(ctx: Ctx, cx: number, cy: number, len: number, wid: number, 
 // ---------- 主入口 ----------
 
 export function createAllTextures(scene: Phaser.Scene): void {
+  // dpr1→2x、dpr2→3x、dpr3→4x；纹理都很小，显存开销可忽略
+  TEX_SCALE = Math.min(4, Math.ceil(Viewport.dprNow() * 1.25));
+
   // === 玩家：萤光小精灵 ===
   makeTex(scene, 'player', 40, 44, (ctx) => {
     softGlow(ctx, 20, 26, 18, 'rgba(255,246,216,0.8)');

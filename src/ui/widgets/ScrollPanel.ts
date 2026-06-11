@@ -17,6 +17,12 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
   private moved = false;
   private lastY = 0;
   private downY = 0;
+  private tmpVec = new Phaser.Math.Vector2();
+
+  /** 指针(物理像素) → 场景世界坐标（消化相机 DPR 缩放） */
+  private toWorld(p: Phaser.Input.Pointer): Phaser.Math.Vector2 {
+    return p.positionToCamera(this.scene.cameras.main, this.tmpVec) as Phaser.Math.Vector2;
+  }
 
   constructor(scene: Phaser.Scene, view: Rect) {
     super(scene, view.x, view.y);
@@ -38,8 +44,8 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
     zone.on('pointerdown', (p: Phaser.Input.Pointer) => {
       this.dragging = true;
       this.moved = false;
-      this.lastY = p.y;
-      this.downY = p.y;
+      this.lastY = this.toWorld(p).y;
+      this.downY = this.lastY;
       this.vel = 0;
     });
     scene.input.on('pointermove', this.onMove, this);
@@ -88,14 +94,15 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
 
   private onMove(p: Phaser.Input.Pointer): void {
     if (!this.dragging || !p.isDown) return;
-    if (!this.moved && Math.abs(p.y - this.downY) > DRAG_THRESHOLD) this.moved = true;
+    const wy = this.toWorld(p).y;
+    if (!this.moved && Math.abs(wy - this.downY) > DRAG_THRESHOLD) this.moved = true;
     if (this.moved) {
-      const dy = p.y - this.lastY;
+      const dy = wy - this.lastY;
       this.scroll -= dy;
       this.vel = -dy * 60; // 估算速度（像素/秒）
       this.applyScroll(true);
     }
-    this.lastY = p.y;
+    this.lastY = wy;
   }
 
   private onUp(): void {
@@ -103,7 +110,7 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
   }
 
   private onWheel(_p: Phaser.Input.Pointer, _objs: unknown, _dx: number, dy: number): void {
-    const p = this.scene.input.activePointer;
+    const p = this.toWorld(this.scene.input.activePointer);
     const { view } = this;
     if (p.x < view.x || p.x > view.x + view.w || p.y < view.y || p.y > view.y + view.h) return;
     this.scroll += dy * 0.6;
