@@ -96,6 +96,71 @@ const D: Dict = {
   c_heal_d: ['恢复 40 生命', 'Restore 40 HP'],
   c_gold: ['晨光碎片', 'Dawn Shards'],
   c_gold_d: ['获得 40 经验', 'Gain 40 XP'],
+
+  // 敌人名称（图鉴）
+  en_blob: ['墨团', 'Inkblob'],
+  en_midge: ['小蠓', 'Midge'],
+  en_shelly: ['壳壳', 'Shelly'],
+  en_spitter: ['喷喷', 'Spitter'],
+  en_dasher: ['冲冲', 'Dasher'],
+  en_splitter: ['分裂球', 'Splitter'],
+  en_mini: ['迷你球', 'Mini'],
+  en_elite: ['精英墨团', 'Elite Inkblob'],
+  en_boss: ['墨之王', 'Ink Monarch'],
+
+  // 通用 UI
+  ui_back: ['返回', 'Back'],
+  ui_ok: ['好的', 'OK'],
+  ui_locked: ['未解锁', 'Locked'],
+  ui_lockedHint: ['达成条件后解锁', 'Unlocks via achievements'],
+  ui_comingSoon: ['敬请期待', 'Coming soon'],
+  ui_select: ['选择', 'Select'],
+  ui_minutes: ['分钟', 'min'],
+
+  // 主菜单入口
+  menu_shop: ['商店', 'Shop'],
+  menu_codex: ['图鉴', 'Codex'],
+  menu_ach: ['成就', 'Feats'],
+  menu_settings: ['设置', 'Settings'],
+
+  // 场景标题
+  scn_charSelect: ['选择角色', 'Choose a Hero'],
+  scn_mapSelect: ['选择地图', 'Choose a Field'],
+  scn_shop: ['晨光商店', 'Dawn Shop'],
+  scn_codex: ['晨野图鉴', 'Codex'],
+  scn_achievements: ['成就', 'Achievements'],
+  scn_settings: ['设置', 'Settings'],
+
+  // 角色
+  char_spark: ['小萤', 'Flicker'],
+  char_spark_d: ['草甸晨光中的萤光小精灵，挥舞光刃', 'A glimmer sprite of the meadow, wielding the Light Blade'],
+  char_spark_w: ['初始武器：光刃', 'Starts with: Light Blade'],
+
+  // 地图
+  map_meadow: ['晨光草甸', 'Morning Meadow'],
+  map_meadow_d: ['一切开始的地方：花海、微风与墨之王', 'Where it all begins: flowers, breeze, and the Ink Monarch'],
+
+  // 商店占位
+  shop_coming: ['永久强化商店将随存档系统一起开放', 'Permanent upgrades arrive with the save system'],
+  shop_slotHint: ['强化槽位', 'Upgrade slot'],
+
+  // 图鉴占位
+  codex_weapons: ['武器', 'Weapons'],
+  codex_passives: ['被动', 'Passives'],
+  codex_enemies: ['敌人', 'Enemies'],
+  codex_chars: ['角色', 'Heroes'],
+  codex_maps: ['地图', 'Fields'],
+  codex_hint: ['游玩中遇见即点亮', 'Encounter things in a run to light them up'],
+
+  // 成就占位
+  ach_coming: ['成就将在后续版本点亮解锁之路', 'Achievements will pave the unlock road soon'],
+
+  // 设置
+  set_volume: ['音量', 'Volume'],
+  set_dmgNum: ['伤害数字', 'Damage Numbers'],
+  set_shake: ['屏幕震动', 'Screen Shake'],
+  set_lang: ['语言', 'Language'],
+  set_sound: ['声音', 'Sound'],
 };
 
 let lang: Lang = (() => {
@@ -128,8 +193,13 @@ export function toggleLang(): void {
   setLang(lang === 'zh' ? 'en' : 'zh');
 }
 
-export function onLangChange(f: () => void): void {
+/** 返回反注册函数，场景 shutdown 时务必调用（防泄漏） */
+export function onLangChange(f: () => void): () => void {
   listeners.push(f);
+  return () => {
+    const i = listeners.indexOf(f);
+    if (i >= 0) listeners.splice(i, 1);
+  };
 }
 
 // 圆润系统字体栈（零外部资源）

@@ -111,7 +111,7 @@ export class ResultScene extends Phaser.Scene {
     }, { fontSize: 22 });
     const menu = makeButton(this, cx, h * 0.82 + 72, 220, 50, t('quit'), () => {
       this.cleanup();
-      this.scene.start('menu');
+      this.scene.start('title');
     }, { fontSize: 18 });
     retry.setDepth(2);
     menu.setDepth(2);

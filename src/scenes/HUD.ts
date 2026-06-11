@@ -1,10 +1,12 @@
 // HUD 覆盖层：状态条、计时、武器栏、升级三选一、宝箱、暂停、Boss 条
+// 双形态：桌面横屏显示构筑信息；手机竖屏精简（构筑详情进暂停面板）
 import Phaser from 'phaser';
 import { FONT, t, toggleLang } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { PASSIVE_META, WEAPON_META, WeaponId } from '../config';
 import { makeButton, setButtonLabel } from '../ui/widgets';
+import { Viewport } from '../ui/Viewport';
 import type { GameScene, Offer } from './Game';
 
 export class HUDScene extends Phaser.Scene {
@@ -28,7 +30,15 @@ export class HUDScene extends Phaser.Scene {
     super('hud');
   }
 
+  private vp!: Viewport;
+
+  /** 竖屏精简形态：只常驻 生命/经验/时间/暂停，构筑详情进暂停面板 */
+  private get compactHud(): boolean {
+    return this.vp.portrait && this.vp.bp === 'compact';
+  }
+
   create(): void {
+    this.vp = Viewport.get();
     this.gs = this.scene.get('game') as GameScene;
     this.overlayMode = 'none';
     this.overlay = [];
@@ -108,15 +118,19 @@ export class HUDScene extends Phaser.Scene {
   }
 
   private layout(): void {
-    const w = this.scale.width;
-    this.timerText.setPosition(w / 2, 18);
-    this.killIcon.setPosition(w / 2 - 24, 68);
-    this.killText.setPosition(w / 2 - 8, 68);
-    this.levelText.setPosition(w - 14, 14);
-    this.pauseBtn.setPosition(w - 38, 64);
-    this.muteBtn.setPosition(w - 38, 116);
-    this.bossName.setPosition(w / 2, 96);
-    this.warnText.setPosition(w / 2, this.scale.height * 0.3);
+    const safe = this.vp.safe;
+    const cx = safe.x + safe.w / 2;
+    const compact = this.compactHud;
+
+    this.timerText.setPosition(cx, safe.y + 14);
+    this.killIcon.setPosition(cx - 24, safe.y + 64).setVisible(!compact);
+    this.killText.setPosition(cx - 8, safe.y + 64).setVisible(!compact);
+    this.levelText.setPosition(safe.x + safe.w - 14, safe.y + 12).setVisible(!compact);
+    this.pauseBtn.setPosition(safe.x + safe.w - 36, safe.y + (compact ? 60 : 64));
+    this.muteBtn.setPosition(safe.x + safe.w - 36, safe.y + 116).setVisible(!compact);
+    this.bossName.setPosition(cx, safe.y + 96);
+    this.warnText.setPosition(cx, safe.y + safe.h * 0.3);
+    this.buildIconRow();
     if (this.overlayMode !== 'none') {
       // 重新布局开销大，直接关闭重开
       const mode = this.overlayMode;
@@ -129,25 +143,28 @@ export class HUDScene extends Phaser.Scene {
 
   update(): void {
     if (!this.gs || !this.gs.player) return;
+    const safe = this.vp.safe;
     const w = this.scale.width;
     const g = this.bars;
     g.clear();
-    // XP 条（顶部通栏）
+    // XP 条（安全区顶部通栏）
     const xpK = Phaser.Math.Clamp(this.gs.xp / this.gs.xpNeed, 0, 1);
     g.fillStyle(PAL.xpBack, 0.9);
-    g.fillRect(0, 0, w, 9);
+    g.fillRect(0, safe.y, w, 9);
     g.fillStyle(PAL.xp, 1);
-    g.fillRect(0, 0, w * xpK, 9);
+    g.fillRect(0, safe.y, w * xpK, 9);
     // HP 条（左上）
-    const hpW = Math.min(170, w * 0.35);
+    const hpX = safe.x + 14;
+    const hpY = safe.y + 16;
+    const hpW = Math.min(170, safe.w * 0.35);
     const hpK = Phaser.Math.Clamp(this.gs.hp / this.gs.stats.maxHp, 0, 1);
     g.fillStyle(0x5a5248, 0.08);
-    g.fillRoundedRect(14, 20, hpW, 16, 8);
+    g.fillRoundedRect(hpX, hpY, hpW, 16, 8);
     g.fillStyle(PAL.hp, 1);
-    if (hpK > 0.03) g.fillRoundedRect(14, 20, Math.max(12, hpW * hpK), 16, 8);
+    if (hpK > 0.03) g.fillRoundedRect(hpX, hpY, Math.max(12, hpW * hpK), 16, 8);
     g.lineStyle(2, 0xe0d4bc, 1);
-    g.strokeRoundedRect(14, 20, hpW, 16, 8);
-    this.hpText.setPosition(20, 28).setText(Math.ceil(this.gs.hp) + ' / ' + this.gs.stats.maxHp);
+    g.strokeRoundedRect(hpX, hpY, hpW, 16, 8);
+    this.hpText.setPosition(hpX + 6, hpY + 8).setText(Math.ceil(this.gs.hp) + ' / ' + this.gs.stats.maxHp);
 
     // 计时
     const sec = Math.floor(this.gs.elapsed);
@@ -161,15 +178,17 @@ export class HUDScene extends Phaser.Scene {
     if (this.bossVisible) {
       const boss = this.gs.enemies.boss;
       if (boss && boss.active) {
-        const bw = Math.min(420, w - 80);
+        const bw = Math.min(420, safe.w - 80);
+        const bx = safe.x + safe.w / 2 - bw / 2;
+        const by = safe.y + 108;
         const bk = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
         this.bossName.setText(t('bossName'));
         g.fillStyle(0x5a5248, 0.1);
-        g.fillRoundedRect(w / 2 - bw / 2, 108, bw, 12, 6);
+        g.fillRoundedRect(bx, by, bw, 12, 6);
         g.fillStyle(0x8a96b8, 1);
-        if (bk > 0.02) g.fillRoundedRect(w / 2 - bw / 2, 108, bw * bk, 12, 6);
+        if (bk > 0.02) g.fillRoundedRect(bx, by, bw * bk, 12, 6);
         g.lineStyle(2, 0x5a6488, 0.8);
-        g.strokeRoundedRect(w / 2 - bw / 2, 108, bw, 12, 6);
+        g.strokeRoundedRect(bx, by, bw, 12, 6);
       }
     }
   }
@@ -179,8 +198,11 @@ export class HUDScene extends Phaser.Scene {
   private buildIconRow(): void {
     this.iconRow.forEach((o) => o.destroy());
     this.iconRow = [];
-    let x = 30;
-    const y = 56;
+    // 竖屏精简形态不常驻构筑栏（详情见暂停面板）
+    if (this.compactHud) return;
+    const safe = this.vp.safe;
+    let x = safe.x + 30;
+    const y = safe.y + 52;
     for (const wpn of this.gs.weapons.list) {
       const meta = WEAPON_META.find((m) => m.id === wpn.id)!;
       const icon = this.add.image(x, y, meta.icon).setScale(0.8).setDepth(11);
@@ -191,7 +213,7 @@ export class HUDScene extends Phaser.Scene {
       this.iconRow.push(icon, lv);
       x += 38;
     }
-    x = 30;
+    x = safe.x + 30;
     for (const [pid, plv] of this.gs.passives) {
       const meta = PASSIVE_META.find((m) => m.id === pid)!;
       const icon = this.add.image(x, y + 38, meta.icon).setScale(0.62).setDepth(11);
@@ -443,10 +465,38 @@ export class HUDScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
     const veil = this.addVeil();
-    const title = this.add.text(w / 2, h * 0.24, t('pause'), {
+    const title = this.add.text(w / 2, h * 0.18, t('pause'), {
       fontFamily: FONT, fontSize: '36px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 7,
     }).setOrigin(0.5).setDepth(101);
+
+    // 构筑摘要：武器 + 被动（竖屏精简形态的详情入口）
+    const wList = this.gs.weapons.list;
+    const pList = [...this.gs.passives];
+    const iconGap = 44;
+    const rowY = h * 0.18 + 52;
+    const wRowW = wList.length * iconGap;
+    wList.forEach((wpn, i) => {
+      const meta = WEAPON_META.find((m) => m.id === wpn.id)!;
+      const ix = w / 2 - wRowW / 2 + iconGap / 2 + i * iconGap;
+      const icon = this.add.image(ix, rowY, meta.icon).setScale(0.9).setDepth(101);
+      const lv = this.add.text(ix + 11, rowY + 11, wpn.evolved ? '★' : String(wpn.level), {
+        fontFamily: FONT, fontSize: '12px', fontStyle: 'bold',
+        color: wpn.evolved ? '#C8902A' : PAL.inkCss, stroke: '#FFFFFF', strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(102);
+      this.overlay.push(icon, lv);
+    });
+    const pRowW = pList.length * 36;
+    pList.forEach(([pid, plv], i) => {
+      const meta = PASSIVE_META.find((m) => m.id === pid)!;
+      const ix = w / 2 - pRowW / 2 + 18 + i * 36;
+      const icon = this.add.image(ix, rowY + 40, meta.icon).setScale(0.66).setDepth(101);
+      const lv = this.add.text(ix + 9, rowY + 49, String(plv), {
+        fontFamily: FONT, fontSize: '11px', fontStyle: 'bold', color: PAL.inkCss,
+        stroke: '#FFFFFF', strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(102);
+      this.overlay.push(icon, lv);
+    });
     const resume = makeButton(this, w / 2, h * 0.42, 230, 58, t('resume'), () => this.togglePause(), { fontSize: 22 });
     const sound = makeButton(this, w / 2, h * 0.42 + 76, 230, 50, SFX.muted ? t('soundOff') : t('soundOn'), () => {
       SFX.setMuted(!SFX.muted);
@@ -462,7 +512,7 @@ export class HUDScene extends Phaser.Scene {
       this.closeOverlay();
       this.scene.stop('game');
       this.scene.stop();
-      this.game.scene.start('menu');
+      this.game.scene.start('title');
     }, { fontSize: 18 });
     [resume, sound, lang, quit].forEach((b) => b.setDepth(101));
     this.overlay.push(veil, title, resume, sound, lang, quit);

@@ -1,5 +1,6 @@
 // WebAudio 程序化音频：SFX 即时合成 + 生成式五声音阶 BGM（零外部资源）
 const LS_KEY = 'dawnfield.muted';
+const LS_VOL = 'dawnfield.volume';
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
@@ -10,9 +11,14 @@ class SoundEngine {
   private bgmIntensity = 0;
   private noiseBuf: AudioBuffer | null = null;
   muted = false;
+  volume = 1;
 
   constructor() {
-    try { this.muted = localStorage.getItem(LS_KEY) === '1'; } catch { /* ignore */ }
+    try {
+      this.muted = localStorage.getItem(LS_KEY) === '1';
+      const v = parseFloat(localStorage.getItem(LS_VOL) ?? '1');
+      if (!Number.isNaN(v)) this.volume = Math.max(0, Math.min(1, v));
+    } catch { /* ignore */ }
   }
 
   /** 必须在用户手势中首次调用（移动端 AudioContext 解锁） */
@@ -25,7 +31,7 @@ class SoundEngine {
     if (!AC) return;
     this.ctx = new AC();
     this.master = this.ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : 1;
+    this.master.gain.value = this.muted ? 0 : this.volume;
     const comp = this.ctx.createDynamicsCompressor();
     comp.threshold.value = -18;
     this.master.connect(comp);
@@ -53,7 +59,15 @@ class SoundEngine {
   setMuted(m: boolean): void {
     this.muted = m;
     try { localStorage.setItem(LS_KEY, m ? '1' : '0'); } catch { /* ignore */ }
-    if (this.master && this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.05);
+    if (this.master && this.ctx) this.master.gain.setTargetAtTime(m ? 0 : this.volume, this.ctx.currentTime, 0.05);
+  }
+
+  setVolume(v: number): void {
+    this.volume = Math.max(0, Math.min(1, v));
+    try { localStorage.setItem(LS_VOL, String(this.volume)); } catch { /* ignore */ }
+    if (this.master && this.ctx && !this.muted) {
+      this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.05);
+    }
   }
 
   // ---------- 基础合成单元 ----------
