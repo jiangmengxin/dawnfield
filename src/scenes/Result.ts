@@ -33,17 +33,23 @@ export class ResultScene extends Phaser.Scene {
         time: data.time,
         level: data.level,
         weapons: data.build.length,
-        passives: 0, // 结算数据不含被动，被动类成就由局内 Tracker 评估
+        passives: data.passives, // M13：win 类成就（noPassiveClear）需要真实被动数
         evolves: data.build.filter((b) => b.evolved).length,
         maxWeapon: data.build.some((b) => b.evolved || b.level >= WEAPON_MAX_LEVEL),
-        maxPassive: false, // 同上，局内已评估
+        maxPassive: false, // 局内 Tracker 已评估
         eliteKills: 0, // 同上，局内已评估
         win: data.win,
         mapId: data.mapId,
         difficulty: data.diff,
         endlessCycle: data.cycle,
+        // M13 结构性挑战（flawlessBoss 等 win 类只在此处看得到 win=true）
+        bossNoHit: data.bossNoHit,
+        firstHurtAt: data.firstHurtAt,
+        firstEvolveAt: data.firstEvolveAt,
+        arcana: data.arcana,
       },
-      stats: Meta.save.stats,
+      // recordRun 已先入账：winsByChar 含本局胜利，fiveCharWins 当场可判
+      stats: { ...Meta.save.stats, charWins: Object.keys(Meta.save.stats.winsByChar).length },
       hyper: Meta.save.hyper, // recordRun 已写入本局档位，hyperAll 据此判全图
     });
   }

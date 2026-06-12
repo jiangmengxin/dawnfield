@@ -108,7 +108,10 @@ export class WeaponManager implements RunSystem {
   }
 
   evolve(id: WeaponId): void {
-    this.get(id)?.onEvolve();
+    const w = this.get(id);
+    if (!w) return;
+    w.onEvolve();
+    this.ctx.notifyEvolve(id); // M13：onEvolve 钩子 + firstEvolveAt 埋点（进化唯一入口）
   }
 
   /** 清空全部武器（M12 bench 配置切换用） */

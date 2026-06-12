@@ -2,7 +2,7 @@
 import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
-import { ACHIEVEMENTS } from '../content/achievements';
+import { ACHIEVEMENTS, AchievementSpec, LEGACY_ACHIEVEMENTS } from '../content/achievements';
 import { MAPS } from '../content/maps';
 import { ensureMapAssets } from '../gfx/textures';
 import { Meta } from '../core/MetaState';
@@ -35,10 +35,14 @@ export class AchievementsScene extends UIScene {
     const gap = THEME.gapSm;
     const fontScale = this.vp.bp === 'compact' ? 0.9 : 1;
 
+    // M13 legacy 区：被替换的纯计数成就仅当已解锁才渲染（永不回收，不可再达成）
+    const legacy = LEGACY_ACHIEVEMENTS.filter((a) => Meta.hasAch(a.id));
+
     panel.setContent((add) => {
-      ACHIEVEMENTS.forEach((spec, i) => {
+      let y = 0;
+      const addRow = (spec: AchievementSpec): void => {
         const unlocked = Meta.hasAch(spec.id);
-        // 附带解锁奖励的成就：描述里点明（角色名达成前不剧透显示 ???；地图名不剧透内容，直接显示）
+        // 附带解锁奖励的成就：描述里点明（角色名达成前不剧透显示 ???；地图/规则卡名直接显示当目标）
         let reward = '';
         if (spec.unlockChar) {
           reward += ' · ' + t('ach_reward').replace('{c}', unlocked ? t('char_' + spec.unlockChar) : '???');
@@ -46,10 +50,13 @@ export class AchievementsScene extends UIScene {
         if (spec.unlockMap) {
           reward += ' · ' + t('ach_rewardMap').replace('{m}', t('map_' + spec.unlockMap));
         }
+        if (spec.unlockArcana) {
+          reward += ' · ' + t('ach_rewardArc').replace('{a}', t('arc_' + spec.unlockArcana));
+        }
         if (spec.rewardCoins) {
           reward += ' · ' + t('ach_rewardCoins').replace('{n}', String(spec.rewardCoins));
         }
-        const card = new Card(this, rowW / 2, i * (rowH + gap) + rowH / 2, {
+        const card = new Card(this, rowW / 2, y + rowH / 2, {
           w: rowW, h: rowH,
           layout: 'row',
           icon: spec.icon,
@@ -62,8 +69,18 @@ export class AchievementsScene extends UIScene {
           fontScale,
         });
         add(card as unknown as Phaser.GameObjects.GameObject);
-      });
-      return ACHIEVEMENTS.length * (rowH + gap);
+        y += rowH + gap;
+      };
+      ACHIEVEMENTS.forEach(addRow);
+      if (legacy.length > 0) {
+        const header = this.add.text(rowW / 2, y + 14, '— ' + t('ach_legacy') + ' —', {
+          fontFamily: FONT, fontSize: this.vp.fs(14) + 'px', fontStyle: 'bold', color: PAL.inkSoft,
+        }).setOrigin(0.5, 0);
+        add(header);
+        y += 14 + header.height + THEME.gapSm;
+        legacy.forEach(addRow);
+      }
+      return y;
     });
   }
 }

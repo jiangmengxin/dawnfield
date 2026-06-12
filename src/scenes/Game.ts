@@ -231,6 +231,15 @@ export class GameScene extends Phaser.Scene {
       spawnPickup: (kind, x, y) => g.pickupsRef.spawnPickup(kind, x, y),
       recomputeStats: () => g.recomputeStats(),
       bgmBoost: (sec) => { g.bgmBoostT = Math.max(g.bgmBoostT, sec); },
+      // M13 契约：构筑随机统一入口（M17 注入种子流时只换此实现）
+      rng: () => Math.random(),
+      notifyCoinPicked: (v) => {
+        for (const m of g.modifiers) m.onCoinPicked?.(v, g.ctx);
+      },
+      notifyEvolve: (id) => {
+        if (g.run.firstEvolveAt === Infinity) g.run.firstEvolveAt = g.run.elapsed;
+        for (const m of g.modifiers) m.onEvolve?.(id, g.ctx);
+      },
     };
   }
 
@@ -331,8 +340,20 @@ export class GameScene extends Phaser.Scene {
       e.kvy += (opts.ky ?? 0) * opts.kb * e.knockMul;
     }
     if (e.hp <= 0) this.enemies.kill(e);
+    // M13 钩子：武器伤害结算完成后；inOnHit 守卫防同步递归，钩子衍生伤害自带 noHook
+    if (final > 0 && !opts.noHook && !this.inOnHit) {
+      this.inOnHit = true;
+      try {
+        for (const m of this.modifiers) m.onWeaponHit?.(e, final, this.ctx);
+      } finally {
+        this.inOnHit = false;
+      }
+    }
     return final;
   }
+
+  /** onWeaponHit 递归守卫（M13）：钩子内同步引发的 hitEnemy 不再二次触发钩子 */
+  private inOnHit = false;
 
   onEnemyKilled(e: Enemy): void {
     this.run.kills++;
@@ -391,11 +412,23 @@ export class GameScene extends Phaser.Scene {
   damagePlayer(d: number): void {
     if (this.run.iframeT > 0 || !this.run.running) return;
     if (getSettings().invincible) return; // 调试：无敌（优先于复活，不消耗次数）
+    // M13 钩子：受伤结算前改写（iframe 判定后、扣血前）；返回 ≤0 = 完全免疫，不进 iframe
+    for (const m of this.modifiers) {
+      if (m.modifyPlayerDamage) d = m.modifyPlayerDamage(d, this.ctx);
+    }
+    if (d <= 0) return;
     this.run.iframeT = PLAYER.iframe;
-    this.run.hp -= Math.max(1, d - this.run.stats.armor); // 永久强化：护甲平减，至少 1 点
+    const applied = Math.max(1, d - this.run.stats.armor); // 永久强化：护甲平减，至少 1 点
+    this.run.hp -= applied;
+    // M13 成就埋点：首次受伤时刻 + Boss 战受伤标记（flawlessBoss/untouchable10）
+    if (this.run.firstHurtAt === Infinity) this.run.firstHurtAt = this.run.elapsed;
+    const boss = this.enemies.boss;
+    if (boss && boss.active) this.run.bossHit = true;
     SFX.hurt();
     this.fx.flash(this.player, 0xf08080);
     if (getSettings().shake) this.cameras.main.shake(120, 0.004);
+    // M13 钩子：实际扣血后、败北判定前（raw=护甲前；thorncore 蓄能用 raw，坦克体验不吃亏）
+    for (const m of this.modifiers) m.onPlayerDamaged?.(d, applied, this.ctx);
     if (this.run.hp <= 0) {
       if (this.run.revivesLeft > 0) {
         this.revive();
@@ -484,6 +517,11 @@ export class GameScene extends Phaser.Scene {
       revivesUsed: this.run.revivesUsed,
       essence: this.run.essence.dmg + this.run.essence.cd + this.run.essence.area,
       build: this.weapons.list.map((w) => ({ id: w.id, level: w.level, evolved: w.evolved })),
+      passives: this.run.passives.size,
+      arcana: this.run.arcana.length,
+      bossNoHit: !this.run.bossHit,
+      firstHurtAt: this.run.firstHurtAt,
+      firstEvolveAt: this.run.firstEvolveAt,
     };
     this.scene.stop('hud');
     this.scene.start('result', result);

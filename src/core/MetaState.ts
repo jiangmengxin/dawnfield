@@ -1,7 +1,8 @@
 // 局外状态（MetaState）：金币 / 商店强化 / 图鉴点亮 / 成就 / 解锁 / 累计统计
 // 存档读写经 core/save；与局内 RunState 配对
-import type { MapId, PowerUpId } from '../content/ids';
+import type { ArcanaId, MapId, PowerUpId } from '../content/ids';
 import { ACHIEVEMENTS } from '../content/achievements';
+import { ARCANA_META } from '../content/arcana';
 import { POWERUPS, PowerUpSpec, powerUpPrice } from '../content/shop';
 import { CodexCat, flushSave, getSave, persistSave, SaveV2 } from './save';
 
@@ -132,6 +133,15 @@ class MetaStateImpl {
     return true;
   }
 
+  /** 规则卡入池判定（M13）：basic 恒真；mechanic 查挂钩成就（unlockArcana）是否达成。
+   *  纯查询零存档字段（成就即解锁凭据，零迁移）；调试直给不受限 */
+  isArcanaUnlocked(id: ArcanaId): boolean {
+    const meta = ARCANA_META.find((m) => m.id === id);
+    if (!meta || meta.tier !== 'mechanic') return true;
+    const ach = ACHIEVEMENTS.find((a) => a.unlockArcana === id);
+    return !ach || this.hasAch(ach.id);
+  }
+
   /** 启动时补同步：旧档已有成就 → 应用其角色/地图解锁（成就表后补解锁字段时也能追授） */
   syncAchUnlocks(): void {
     for (const a of ACHIEVEMENTS) {
@@ -164,10 +174,13 @@ class MetaStateImpl {
   recordRun(r: {
     win: boolean; time: number; kills: number; coins: number;
     mapId?: string; mode?: 'normal' | 'endless'; diff?: 0 | 1 | 2; cycle?: number;
+    charId?: string;
   }): boolean {
     const st = this.save.stats;
     st.runs++;
     if (r.win) st.wins++;
+    // M13：各角色通关计数（fiveCharWins 消费；v2 搭车字段，中途退出不计胜）
+    if (r.win && r.charId) st.winsByChar[r.charId] = (st.winsByChar[r.charId] ?? 0) + 1;
     st.kills += r.kills;
     st.playSeconds += Math.round(r.time);
     st.bestSurvival = Math.max(st.bestSurvival, Math.round(r.time));

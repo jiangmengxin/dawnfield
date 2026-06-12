@@ -1351,4 +1351,176 @@ export function createIcons(scene: Phaser.Scene): void {
     ctx.restore();
     star(ctx, 27.5, 11, 5, 5, 2.2, cssOf(PAL.spark), cssOf(PAL.sparkDeep));
   });
+
+  // ---------- 规则卡 Arcana（M13）：6 张机制卡 ----------
+
+  // 裂光回响：中心星 + 三道迸出的光屑轨迹
+  makeTex(scene, 'icon_arc_splinter', 40, 40, (ctx) => {
+    bg(ctx);
+    star(ctx, 17, 22, 5, 7.5, 3.4, cssOf(PAL.spark), cssOf(PAL.sparkDeep));
+    ctx.strokeStyle = cssOf(PAL.sparkDeep);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    for (const [ex, ey] of [[30, 11], [31, 22], [27, 31]] as const) {
+      ctx.beginPath();
+      ctx.moveTo(21, 20);
+      ctx.quadraticCurveTo((21 + ex) / 2 + 1, (20 + ey) / 2 - 2, ex, ey);
+      ctx.stroke();
+    }
+    for (const [ex, ey] of [[30, 11], [31, 22], [27, 31]] as const) {
+      star(ctx, ex, ey, 4, 2.6, 1.1, cssOf(PAL.spark));
+    }
+  });
+
+  // 荆棘之心：带尖刺的心形
+  makeTex(scene, 'icon_arc_thorncore', 40, 40, (ctx) => {
+    bg(ctx);
+    // 环绕尖刺
+    ctx.fillStyle = cssOf(PAL.grassDark);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+      const bx = 20 + Math.cos(a) * 11;
+      const by = 21 + Math.sin(a) * 10;
+      ctx.beginPath();
+      ctx.moveTo(bx + Math.cos(a + Math.PI / 2) * 2.4, by + Math.sin(a + Math.PI / 2) * 2.4);
+      ctx.lineTo(bx + Math.cos(a) * 4.5, by + Math.sin(a) * 4.5);
+      ctx.lineTo(bx + Math.cos(a - Math.PI / 2) * 2.4, by + Math.sin(a - Math.PI / 2) * 2.4);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // 心形
+    ctx.beginPath();
+    ctx.moveTo(20, 28);
+    ctx.bezierCurveTo(11, 21, 12, 12.5, 20, 16);
+    ctx.bezierCurveTo(28, 12.5, 29, 21, 20, 28);
+    ctx.fillStyle = cssOf(PAL.heart);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#D86870';
+    ctx.stroke();
+  });
+
+  // 燃晖之誓：火焰 + 下方被禁的小红心
+  makeTex(scene, 'icon_arc_vow', 40, 40, (ctx) => {
+    bg(ctx);
+    // 火焰
+    ctx.beginPath();
+    ctx.moveTo(20, 7);
+    ctx.quadraticCurveTo(28, 14, 26, 21);
+    ctx.quadraticCurveTo(24.5, 25.5, 20, 26);
+    ctx.quadraticCurveTo(15.5, 25.5, 14, 21);
+    ctx.quadraticCurveTo(12, 14, 20, 7);
+    ctx.fillStyle = '#F0A050';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#D88038';
+    ctx.stroke();
+    // 内焰
+    ctx.beginPath();
+    ctx.moveTo(20, 14);
+    ctx.quadraticCurveTo(23.5, 18, 20, 23);
+    ctx.quadraticCurveTo(16.5, 18, 20, 14);
+    ctx.fillStyle = '#FFE9A8';
+    ctx.fill();
+    // 被禁的小红心（禁疗）
+    ctx.beginPath();
+    ctx.moveTo(20, 34.5);
+    ctx.bezierCurveTo(15.5, 31, 16, 27, 20, 28.8);
+    ctx.bezierCurveTo(24, 27, 24.5, 31, 20, 34.5);
+    ctx.fillStyle = 'rgba(224,128,136,0.85)';
+    ctx.fill();
+    ctx.strokeStyle = '#C06870';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(15, 34.5);
+    ctx.lineTo(25, 27.5);
+    ctx.stroke();
+  });
+
+  // 孤注一掷：四张收拢的手牌
+  makeTex(scene, 'icon_arc_allin', 40, 40, (ctx) => {
+    bg(ctx);
+    for (let i = 0; i < 4; i++) {
+      const a = -0.42 + i * 0.28;
+      ctx.save();
+      ctx.translate(20, 27);
+      ctx.rotate(a);
+      ctx.translate(0, -12);
+      ctx.fillStyle = i === 3 ? '#EFE0F8' : '#FFFDF6';
+      ctx.strokeStyle = '#9878B8';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.rect(-5, -8, 10, 16);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    star(ctx, 24.5, 13, 4, 3, 1.3, cssOf(PAL.spark));
+  });
+
+  // 凝光：聚拢光线的大光珠（蓄而后发）
+  makeTex(scene, 'icon_arc_slowburn', 40, 40, (ctx) => {
+    bg(ctx);
+    // 四向聚拢光线
+    ctx.strokeStyle = cssOf(PAL.rainDeep);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      ctx.beginPath();
+      ctx.moveTo(20 + Math.cos(a) * 16, 20 + Math.sin(a) * 16);
+      ctx.lineTo(20 + Math.cos(a) * 11, 20 + Math.sin(a) * 11);
+      ctx.stroke();
+    }
+    softGlow(ctx, 20, 20, 10, 'rgba(160,208,240,0.95)');
+    ctx.beginPath();
+    ctx.arc(20, 20, 6.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#A8D0F0';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = cssOf(PAL.rainDeep);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(18, 18, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fill();
+  });
+
+  // 晨光领域：地平线上的朝阳与光环
+  makeTex(scene, 'icon_arc_dawnfield', 40, 40, (ctx) => {
+    bg(ctx);
+    // 光环（领域圈）
+    ctx.strokeStyle = 'rgba(226,180,82,0.7)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([3, 2.6]);
+    ctx.beginPath();
+    ctx.arc(20, 22, 13.5, Math.PI, Math.PI * 2.35);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 朝阳
+    softGlow(ctx, 20, 22, 9, 'rgba(255,224,128,0.95)');
+    ctx.beginPath();
+    ctx.arc(20, 22, 6, Math.PI, Math.PI * 2);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(PAL.xp);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = cssOf(PAL.honeyDeep);
+    ctx.stroke();
+    // 地平线
+    ctx.beginPath();
+    ctx.moveTo(9, 22);
+    ctx.lineTo(31, 22);
+    ctx.stroke();
+    // 光芒
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const a = Math.PI + ((i + 1) / 4) * Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(20 + Math.cos(a) * 8.5, 22 + Math.sin(a) * 8.5);
+      ctx.lineTo(20 + Math.cos(a) * 11.5, 22 + Math.sin(a) * 11.5);
+      ctx.stroke();
+    }
+  });
 }

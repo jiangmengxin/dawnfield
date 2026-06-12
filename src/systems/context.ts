@@ -14,6 +14,7 @@ export interface HitOpts {
   ky?: number;
   pitch?: number; // 命中音效音高
   quiet?: boolean; // 不出闪白/飘字/音效（DoT 用）
+  noHook?: boolean; // 不触发 onWeaponHit 钩子（M13：钩子衍生伤害防连锁递归——光屑/荆棘新星/灼光领域）
 }
 
 /** 地面区域：水洼减速 / 星尘灼烧 / 治愈泉 / 顺风加速（M6 机制：springs→heal，gusts→haste） */
@@ -91,6 +92,12 @@ export interface RunResult {
   revivesUsed: number; // 本局已用复活次数（M10；M11 无尽记录行旁标注）
   essence: number; // 晨露精华总张数（M12，结算页展示）
   build: Array<{ id: WeaponId; level: number; evolved: boolean }>;
+  // M13 成就口径（终局评估用：win 类成就只在 Result 看得到 win=true）
+  passives: number; // 持有被动数（noPassiveClear）
+  arcana: number; // 持有规则卡数（arcanaTrio 补尾）
+  bossNoHit: boolean; // Boss 战期间未受伤（flawlessBoss）
+  firstHurtAt: number; // 首次受伤时刻（秒；未受伤 = Infinity）
+  firstEvolveAt: number; // 首次进化时刻（秒；未进化 = Infinity）
 }
 
 /** 局内系统统一接口：GameScene 持有 systems: RunSystem[] 按序 update */
@@ -133,9 +140,16 @@ export interface CombatContext {
   recomputeStats(): void;
   /** BGM 强度临时抬升（M12 surge 中场事件；M18 Boss 战切换复用此通道） */
   bgmBoost(sec: number): void;
+  /** 构筑随机统一入口（M13 契约：暂为 Math.random 包装，M17 注入种子流时只换实现）。
+   *  机制卡概率、宝箱规则卡层等「构筑随机」新代码一律走此处；敌人 AI/刷怪位置不在范围内 */
+  rng(): number;
+  /** 拾取金币时转发（M13 onCoinPicked 钩子；value 为拾取面值，乘区前） */
+  notifyCoinPicked(value: number): void;
+  /** 武器进化时转发（M13 onEvolve 钩子 + firstEvolveAt 埋点；唯一入口 WeaponManager.evolve） */
+  notifyEvolve(id: WeaponId): void;
 }
 
-/** 规则卡钩子（10 张 Arcana，M9 实装于 systems/arcana.ts；调用点 M2 起全挂） */
+/** 规则卡钩子（M9 六钩子 + M13 五钩子；实装于 systems/arcana.ts，M14 角色 trait 复用同一接口） */
 export interface RunModifier {
   /** 属性重算后追加修正 */
   statMods?(stats: Stats): void;
@@ -149,4 +163,15 @@ export interface RunModifier {
   onChest?(reward: ChestReward): ChestReward;
   /** 每帧 */
   onTick?(dt: number, ctx: CombatContext): void;
+  // ---------- M13 新钩子（全部可选，零卡持有时零开销） ----------
+  /** 武器伤害结算完成后（applied>0）；钩子衍生伤害带 noHook + GameScene inOnHit 守卫防递归 */
+  onWeaponHit?(e: Enemy, applied: number, ctx: CombatContext): void;
+  /** 玩家实际扣血后、败北判定前（raw=护甲前，applied=实扣） */
+  onPlayerDamaged?(raw: number, applied: number, ctx: CombatContext): void;
+  /** 玩家受伤结算前改写（返回 ≤0 = 完全免疫，不扣血不进 iframe；闪避类机制用） */
+  modifyPlayerDamage?(d: number, ctx: CombatContext): number;
+  /** 拾取金币时 */
+  onCoinPicked?(value: number, ctx: CombatContext): void;
+  /** 武器进化时 */
+  onEvolve?(id: WeaponId, ctx: CombatContext): void;
 }

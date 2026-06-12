@@ -4,6 +4,7 @@ import { t } from '../i18n';
 import { FONT } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { ARCANA_META, PASSIVE_META, WEAPON_META, ENEMIES, EnemyId, CHARACTERS, MAPS } from '../content';
+import { ACHIEVEMENTS } from '../content/achievements';
 import { ensureMapAssets } from '../gfx/textures';
 import { CodexCat } from '../core/save';
 import { Meta } from '../core/MetaState';
@@ -14,7 +15,8 @@ import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
 import { THEME } from '../ui/theme';
 
 // 1.0 目标量级（锁定占位补齐到这些数字；敌人按实装量展示，未遇见即 ???）
-const TARGET = { weapons: 16, passives: 16, chars: 16, maps: 8, arcana: 10 } as const;
+// M13：规则卡 10→16（6 张机制卡）
+const TARGET = { weapons: 16, passives: 16, chars: 16, maps: 8, arcana: 16 } as const;
 
 export class CodexScene extends UIScene {
   private tab: CodexCat = 'weapons';
@@ -114,9 +116,20 @@ export class CodexScene extends UIScene {
       pushLocked(TARGET.chars - CHARACTERS.length);
     } else if (tab === 'arcana') {
       for (const m of ARCANA_META) {
+        // M13 机制卡未解锁：不走首遇点亮，直接显示解锁条件（成就名）当攻略目标
+        if (m.tier === 'mechanic' && !Meta.isArcanaUnlocked(m.id)) {
+          const ach = ACHIEVEMENTS.find((a) => a.unlockArcana === m.id);
+          items.push({
+            title: '？？？', fontScale,
+            desc: ach ? t('ui_unlockBy').replace('{a}', t('ach_' + ach.id)) : t('ui_lockedHint'),
+            tag: '★ ' + t('arcMech'), tagColor: '#C8902A',
+          });
+          continue;
+        }
         items.push(this.entry(tab, m.id, {
           icon: m.icon, title: t('arc_' + m.id), color: m.color, fontScale,
           desc: t('arc_' + m.id + '_d'),
+          ...(m.tier === 'mechanic' ? { tag: '★ ' + t('arcMech'), tagColor: '#C8902A' } : {}),
         }));
       }
       pushLocked(TARGET.arcana - ARCANA_META.length);

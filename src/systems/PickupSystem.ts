@@ -1,5 +1,6 @@
 // 拾取系统：经验光珠（磁吸/合并）+ 金币（磁吸/合并）+ 红心 + 宝箱掉落物
 import Phaser from 'phaser';
+import { ARC_FX } from '../content/arcana';
 import { DROPS } from '../content/player';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
@@ -140,6 +141,7 @@ export class PickupSystem implements RunSystem {
             ctx.fx.burst(px, py - 8, { tex: 'p_dot', color: PAL.gemBig, count: 2, speed: 60, life: 0.25, scale: 0.6 });
           } else {
             ctx.run.addCoins(g.value);
+            ctx.notifyCoinPicked(g.value); // M13 onCoinPicked 钩子
             SFX.coin();
             ctx.fx.burst(px, py - 8, { tex: 'p_star', color: PAL.chest, count: 3, speed: 70, life: 0.3, scale: 0.6 });
           }
@@ -161,9 +163,17 @@ export class PickupSystem implements RunSystem {
         p.active = false;
         p.img.setVisible(false);
         if (p.kind === 'heart') {
-          ctx.run.heal(DROPS.heartHeal);
-          SFX.heal();
-          ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_dot', color: PAL.heart, count: 8, speed: 80, life: 0.5, grav: -80 });
+          if (ctx.stats.healMul <= 0) {
+            // 燃晖之誓（M13 vow）：禁疗局爱心转为金币，拾取不落空
+            ctx.run.addCoins(ARC_FX.vowHeartCoins);
+            ctx.notifyCoinPicked(ARC_FX.vowHeartCoins);
+            SFX.coin();
+            ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_star', color: PAL.chest, count: 5, speed: 80, life: 0.4, scale: 0.7 });
+          } else {
+            ctx.run.heal(DROPS.heartHeal);
+            SFX.heal();
+            ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_dot', color: PAL.heart, count: 8, speed: 80, life: 0.5, grav: -80 });
+          }
         } else {
           this.onChest();
         }

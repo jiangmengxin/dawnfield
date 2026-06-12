@@ -7,7 +7,7 @@ import { CharacterSpec, getCharacter } from '../content/characters';
 import { DIFFICULTY } from '../content/difficulty';
 import { endlessCoinMul } from '../content/endless';
 import { PASSIVE_FX } from '../content/passives';
-import { ESSENCE, PLAYER, xpForLevel } from '../content/player';
+import { ESSENCE, MAX_WEAPONS, PLAYER, xpForLevel } from '../content/player';
 import { powerUpBonus, PowerUpBonus } from '../content/shop';
 import { getSave } from './save';
 
@@ -24,6 +24,10 @@ export interface Stats {
   armor: number; // 受到伤害平减
   regen: number; // 每秒回复
   crit: number; // 暴击率增量（叠加在基础暴击上）
+  // M13 钩子地基三字段（机制卡/角色 trait 经 statMods 改写）
+  healMul: number; // 回血总乘子（默认 1；vow=0 覆盖 regen/爱心/选卡回血/治愈泉全部入口）
+  maxWeapons: number; // 武器槽上限（默认 MAX_WEAPONS；allin 降为 4，已超出不移除）
+  offers: number; // 升级候选张数（默认 3；M14 ivy 四选一消费）
 }
 
 export class RunState {
@@ -53,6 +57,10 @@ export class RunState {
   arcana: ArcanaId[] = [];
   /** 晨露精华（M12 Limit Break）：满构筑后升级溢出选项的微量永续成长，本局有效不入存档 */
   essence = { dmg: 0, cd: 0, area: 0 };
+  // M13 成就埋点：首次受伤/首次进化时刻（秒；未发生 = Infinity）+ Boss 战受伤标记
+  firstHurtAt = Infinity;
+  firstEvolveAt = Infinity;
+  bossHit = false;
   /** 地图升级节奏乘子（M12，= MapSpec.xpK；GameScene.create 写入） */
   mapXpK = 1;
   difficultyHp = 1;
@@ -112,6 +120,9 @@ export class RunState {
       armor: pu.armor + (m.armor ?? 0) + PASSIVE_FX.acornArmor * p('acorn'),
       regen: pu.regen + (m.regen ?? 0) + PASSIVE_FX.honeyRegen * p('honey') + PASSIVE_FX.snackRegen * p('snack'),
       crit: pu.crit + (m.crit ?? 0) + PASSIVE_FX.ladybugCrit * p('ladybug'),
+      healMul: 1,
+      maxWeapons: MAX_WEAPONS,
+      offers: 3,
     };
   }
 
@@ -131,7 +142,8 @@ export class RunState {
     this.coins += v * this.stats.coinGain * DIFFICULTY[this.diff].coinMul * decay;
   }
 
+  /** 全部回血入口统一走此处（regen/爱心/选卡回血/治愈泉/宝箱）；healMul=0 即 vow 禁疗 */
   heal(v: number): void {
-    this.hp = Math.min(this.stats.maxHp, this.hp + v);
+    this.hp = Math.min(this.stats.maxHp, this.hp + v * this.stats.healMul);
   }
 }

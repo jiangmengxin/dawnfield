@@ -47,10 +47,12 @@ export type BehaviorId =
   | 'spiral' | 'ambush'
   | 'burrow' | 'phase';
 
-/** 规则卡 Arcana（M9：10 张，开局选 1，精英宝箱可再得） */
+/** 规则卡 Arcana（M9：10 张基础卡；M13：6 张机制卡，成就解锁后入池） */
 export type ArcanaId =
   | 'petaltide' | 'tailwind' | 'thornlace' | 'goldbell' | 'starpop'
-  | 'moonheart' | 'dewspring' | 'fireflyway' | 'compass' | 'onepath';
+  | 'moonheart' | 'dewspring' | 'fireflyway' | 'compass' | 'onepath'
+  // M13 机制卡（tier=mechanic，拿了之后整局打法都变）
+  | 'splinter' | 'thorncore' | 'vow' | 'allin' | 'slowburn' | 'dawnfield';
 
 /** 商店永久强化（金币唯一用途，可全额重置） */
 export type PowerUpId =
@@ -59,7 +61,9 @@ export type PowerUpId =
   // M10 构筑操控与复活（次数类：等级 → 每局次数，不走 powerUpBonus 乘区）
   | 'revive' | 'reroll' | 'banish' | 'skip';
 
-/** 成就（M7：40 个全量） */
+/** 成就（M7：40 个全量；M13：7 个纯计数移入 LEGACY，7 个结构性挑战顶替，总量不变）
+ *  legacy id（kills5000/kills10000/coins5000/runs20/runs50/buy10/buy25）保留在联合类型：
+ *  已解锁的旧档仍要渲染（legacy 区），i18n 键照常受 check-i18n 约束 */
 export type AchievementId =
   | 'swarm100' | 'survive5' | 'level20' | 'eliteSlayer' | 'firstEvolve' | 'maxWeapon'
   | 'fullArsenal' | 'fullCharms' | 'meadowClear' | 'kills1000' | 'coins500' | 'firstBuy'
@@ -72,4 +76,7 @@ export type AchievementId =
   | 'brambleClear' | 'nocturneClear' | 'summitClear' | 'survive20' | 'kills500' | 'level40'
   | 'evolve6' | 'coins5000' | 'kills10000' | 'wins10' | 'runs50' | 'buy25'
   // M11（无尽与狂暴）
-  | 'hyperClear1' | 'hyperAll' | 'endless3' | 'endless6';
+  | 'hyperClear1' | 'hyperAll' | 'endless3' | 'endless6'
+  // M13（结构性挑战，顶替 7 个纯计数）
+  | 'flawlessBoss' | 'fiveCharWins' | 'noPassiveClear' | 'untouchable10'
+  | 'evolveRush' | 'soloWeaponClear' | 'arcanaTrio';

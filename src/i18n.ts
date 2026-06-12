@@ -226,6 +226,21 @@ const D: Dict = {
   arc_onepath: ['专一之路', 'The Single Path'],
   arc_onepath_d: ['升级只出现已持有的选项，冷却 -8%', 'Level-ups offer only what you hold; cooldown -8%'],
 
+  // 机制规则卡（M13）：拿了之后整局打法都变；成就解锁后入池
+  arcMech: ['机制', 'Mechanic'],
+  arc_splinter: ['裂光回响', 'Splinter Echo'],
+  arc_splinter_d: ['武器命中有25%几率迸出3枚追踪光屑（伤害为该次命中的35%）', 'Weapon hits have a 25% chance to burst into 3 homing splinters (35% of the hit)'],
+  arc_thorncore: ['荆棘之心', 'Bramble Heart'],
+  arc_thorncore_d: ['受伤积蓄棘刺，承伤累计达生命上限35%时爆发荆棘新星', 'Stores thorns as you take hits; bursts into a bramble nova at 35% max HP stored'],
+  arc_vow: ['燃晖之誓', 'Vow of Embers'],
+  arc_vow_d: ['生命无法以任何方式回复；伤害+45%，范围+15%，爱心化作金币', 'No healing of any kind; damage +45%, area +15%, hearts turn to coins'],
+  arc_allin: ['孤注一掷', 'All In'],
+  arc_allin_d: ['武器槽上限降为4（已持有的不移除）；全武器冷却 -40%', 'Weapon slots capped at 4 (held weapons stay); all cooldowns -40%'],
+  arc_slowburn: ['凝光', 'Slowlight'],
+  arc_slowburn_d: ['冷却 +60%，伤害 ×2.2，范围 +25%——每一发都是大招', 'Cooldown +60%, damage ×2.2, area +25% — every cast a finisher'],
+  arc_dawnfield: ['晨光领域', 'Dawnfield'],
+  arc_dawnfield_d: ['拾取范围化作灼光领域，域内敌人持续受灼烧；磁吸+15%', 'Your pickup range becomes a searing field that burns foes within; magnet +15%'],
+
   // 兜底卡
   c_heal: ['野莓甜点', 'Berry Treat'],
   c_heal_d: ['恢复 40 生命', 'Restore 40 HP'],
@@ -511,8 +526,8 @@ const D: Dict = {
   ach_kills5000_d: ['累计击败 5000 个敌人', 'Defeat 5000 foes in total'],
   ach_coins2000: ['满袋金光', 'Coffers Full'],
   ach_coins2000_d: ['累计获得 2000 金币', 'Earn 2000 coins in total'],
-  ach_wins5: ['五度黎明', 'Five Dawns'],
-  ach_wins5_d: ['累计胜利 5 场', 'Win 5 runs in total'],
+  ach_wins5: ['三度黎明', 'Three Dawns'], // M13 成本校平：阈值 5→3，id 不变
+  ach_wins5_d: ['累计胜利 3 场', 'Win 3 runs in total'],
   ach_runs20: ['晨野老朋友', 'Old Friend'],
   ach_runs20_d: ['累计出击 20 局', 'Set out on 20 runs'],
   ach_buy10: ['商店常客', 'Regular Customer'],
@@ -555,6 +570,23 @@ const D: Dict = {
   ach_endless6: ['不灭晨星', 'Undying Morningstar'],
   ach_endless6_d: ['任一地图无尽模式坚守到第 6 轮', 'Reach round 6 in Endless on any map'],
   ach_rewardCoins: ['奖励 {n} 金币', 'Reward: {n} coins'],
+  // M13 结构性挑战（顶替 7 个纯计数；旧成就文案保留供 legacy 区渲染）
+  ach_flawlessBoss: ['完美谢幕', 'Flawless Finale'],
+  ach_flawlessBoss_d: ['Boss 战期间未受伤并通关', 'Win without taking damage during the boss fight'],
+  ach_fiveCharWins: ['群星闪耀', 'Constellation'],
+  ach_fiveCharWins_d: ['用 5 个不同角色各通关至少 1 次', 'Win with 5 different heroes'],
+  ach_noPassiveClear: ['轻装上阵', 'Travel Light'],
+  ach_noPassiveClear_d: ['不携带任何被动通关任意地图', 'Clear any map without a single passive'],
+  ach_untouchable10: ['毫发无伤', 'Untouchable'],
+  ach_untouchable10_d: ['单局前 10 分钟未受到任何伤害', 'Take no damage in the first 10 minutes of a run'],
+  ach_evolveRush: ['速成进化', 'Rush Evolution'],
+  ach_evolveRush_d: ['开局 8 分钟内完成首次进化', 'Evolve a weapon within the first 8 minutes'],
+  ach_soloWeaponClear: ['一招鲜', 'One-Trick Wonder'],
+  ach_soloWeaponClear_d: ['全程只持 1 把武器通关任意地图', 'Clear any map holding only one weapon'],
+  ach_arcanaTrio: ['三卡同辉', 'Triple Arcana'],
+  ach_arcanaTrio_d: ['同一局持有 3 张规则卡', 'Hold 3 arcana cards in one run'],
+  ach_rewardArc: ['解锁规则卡：{a}', 'Unlocks arcana: {a}'],
+  ach_legacy: ['往昔成就', 'Legacy Feats'],
 
   // 设置
   set_volBgm: ['音乐音量', 'Music Volume'],

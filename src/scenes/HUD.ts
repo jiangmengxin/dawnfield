@@ -4,6 +4,7 @@ import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { DEATH_COLOR, PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
+import { ACHIEVEMENTS } from '../content/achievements';
 import { ARCANA_META } from '../content/arcana';
 import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
 import { PASSIVE_META } from '../content/passives';
@@ -292,14 +293,15 @@ export class HUDScene extends Phaser.Scene {
 
   // ---------- 武器/被动图标栏 ----------
 
-  /** 当前构筑 → 槽位条目（不足上限补 null 空槽） */
+  /** 当前构筑 → 槽位条目（不足上限补 null 空槽；上限读 stats.maxWeapons——M13 allin 降 4，
+   *  已持有超出上限时如实显示全部） */
   private weaponSlots(): Array<{ icon: string; label: string; gold: boolean } | null> {
     const out: Array<{ icon: string; label: string; gold: boolean } | null> = [];
     for (const wpn of this.gs.weapons.list) {
       const meta = WEAPON_META.find((m) => m.id === wpn.id)!;
       out.push({ icon: meta.icon, label: wpn.evolved ? '★' : String(wpn.level), gold: wpn.evolved });
     }
-    while (out.length < MAX_WEAPONS) out.push(null);
+    while (out.length < this.gs.run.stats.maxWeapons) out.push(null);
     return out;
   }
 
@@ -596,14 +598,14 @@ export class HUDScene extends Phaser.Scene {
     this.layoutArcanaGrid(choices, (id) => this.chooseArcana(id));
   }
 
-  /** 全卡池网格（开局选卡与宝箱规则卡件共用）：横屏 5 列 / 竖屏 2 列；末行不满时居中。
-   *  恒排满全部卡（排版稳定不随持有数变化），不在 pickable 内的卡置灰不可选 */
+  /** 全卡池网格（开局选卡与宝箱规则卡件共用）：横屏 4 列 / 竖屏 2 列；末行不满时居中。
+   *  恒排满全部 16 卡（排版稳定不随持有数变化）：可选 / 已持有（置灰 ✓）/ 未解锁（M13 机制卡显示解锁条件） */
   private layoutArcanaGrid(pickable: ArcanaId[], onPick: (id: ArcanaId) => void): void {
     const w = this.vp.w;
     const h = this.vp.h;
     const all = ARCANA_META.map((m) => m.id);
     const portrait = h > w;
-    const cols = portrait ? 2 : 5;
+    const cols = portrait ? 2 : 4;
     const rows = Math.ceil(all.length / cols);
     const gapX = 12;
     const gapY = 12;
@@ -620,12 +622,16 @@ export class HUDScene extends Phaser.Scene {
       const rowW = inRow * cw + (inRow - 1) * gapX;
       const cx = w / 2 - rowW / 2 + col * (cw + gapX) + cw / 2;
       const cy = y0 + row * (ch + gapY) + ch / 2;
-      this.makeArcanaCard(id, i, cx, cy, cw, ch, () => onPick(id), !pickable.includes(id));
+      const state = pickable.includes(id) ? 'pick'
+        : this.gs.run.arcana.includes(id) ? 'owned'
+        : Meta.isArcanaUnlocked(id) ? 'owned' : 'locked';
+      this.makeArcanaCard(id, i, cx, cy, cw, ch, () => onPick(id), state);
     });
   }
 
   /** 方形规则卡：白卡底 + 主题色描边 + 顶部色带托图标；尺寸自适应（极矮卡省略描述）。
-   *  owned = 已持有：整卡置灰不可选 + ✓ 已持有角标（排版与可选卡完全一致） */
+   *  state（M13 三态，排版完全一致）：pick 可选；owned 置灰 + ✓ 已持有；
+   *  locked 未解锁机制卡——描述替换为解锁条件（成就名），不可选 */
   private makeArcanaCard(
     id: ArcanaId,
     idx: number,
@@ -634,24 +640,25 @@ export class HUDScene extends Phaser.Scene {
     cw: number,
     ch: number,
     onPick: () => void,
-    owned = false,
+    state: 'pick' | 'owned' | 'locked' = 'pick',
   ): void {
     const meta = ARCANA_META.find((m) => m.id === id)!;
+    const dim = state !== 'pick';
     const big = ch >= 180; // 桌面大卡 / 竖屏小卡
     const showDesc = ch >= 96;
     const bandH = big ? ch * 0.38 : ch * 0.42;
-    const edge = owned ? 0xc8bca4 : meta.color;
+    const edge = dim ? 0xc8bca4 : meta.color;
     const g = this.add.graphics();
     const draw = (over: boolean) => {
       g.clear();
       g.fillStyle(0x5a5248, 0.08);
       g.fillRoundedRect(-cw / 2 + 2, -ch / 2 + 4, cw, ch, 10);
-      g.fillStyle(over ? 0xfffef8 : owned ? 0xf2ece0 : PAL.cardBg, 1);
+      g.fillStyle(over ? 0xfffef8 : dim ? 0xf2ece0 : PAL.cardBg, 1);
       g.fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 10);
       // 顶部色带（卡牌感；与升级卡的纯白底区分）
-      g.fillStyle(edge, over ? 0.4 : owned ? 0.18 : 0.26);
+      g.fillStyle(edge, over ? 0.4 : dim ? 0.18 : 0.26);
       g.fillRoundedRect(-cw / 2, -ch / 2, cw, bandH, { tl: 10, tr: 10, bl: 0, br: 0 });
-      g.lineStyle(2.5, edge, owned ? 0.7 : 1);
+      g.lineStyle(2.5, edge, dim ? 0.7 : 1);
       g.strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 10);
     };
     draw(false);
@@ -662,33 +669,46 @@ export class HUDScene extends Phaser.Scene {
       align: 'center', wordWrap: { width: cw - 16 },
     }).setOrigin(0.5, 0);
     const parts: Phaser.GameObjects.GameObject[] = [g, icon, nameTxt];
+    // M13 机制卡 ★ 角标（色带左上角，区别于基础卡）
+    if (meta.tier === 'mechanic') {
+      const starTag = this.add.text(-cw / 2 + 8, -ch / 2 + 5, '★ ' + t('arcMech'), {
+        fontFamily: FONT, fontSize: (big ? 12 : 10) + 'px', fontStyle: 'bold', color: '#C8902A',
+        stroke: '#FFFFFF', strokeThickness: 3,
+      }).setOrigin(0, 0);
+      parts.push(starTag);
+    }
     if (showDesc) {
-      const descTxt = this.add.text(0, nameTxt.y + nameTxt.height + (big ? 8 : 3), t('arc_' + id + '_d'), {
+      // locked：描述替换为解锁条件（成就名）
+      const ach = state === 'locked' ? ACHIEVEMENTS.find((a) => a.unlockArcana === id) : undefined;
+      const descStr = ach
+        ? t('ui_unlockBy').replace('{a}', t('ach_' + ach.id))
+        : state === 'locked' ? t('ui_lockedHint') : t('arc_' + id + '_d');
+      const descTxt = this.add.text(0, nameTxt.y + nameTxt.height + (big ? 8 : 3), descStr, {
         fontFamily: FONT, fontSize: (big ? 13 : 11) + 'px', color: PAL.inkSoft, align: 'center',
         wordWrap: { width: cw - 18 },
       }).setOrigin(0.5, 0);
       parts.push(descTxt);
     }
-    if (owned) {
-      // 内容整体减淡 + 底部「✓ 已持有」角标
+    if (dim) {
+      // 内容整体减淡 + 底部角标（已持有 ✓ / 未解锁）
       icon.setAlpha(0.45);
       nameTxt.setAlpha(0.55);
-      parts.forEach((p) => { if (p !== g && p !== icon && p !== nameTxt) (p as Phaser.GameObjects.Text).setAlpha(0.5); });
-      const ownedTag = this.add.text(0, ch / 2 - (big ? 14 : 10), '✓ ' + t('arcOwned'), {
+      const tagStr = state === 'owned' ? '✓ ' + t('arcOwned') : t('ui_locked');
+      const dimTag = this.add.text(0, ch / 2 - (big ? 14 : 10), tagStr, {
         fontFamily: FONT, fontSize: (big ? 14 : 11) + 'px', fontStyle: 'bold', color: '#B8924A',
       }).setOrigin(0.5, 1);
-      parts.push(ownedTag);
+      parts.push(dimTag);
     }
     const c = this.add.container(cx, cy, parts).setDepth(101).setAlpha(0).setScale(0.7);
     c.setSize(cw, ch);
-    if (!owned) {
+    if (!dim) {
       c.setInteractive({ useHandCursor: true });
       c.on('pointerover', () => draw(true));
       c.on('pointerout', () => draw(false));
       c.on('pointerup', onPick);
     }
     this.tweens.add({
-      targets: c, alpha: owned ? 0.75 : 1, scale: 1, duration: 240, delay: 28 * idx, ease: 'Back.easeOut',
+      targets: c, alpha: dim ? 0.75 : 1, scale: 1, duration: 240, delay: 28 * idx, ease: 'Back.easeOut',
     });
     this.overlay.push(c);
   }

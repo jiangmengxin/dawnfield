@@ -124,5 +124,132 @@ export function createArcanaModifier(id: ArcanaId, ctx: CombatContext): RunModif
           return kept.length > 0 ? kept : offers;
         },
       };
+
+    // ---------- M13 机制卡 ----------
+
+    case 'splinter': // 裂光回响：武器命中概率迸出追踪光屑（光屑 noHook，不再触发回响）
+      return {
+        onWeaponHit: (e, applied, c) => {
+          if (c.rng() >= ARC_FX.splinterChance) return;
+          const out: Enemy[] = [];
+          c.grid.queryCircle(e.x, e.y, ARC_FX.splinterSeekR, out);
+          const sx = e.x;
+          const sy = e.y;
+          const targets = out
+            .filter((n) => n.active && !n.dying && n !== e)
+            .sort((a, b) => ((a.x - sx) ** 2 + (a.y - sy) ** 2) - ((b.x - sx) ** 2 + (b.y - sy) ** 2))
+            .slice(0, ARC_FX.splinterN);
+          if (targets.length === 0) return;
+          const dmg = applied * ARC_FX.splinterDmgK;
+          for (const tgt of targets) {
+            // 光屑飞行：星屑 tween 0.15s 到目标（倍速/顿帧随 tweens.timeScale），命中结算带 noHook
+            const p = c.scene.add.image(sx, sy, 'p_star').setTint(0xf0d878).setScale(0.8).setDepth(1150);
+            c.scene.tweens.add({
+              targets: p, x: tgt.x, y: tgt.y, scale: 0.5, duration: 150, ease: 'Sine.easeIn',
+              onComplete: () => {
+                p.destroy();
+                if (!c.run.running) return;
+                const ap = c.hitEnemy(tgt, dmg, { quiet: true, noHook: true });
+                if (ap > 0) {
+                  c.dmgLog('arc_splinter', ap); // 伤害占比统计口径（M13）
+                  c.fx.burst(tgt.x, tgt.y, { tex: 'p_dot', color: 0xf0d878, count: 3, speed: 90, life: 0.25, scale: 0.7 });
+                }
+              },
+            });
+          }
+        },
+      };
+
+    case 'thorncore': {
+      // 荆棘之心：按护甲前承伤蓄能，达最大生命 35% 时自动爆发荆棘新星并清空
+      let charge = 0;
+      let fxT = 0;
+      return {
+        onPlayerDamaged: (raw, _applied, c) => {
+          charge += raw;
+          const need = c.stats.maxHp * ARC_FX.thorncoreThreshold;
+          if (charge < need) return;
+          const burst = Math.min(charge * ARC_FX.thorncoreBurstK, ARC_FX.thorncoreCapDmg * c.stats.dmg);
+          charge = 0;
+          const px = c.player.x;
+          const py = c.player.y;
+          const out: Enemy[] = [];
+          c.grid.queryCircle(px, py, ARC_FX.thorncoreR, out);
+          for (const n of out) {
+            const d = Math.hypot(n.x - px, n.y - py) || 1;
+            const ap = c.hitEnemy(n, burst, {
+              quiet: true, noHook: true,
+              kb: ARC_FX.thorncoreKb, kx: (n.x - px) / d, ky: (n.y - py) / d,
+            });
+            if (ap > 0) c.dmgLog('arc_thorncore', ap);
+          }
+          c.fx.ring(px, py, 0xd87884, 10, 0.55);
+          c.fx.burst(px, py, { tex: 'p_dot', color: 0xd87884, count: 18, speed: 260, life: 0.5 });
+          c.hitStop(0.05);
+        },
+        onTick: (dt, c) => {
+          // 蓄能提示：≥70% 阈值时周期红环呼吸
+          fxT -= dt;
+          if (fxT > 0) return;
+          fxT = 1.1;
+          if (charge >= c.stats.maxHp * ARC_FX.thorncoreThreshold * 0.7) {
+            c.fx.ring(c.player.x, c.player.y, 0xd87884, 3, 0.4);
+          }
+        },
+      };
+    }
+
+    case 'vow': // 燃晖之誓：禁疗（healMul=0 覆盖一切回血入口）+ 伤害/范围；爱心转金币在 PickupSystem
+      return {
+        statMods: (s) => {
+          s.healMul = 0;
+          s.dmg *= ARC_FX.vowDmg;
+          s.area *= ARC_FX.vowArea;
+        },
+      };
+
+    case 'allin': // 孤注一掷：武器槽上限 4（已超出不移除，停止新供给）+ 全武器冷却
+      return {
+        statMods: (s) => {
+          s.maxWeapons = Math.min(s.maxWeapons, ARC_FX.allinCap);
+          s.cd = Math.max(0.4, s.cd * ARC_FX.allinCd);
+        },
+      };
+
+    case 'slowburn': // 凝光：大招化——冷却变长、单发伤害与范围暴涨（偏爱爆发武器）
+      return {
+        statMods: (s) => {
+          s.cd *= ARC_FX.slowburnCd;
+          s.dmg *= ARC_FX.slowburnDmg;
+          s.area *= ARC_FX.slowburnArea;
+        },
+      };
+
+    case 'dawnfield': {
+      // 晨光领域：拾取范围化作灼光领域，域内敌人持续灼烧（磁吸系构筑变伤害构筑，点题卡）
+      let t = 0;
+      let pulse = 0;
+      return {
+        statMods: (s) => {
+          s.magnet *= ARC_FX.dawnfieldMagnet;
+        },
+        onTick: (dt, c) => {
+          t -= dt;
+          if (t > 0) return;
+          t = ARC_FX.dawnfieldTick;
+          const r = c.stats.magnet * ARC_FX.dawnfieldRK;
+          const out: Enemy[] = [];
+          c.grid.queryCircle(c.player.x, c.player.y, r, out);
+          const dmg = ARC_FX.dawnfieldDps * c.stats.dmg * ARC_FX.dawnfieldTick;
+          for (const n of out) {
+            const ap = c.hitEnemy(n, dmg, { quiet: true, noHook: true });
+            if (ap > 0) c.dmgLog('arc_dawnfield', ap);
+          }
+          // 领域氛围：每 2s 一圈淡金环（不逐 tick 出环防视觉噪音）
+          pulse = (pulse + 1) % 4;
+          if (pulse === 0) c.fx.ring(c.player.x, c.player.y, 0xf2cf6e, Math.max(4, r / 16), 0.6);
+        },
+      };
+    }
   }
 }

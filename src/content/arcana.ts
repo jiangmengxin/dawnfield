@@ -6,19 +6,28 @@ export interface ArcanaMeta {
   id: ArcanaId;
   color: number;
   icon: string; // 纹理 key
+  /** M13 分级：basic 恒在池；mechanic 成就解锁后入池（isArcanaUnlocked 查 unlockArcana 挂钩） */
+  tier: 'basic' | 'mechanic';
 }
 
 export const ARCANA_META: ArcanaMeta[] = [
-  { id: 'petaltide',  color: 0xf8a8c0, icon: 'icon_arc_petaltide' },
-  { id: 'tailwind',   color: 0xa8d8c0, icon: 'icon_arc_tailwind' },
-  { id: 'thornlace',  color: 0xe88898, icon: 'icon_arc_thornlace' },
-  { id: 'goldbell',   color: 0xf0c860, icon: 'icon_arc_goldbell' },
-  { id: 'starpop',    color: 0xb0bce8, icon: 'icon_arc_starpop' },
-  { id: 'moonheart',  color: 0x9aa8d8, icon: 'icon_arc_moonheart' },
-  { id: 'dewspring',  color: 0x90c8e8, icon: 'icon_arc_dewspring' },
-  { id: 'fireflyway', color: 0xc8d878, icon: 'icon_arc_fireflyway' },
-  { id: 'compass',    color: 0xd8b060, icon: 'icon_arc_compass' },
-  { id: 'onepath',    color: 0xb898d0, icon: 'icon_arc_onepath' },
+  { id: 'petaltide',  color: 0xf8a8c0, icon: 'icon_arc_petaltide',  tier: 'basic' },
+  { id: 'tailwind',   color: 0xa8d8c0, icon: 'icon_arc_tailwind',   tier: 'basic' },
+  { id: 'thornlace',  color: 0xe88898, icon: 'icon_arc_thornlace',  tier: 'basic' },
+  { id: 'goldbell',   color: 0xf0c860, icon: 'icon_arc_goldbell',   tier: 'basic' },
+  { id: 'starpop',    color: 0xb0bce8, icon: 'icon_arc_starpop',    tier: 'basic' },
+  { id: 'moonheart',  color: 0x9aa8d8, icon: 'icon_arc_moonheart',  tier: 'basic' },
+  { id: 'dewspring',  color: 0x90c8e8, icon: 'icon_arc_dewspring',  tier: 'basic' },
+  { id: 'fireflyway', color: 0xc8d878, icon: 'icon_arc_fireflyway', tier: 'basic' },
+  { id: 'compass',    color: 0xd8b060, icon: 'icon_arc_compass',    tier: 'basic' },
+  { id: 'onepath',    color: 0xb898d0, icon: 'icon_arc_onepath',    tier: 'basic' },
+  // ---------- M13 机制卡（拿了之后整局打法都变；成就解锁，见 achievements.ts unlockArcana） ----------
+  { id: 'splinter',   color: 0xf0d878, icon: 'icon_arc_splinter',   tier: 'mechanic' },
+  { id: 'thorncore',  color: 0xd87884, icon: 'icon_arc_thorncore',  tier: 'mechanic' },
+  { id: 'vow',        color: 0xe89860, icon: 'icon_arc_vow',        tier: 'mechanic' },
+  { id: 'allin',      color: 0xb890d8, icon: 'icon_arc_allin',      tier: 'mechanic' },
+  { id: 'slowburn',   color: 0x90b8e0, icon: 'icon_arc_slowburn',   tier: 'mechanic' },
+  { id: 'dawnfield',  color: 0xf2cf6e, icon: 'icon_arc_dawnfield',  tier: 'mechanic' },
 ];
 
 /** 获取规则：开局从全部未持有卡中任选 1（设置可关）；精英宝箱有概率再得，单局至多 maxPerRun 张 */
@@ -51,4 +60,26 @@ export const ARC_FX = {
   fireflyEvery: 30, // 全场磁吸间隔（秒）
   compassGoldMul: 2, // 宝箱金币层 ×2
   onepathCd: 0.92, // 冷却 ×0.92
+  // ---------- M13 机制卡 ----------
+  splinterChance: 0.25, // 武器命中触发概率
+  splinterN: 3, // 光屑枚数
+  splinterDmgK: 0.35, // 光屑伤害 = 本次命中 ×0.35
+  splinterSeekR: 260, // 索敌半径
+  thorncoreThreshold: 0.35, // 蓄能阈值 = 最大生命 ×0.35（按护甲前承伤累计）
+  thorncoreBurstK: 8, // 爆发 = 累计承伤 ×8
+  thorncoreCapDmg: 1500, // 爆发上限 ×stats.dmg（防狂暴/无尽高伤下爆炸失控）
+  thorncoreR: 260, // 荆棘新星半径
+  thorncoreKb: 320, // 新星击退
+  vowDmg: 1.45, // 伤害 ×1.45
+  vowArea: 1.15, // 范围 ×1.15
+  vowHeartCoins: 2, // 爱心转金币面值
+  allinCap: 4, // 武器槽上限
+  allinCd: 0.6, // 全武器冷却 ×0.6
+  slowburnCd: 1.6, // 冷却 ×1.6（"大招化"）
+  slowburnDmg: 2.2, // 伤害 ×2.2
+  slowburnArea: 1.25, // 范围 ×1.25
+  dawnfieldDps: 6, // 域内每秒灼烧 ×stats.dmg
+  dawnfieldRK: 0.9, // 领域半径 = 磁吸 ×0.9
+  dawnfieldTick: 0.5, // 灼烧结算周期（秒）
+  dawnfieldMagnet: 1.15, // 磁吸 ×1.15
 };

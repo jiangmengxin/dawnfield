@@ -48,12 +48,18 @@ export class AchievementTracker implements RunSystem {
         mapId: this.ctx.map.id,
         difficulty: run.diff,
         endlessCycle: run.cycle,
+        // M13 结构性挑战埋点（win 类在 Result 终评，时间类在此逐秒评估）
+        bossNoHit: !run.bossHit,
+        firstHurtAt: run.firstHurtAt,
+        firstEvolveAt: run.firstEvolveAt,
+        arcana: run.arcana.length,
       },
       // 累计类并入当前局进度，避免要再开一局才能解锁
       stats: {
         ...st,
         kills: st.kills + run.kills,
         coinsEarned: st.coinsEarned + Math.floor(run.coins),
+        charWins: Object.keys(st.winsByChar).length,
       },
       hyper: Meta.save.hyper,
     };

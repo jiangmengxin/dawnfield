@@ -2,7 +2,7 @@
 // 宝箱分层：可进化 → 进化；否则概率再得规则卡；否则 → 已持有项升级×N；无可升级 → 金币
 import { ARCANA, ARCANA_META } from '../content/arcana';
 import { CHEST, WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
-import { ESSENCE, MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
+import { ESSENCE, MAX_PASSIVES } from '../content/player';
 import { PASSIVE_MAX_LEVEL, PASSIVE_META, PASSIVE_FX } from '../content/passives';
 import type { ArcanaId, PassiveId, WeaponId } from '../content/ids';
 import { PAL } from '../gfx/palette';
@@ -51,7 +51,9 @@ export class LevelUpSystem implements RunSystem {
     const ctx = this.ctx;
     const run = ctx.run;
     run.pendingArcana = false;
-    const pool = ARCANA_META.map((m) => m.id).filter((id) => !run.arcana.includes(id));
+    // M13：机制卡未达成对应成就时不进池（basic 恒可用；调试直给不受限）
+    const pool = ARCANA_META.map((m) => m.id)
+      .filter((id) => !run.arcana.includes(id) && Meta.isArcanaUnlocked(id));
     if (pool.length === 0) return;
     run.choosing = true;
     SFX.levelup();
@@ -100,7 +102,8 @@ export class LevelUpSystem implements RunSystem {
         if (w.level < WEAPON_MAX_LEVEL && !w.evolved) {
           cands.push({ offer: { kind: 'weapon', id: meta.id, isNew: false, toLevel: w.level + 1 }, w: 3 });
         }
-      } else if (this.weapons.list.length < MAX_WEAPONS) {
+      } else if (this.weapons.list.length < run.stats.maxWeapons) {
+        // 槽上限读 stats（M13 allin 降为 4：已超出不移除，仅停止新供给；精华触发随之提前）
         cands.push({ offer: { kind: 'weapon', id: meta.id, isNew: true, toLevel: 1 }, w: 2.2 });
       }
     }
@@ -131,7 +134,8 @@ export class LevelUpSystem implements RunSystem {
       ];
     }
     const out: Offer[] = [];
-    for (let pick = 0; pick < 3 && cands.length > 0; pick++) {
+    // 候选张数读 stats（M13 默认 3；M14 ivy 四选一消费）
+    for (let pick = 0; pick < this.ctx.stats.offers && cands.length > 0; pick++) {
       out.push(cands.splice(weightedIndex(cands), 1)[0].offer);
     }
     return out;
@@ -237,10 +241,12 @@ export class LevelUpSystem implements RunSystem {
     if (evolvable.length > 0) {
       items.push({ kind: 'evolve', weapon: evolvable[Math.floor(Math.random() * evolvable.length)] });
     }
-    // 2) 规则卡（M9 概率口径不变；候选 = 全部未持有卡，与开局选卡一致，每箱至多一件）
+    // 2) 规则卡（M9 概率口径不变；候选 = 全部未持有且已解锁卡，与开局选卡一致，每箱至多一件）
+    //    随机走 ctx.rng()（M13 契约：M17 种子流 chest 桶）
     if (items.length < n && getSettings().arcana && run.arcana.length < ARCANA.maxPerRun
-      && Math.random() < ARCANA.chestChance) {
-      const pool = ARCANA_META.map((m) => m.id).filter((id) => !run.arcana.includes(id));
+      && this.ctx.rng() < ARCANA.chestChance) {
+      const pool = ARCANA_META.map((m) => m.id)
+        .filter((id) => !run.arcana.includes(id) && Meta.isArcanaUnlocked(id));
       if (pool.length > 0) items.push({ kind: 'arcana', cards: pool });
     }
     // 3) 已持有项升级（不放回抽取；放逐对宝箱升级件同样生效，保持一致性）
