@@ -15,13 +15,14 @@ export function absorbLegacy(s: SaveV1): void {
     const vol = localStorage.getItem('dawnfield.volume');
     if (vol !== null) {
       const v = parseFloat(vol);
-      if (!Number.isNaN(v)) s.settings.volume = Math.max(0, Math.min(1, v));
+      // M8 起音量分轨：旧单一音量同时作为两轨初值
+      if (!Number.isNaN(v)) s.settings.volBgm = s.settings.volSfx = Math.max(0, Math.min(1, v));
     }
 
     const raw = localStorage.getItem('dawnfield.settings');
     if (raw) {
       const p = JSON.parse(raw) as Record<string, unknown>;
-      if (typeof p.volume === 'number') s.settings.volume = Math.max(0, Math.min(1, p.volume));
+      if (typeof p.volume === 'number') s.settings.volBgm = s.settings.volSfx = Math.max(0, Math.min(1, p.volume));
       if (typeof p.dmgNumbers === 'boolean') s.settings.dmgNumbers = p.dmgNumbers;
       if (typeof p.shake === 'boolean') s.settings.shake = p.shake;
       if (p.speed === 2) s.settings.speed = 2;

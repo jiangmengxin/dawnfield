@@ -1,6 +1,7 @@
 // 波次导演：按地图时间表持续刷怪 + 定点事件（包围环 / 精英 / Boss）
 // 波次/事件/精英/Boss 全部来自 MapSpec（content/maps.ts），每图节奏独立调参
 import type { EnemyId } from '../content/ids';
+import type { WaveEvent, WavePhase } from '../content/maps';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
 import { getSettings } from '../core/settings';
@@ -21,6 +22,11 @@ export class WaveDirector implements RunSystem {
       if (t >= p.from) w = p;
     }
     return w;
+  }
+
+  /** 波次预览（M8 调试）：当前波参数 + 下一个未触发事件 */
+  preview(): { wave: WavePhase; next: WaveEvent | null } {
+    return { wave: this.currentWave(), next: this.ctx.map.events[this.eventIdx] ?? null };
   }
 
   private pickType(types: Array<[EnemyId, number]>): EnemyId {

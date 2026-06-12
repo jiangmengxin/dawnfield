@@ -1,5 +1,6 @@
-// 设置页：音量 / 声音 / 伤害数字 / 屏幕震动 / 语言 + 调试区
-// 调试：信息/无敌/全屏拾取/自动选卡/解锁全部内容 + 加币/时间跳跃/指定武器（后两者仅对进行中的局生效）
+// 设置页：BGM/SFX 分轨音量（M8）/ 伤害数字 / 屏幕震动 / 语言 + 调试区
+// （静音开关仍在主菜单与暂停面板；两轨拉零等效静音）
+// 调试：信息/无敌/全屏拾取/自动选卡/解锁全部内容 + 加币/时间跳跃/指定武器/波次预览（后三者仅对进行中的局生效）
 // M3 起设置持久化进版本化存档（core/save）；行高随可用高度自适应，矮屏不溢出
 import { FONT, getLang, Lang, setLang, t } from '../i18n';
 import { PAL } from '../gfx/palette';
@@ -14,6 +15,7 @@ import { UIButton } from '../ui/widgets/UIButton';
 import { Slider } from '../ui/widgets/Slider';
 import { Toggle } from '../ui/widgets/Toggle';
 import { Modal } from '../ui/widgets/Modal';
+import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { THEME } from '../ui/theme';
 import { hstack, rect } from '../ui/layout';
 import type { GameScene } from './Game';
@@ -67,27 +69,29 @@ export class SettingsScene extends UIScene {
       updateSettings({ [key]: on });
     };
 
-    // 音量滑杆
-    let cy = y + rowH / 2;
-    rowBg(cy);
-    label(cy, 'set_volume');
+    // BGM / SFX 分轨音量滑杆（M8）
     const sliderW = Math.min(180, maxW * 0.42);
-    new Slider(this, x0 + maxW - sliderW / 2 - 18, cy, sliderW, SFX.volume, (v) => {
-      SFX.unlock();
-      SFX.setVolume(v);
-      updateSettings({ volume: v });
+    const sliderRow = (key: string, value: number, onChange: (v: number) => void): void => {
+      const sy = y + rowH / 2;
+      rowBg(sy);
+      label(sy, key);
+      new Slider(this, x0 + maxW - sliderW / 2 - 18, sy, sliderW, value, (v) => {
+        SFX.unlock();
+        onChange(v);
+      });
+      y += rowH;
+    };
+    sliderRow('set_volBgm', SFX.volBgm, (v) => SFX.setVolBgm(v));
+    sliderRow('set_volSfx', SFX.volSfx, (v) => {
+      SFX.setVolSfx(v);
+      SFX.uiClick(); // 即时试听当前音量
     });
-    y += rowH;
 
-    toggleRow('set_sound', !SFX.muted, (on) => {
-      SFX.unlock();
-      SFX.setMuted(!on);
-    });
     toggleRow('set_dmgNum', s.dmgNumbers, boolSetting('dmgNumbers'));
     toggleRow('set_shake', s.shake, boolSetting('shake'));
 
     // 语言：显示当前语言，点击弹出语言列表（支持多语言扩展）
-    cy = y + rowH / 2;
+    const cy = y + rowH / 2;
     rowBg(cy);
     label(cy, 'set_lang');
     const current = LANGS.find((l) => l.id === getLang()) ?? LANGS[0];
@@ -111,11 +115,11 @@ export class SettingsScene extends UIScene {
     toggleRow('set_autoPick', s.autoPick, boolSetting('autoPick'));
     toggleRow('set_unlockAll', s.unlockAll, boolSetting('unlockAll'));
 
-    // 调试操作行：加币 / 时间跳跃 / 指定武器（后两者仅对进行中的局生效）
+    // 调试操作行：加币 / 时间跳跃 / 指定武器 / 波次预览（后三者仅对进行中的局生效）
     const opCy = y + rowH / 2;
     rowBg(opCy);
     const btnH = Math.min(THEME.hitMin, rowH - 12);
-    const cells = hstack(rect(x0 - 4, opCy - btnH / 2, maxW + 8, btnH), THEME.gapXs, ['flex', 'flex', 'flex']);
+    const cells = hstack(rect(x0 - 4, opCy - btnH / 2, maxW + 8, btnH), THEME.gapXs, ['flex', 'flex', 'flex', 'flex']);
     const ops: Array<[string, () => void]> = [
       [t('set_addCoins'), () => {
         Meta.addCoins(1000, false); // 调试加币不计入累计获得（不触发金币成就）
@@ -126,13 +130,75 @@ export class SettingsScene extends UIScene {
         if (gs) gs.debugTimeSkip(60);
       }],
       [t('set_giveWeapon'), () => this.openWeaponPicker()],
+      [t('set_wavePreview'), () => this.openWavePreview()],
     ];
     cells.forEach((c, i) => {
       new UIButton(this, c.x + c.w / 2, c.y + c.h / 2, {
-        w: c.w, h: c.h, label: ops[i][0], fontSize: vp.fs(13), onTap: ops[i][1],
+        w: c.w, h: c.h, label: ops[i][0], fontSize: vp.fs(12), onTap: ops[i][1],
       });
     });
     y += rowH;
+  }
+
+  /** 波次预览弹窗（M8 调试）：当前局地图的完整波次/事件时间表，标出当前所处位置 */
+  private openWavePreview(): void {
+    const gs = this.liveGame();
+    if (!gs) return;
+    const map = gs.map;
+    const elapsed = gs.run.elapsed;
+    const fmt = (sec: number): string =>
+      Math.floor(sec / 60) + ':' + String(Math.floor(sec % 60)).padStart(2, '0');
+
+    // 波次 + 事件并成时间轴行（▶ = 当前波 / 未触发的下一事件之前）
+    const lines: Array<{ text: string; hot: boolean }> = [];
+    map.waves.forEach((w, i) => {
+      const to = map.waves[i + 1]?.from;
+      const hot = elapsed >= w.from && (to === undefined || elapsed < to);
+      lines.push({
+        hot,
+        text: (hot ? '▶ ' : '   ') + fmt(w.from) + (to !== undefined ? '~' + fmt(to) : '+') +
+          '  ' + w.interval + 's×' + w.burst + ' ≤' + w.maxAlive + '\n      ' +
+          w.types.map(([id, wt]) => t('en_' + id) + '×' + wt).join(' · '),
+      });
+    });
+    for (const ev of map.events) {
+      const tag = ev.kind === 'boss' ? '★ Boss' : ev.kind === 'elite' ? '◆ 精英' : '◯ 包围环';
+      lines.push({
+        hot: false,
+        text: (elapsed >= ev.t ? '   ' : ' · ') + fmt(ev.t) + '  ' + tag +
+          (ev.enemy ? ' ' + t('en_' + ev.enemy) : '') + (ev.n ? ' ×' + ev.n : ''),
+      });
+    }
+
+    const vp = this.vp;
+    const mw = Math.min(380, vp.w - 32);
+    const mh = Math.min(vp.h - 48, 560);
+    Modal.open(this, {
+      title: t('set_wavePreview') + ' · ' + t('map_' + map.id),
+      w: mw,
+      h: mh,
+      build: (panel, inner) => {
+        // ScrollPanel 工作在世界坐标（mask 为世界系），独立于 panel 容器，随 panel 销毁
+        const view = { x: vp.w / 2 + inner.x, y: vp.h / 2 + inner.y, w: inner.w, h: inner.h };
+        const sp = new ScrollPanel(this, view);
+        sp.setDepth(502);
+        sp.setContent((add) => {
+          let yy = 4;
+          for (const line of lines) {
+            const txt = this.add.text(6, yy, line.text, {
+              fontFamily: FONT, fontSize: vp.fs(13) + 'px',
+              fontStyle: line.hot ? 'bold' : 'normal',
+              color: line.hot ? '#C8902A' : PAL.inkCss,
+              wordWrap: { width: inner.w - 24 },
+            });
+            add(txt);
+            yy += txt.height + 8;
+          }
+          return yy + 4;
+        });
+        panel.once('destroy', () => sp.destroy());
+      },
+    });
   }
 
   /** 进行中的局（活动或暂停），否则 null */

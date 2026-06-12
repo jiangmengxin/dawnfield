@@ -212,16 +212,28 @@ export class HUDScene extends Phaser.Scene {
     const ss = String(sec % 60).padStart(2, '0');
     this.timerText.setText(mm + ':' + ss);
 
-    // 调试信息（设置中开启）：FPS / 实体计数 / 倍速 / 开关状态
+    // 调试信息（设置中开启）：FPS / 实体计数 / 动态上限 + 波次预览 + 武器 DPS（M8）
     const dbg = getSettings();
     if (dbg.debugInfo) {
       const flags = (dbg.invincible ? ' 无敌' : '') + (dbg.fullPickup ? ' 全拾' : '');
+      const dyn = this.gs.dynCapMul;
       const c = this.gs.debugCounts;
+      const p = this.gs.waveDir.preview();
+      const cap = Math.round(p.wave.maxAlive * this.gs.enemyCapMul * dyn);
+      const next = p.next
+        ? p.next.kind + '@' + p.next.t + 's(剩' + Math.max(0, Math.ceil(p.next.t - run.elapsed)) + 's)'
+        : '—';
+      const dps = this.gs.dps.entries().slice(0, 6)
+        .map(([id, d]) => t('w_' + id) + ' ' + Math.round(d))
+        .join('  ');
       this.debugText.setVisible(true).setText(
         'FPS ' + Math.round(this.game.loop.actualFps) +
-        ' | 敌 ' + this.gs.enemies.actives.length +
+        ' | 敌 ' + this.gs.enemies.actives.length + '/' + cap +
         ' 珠 ' + c.gems + ' 币 ' + c.coins + ' 弹 ' + c.bullets + ' 域 ' + c.zones +
-        ' | ' + this.gs.speed + 'x' + flags,
+        ' | ' + this.gs.speed + 'x' + flags + (dyn < 1 ? ' cap×' + dyn : '') +
+        '\n波 @' + p.wave.from + 's 每' + p.wave.interval + 's×' + p.wave.burst +
+        ' ≤' + p.wave.maxAlive + ' | 下个 ' + next +
+        (dps ? '\nDPS ' + dps : ''),
       );
     } else if (this.debugText.visible) {
       this.debugText.setVisible(false);

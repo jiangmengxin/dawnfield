@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import { CRIT, DROPS, PLAYER } from '../content/player';
 import { getMap, MapSpec } from '../content/maps';
 import { DEATH_COLOR, PAL } from '../gfx/palette';
-import { ensureMapAssets } from '../gfx/textures';
+import { ensureMapAssets, releaseMapAssets } from '../gfx/textures';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
 import { InputManager } from '../core/input/InputManager';
@@ -14,6 +14,7 @@ import { TimeController } from '../core/TimeController';
 import { AchievementTracker } from '../systems/AchievementTracker';
 import type { CombatContext, HitOpts, RunModifier, RunResult, RunSystem } from '../systems/context';
 import { DecorSystem } from '../systems/DecorSystem';
+import { DpsTracker } from '../systems/DpsTracker';
 import { Effects } from '../systems/effects';
 import { Enemy, EnemySystem } from '../systems/EnemySystem';
 import { SpatialGrid } from '../systems/grid';
@@ -39,6 +40,11 @@ export class GameScene extends Phaser.Scene {
   fx!: Effects;
   isMobile = false;
   enemyCapMul = 1;
+  /** FPS 采样动态敌人上限（M8）：低帧率逐步压低刷怪上限并降档粒子，恢复后回升 */
+  dynCapMul = 1;
+  /** 武器 DPS 统计（M8 调试面板） */
+  dps = new DpsTracker();
+  waveDir!: WaveDirector;
   /** 规则卡钩子（M9 实装，当前恒为空） */
   modifiers: RunModifier[] = [];
   charId = 'spark';
@@ -82,7 +88,11 @@ export class GameScene extends Phaser.Scene {
     this.facing = { x: 1, y: 0 };
     this.grid = new SpatialGrid<Enemy>(72);
     this.lastKillSfx = 0;
+    this.dynCapMul = 1;
+    this.fpsSampleT = 0;
+    this.dps = new DpsTracker();
 
+    releaseMapAssets(this, this.map.id); // 纹理生命周期（M8）：释放其它图的懒生成纹理
     ensureMapAssets(this, this.map.id); // 本图敌人/装饰/弹体纹理懒生成（幂等）
     this.cameras.main.setBackgroundColor(this.map.paperCss);
     this.player = this.add.image(0, 0, this.run.char.tex).setDepth(1000);
@@ -101,11 +111,13 @@ export class GameScene extends Phaser.Scene {
     this.pickupsRef = pickups;
     this.projectilesRef = projectiles;
 
+    this.waveDir = new WaveDirector(this.ctx, this.enemies);
+
     // 按帧序注册（与拆分前 update 顺序一致；地图机制紧随波次导演）
     this.systems = [
       this.playerSys,
       { update: () => this.grid.rebuild(this.enemies.actives) },
-      new WaveDirector(this.ctx, this.enemies),
+      this.waveDir,
       ...(this.map.mechanic ? [new MapMechanicSystem(this.ctx, this.map.mechanic)] : []),
       this.enemies,
       this.weapons,
@@ -162,8 +174,9 @@ export class GameScene extends Phaser.Scene {
       get enemies() { return g.enemies; },
       get fx() { return g.fx; },
       get isMobile() { return g.isMobile; },
-      get enemyCapMul() { return g.enemyCapMul; },
+      get enemyCapMul() { return g.enemyCapMul * g.dynCapMul; },
       hitEnemy: (e, dmg, opts) => g.hitEnemy(e, dmg, opts),
+      dmgLog: (src, dmg) => g.dps.add(src, dmg),
       onEnemyKilled: (e) => g.onEnemyKilled(e),
       damagePlayer: (d) => g.damagePlayer(d),
       hitStop: (sec) => g.clock.hitStop(sec),
@@ -205,13 +218,35 @@ export class GameScene extends Phaser.Scene {
     this.run.elapsed += dt;
     for (const s of this.systems) s.update(dt);
     for (const m of this.modifiers) m.onTick?.(dt, this.ctx);
+    this.dps.update(dt);
+    this.sampleFpsCap(raw);
     SFX.setIntensity((this.run.elapsed * this.map.timeK) / 600); // 长图情绪曲线同步放缓
+  }
+
+  /** FPS 采样动态敌人上限（M8）：每秒采样，低帧率（<45）逐档压低刷怪上限并降档粒子，
+   *  恢复（≥57）后缓步回升。只影响 WaveDirector 的 maxAlive，已在场敌人不清除 */
+  private fpsSampleT = 0;
+
+  private sampleFpsCap(raw: number): void {
+    this.fpsSampleT += raw;
+    if (this.fpsSampleT < 1) return;
+    this.fpsSampleT = 0;
+    const fps = this.sampleFps();
+    if (fps < 45) this.dynCapMul = Math.max(0.4, Math.round((this.dynCapMul - 0.1) * 100) / 100);
+    else if (fps >= 57 && this.dynCapMul < 1) this.dynCapMul = Math.min(1, Math.round((this.dynCapMul + 0.05) * 100) / 100);
+    this.fx.setQuality(this.dynCapMul <= 0.7 ? 0.6 : 1);
+  }
+
+  /** 独立成员便于调试覆写（运行时可替换以模拟低帧率） */
+  private sampleFps(): number {
+    return this.game.loop.actualFps;
   }
 
   // ---------- 战斗结算 ----------
 
-  hitEnemy(e: Enemy, dmg: number, opts: HitOpts = {}): void {
-    if (!e.active || e.dying) return;
+  /** 返回实际结算伤害（DPS 统计归账用；目标已死/无效返回 0） */
+  hitEnemy(e: Enemy, dmg: number, opts: HitOpts = {}): number {
+    if (!e.active || e.dying) return 0;
     let final = dmg * (0.9 + Math.random() * 0.2);
     const crit = Math.random() < CRIT.chance + this.run.stats.crit;
     if (crit) final *= CRIT.mul;
@@ -229,6 +264,7 @@ export class GameScene extends Phaser.Scene {
       e.kvy += (opts.ky ?? 0) * opts.kb * e.knockMul;
     }
     if (e.hp <= 0) this.enemies.kill(e);
+    return final;
   }
 
   onEnemyKilled(e: Enemy): void {

@@ -10,7 +10,7 @@ import { createIcons } from './icons';
 export { makeTex } from './core';
 export { makeCharacter } from './characters';
 export type { CharRecipe } from './characters';
-export { ensureMapAssets, makeEnemy } from './mapassets';
+export { ensureMapAssets, makeEnemy, releaseMapAssets } from './mapassets';
 export type { EnemyRecipe } from './mapassets';
 
 export function createAllTextures(scene: Phaser.Scene): void {

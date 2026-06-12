@@ -33,7 +33,14 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
     this.maskGfx = scene.make.graphics({ x: 0, y: 0 });
     this.maskGfx.fillStyle(0xffffff);
     this.maskGfx.fillRect(view.x, view.y, view.w, view.h);
-    this.content.setMask(this.maskGfx.createGeometryMask());
+    // Phaser 4 WebGL 不支持 GeometryMask（setMask 仅告警不生效，内容会溢出视口），
+    // 改用 Mask filter（M8 修复）；Canvas 渲染器无 filter，沿用 GeometryMask
+    if (scene.renderer.type === Phaser.WEBGL) {
+      this.content.enableFilters();
+      this.content.filters!.internal.addMask(this.maskGfx);
+    } else {
+      this.content.setMask(this.maskGfx.createGeometryMask());
+    }
 
     this.barGfx = scene.add.graphics();
     this.add(this.barGfx);

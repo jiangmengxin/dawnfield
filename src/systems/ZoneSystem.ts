@@ -19,6 +19,7 @@ interface Zone {
   tick: number;
   affectsPlayer: boolean;
   hasTex: boolean;
+  src?: string; // 伤害归账来源（DPS 调试统计）
 }
 
 export class ZoneSystem implements RunSystem {
@@ -50,7 +51,7 @@ export class ZoneSystem implements RunSystem {
     this.zones.push({
       img, x: spec.x, y: spec.y, r: spec.r, t: spec.dur, effect: spec.effect,
       dps: spec.dps ?? 0, mul: spec.mul ?? 1, tick: 0,
-      affectsPlayer: spec.affectsPlayer === true, hasTex,
+      affectsPlayer: spec.affectsPlayer === true, hasTex, src: spec.src,
     });
   }
 
@@ -104,7 +105,9 @@ export class ZoneSystem implements RunSystem {
           z.tick = 0.25;
           if (z.effect === 'burn') {
             ctx.grid.queryCircle(z.x, z.y, z.r, queryOut);
-            for (const e of queryOut) ctx.hitEnemy(e, z.dps * 0.25, { quiet: true });
+            let applied = 0;
+            for (const e of queryOut) applied += ctx.hitEnemy(e, z.dps * 0.25, { quiet: true });
+            if (z.src !== undefined && applied > 0) ctx.dmgLog(z.src, applied);
             if (Math.random() < 0.6) {
               ctx.fx.burst(z.x + (Math.random() - 0.5) * z.r, z.y + (Math.random() - 0.5) * z.r,
                 { tex: 'p_star', color: PAL.mine, count: 1, speed: 20, life: 0.4, scale: 0.7 });

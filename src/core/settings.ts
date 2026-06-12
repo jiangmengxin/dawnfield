@@ -3,7 +3,8 @@
 import { getSave, persistSave } from './save';
 
 export interface TempSettings {
-  volume: number; // 0..1
+  volBgm: number; // BGM 音量 0..1（M8 分轨）
+  volSfx: number; // SFX 音量 0..1
   dmgNumbers: boolean;
   shake: boolean;
   speed: 1 | 2; // 局内倍速

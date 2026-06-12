@@ -9,7 +9,9 @@ export type CodexCat = 'weapons' | 'passives' | 'enemies' | 'chars' | 'maps';
 export interface SaveSettings {
   lang: 'zh' | 'en' | null; // null = 跟随系统语言
   muted: boolean;
-  volume: number; // 0..1
+  /** M8 分轨音量：BGM / SFX 各自 0..1（旧档单一 volume 在 sanitize 时作为两轨默认值吸收） */
+  volBgm: number;
+  volSfx: number;
   dmgNumbers: boolean;
   shake: boolean;
   speed: 1 | 2;
@@ -61,7 +63,7 @@ export function defaultSave(): SaveV1 {
     achievements: [],
     stats: { runs: 0, wins: 0, kills: 0, coinsEarned: 0, bestSurvival: 0, playSeconds: 0, purchases: 0 },
     settings: {
-      lang: null, muted: false, volume: 1, dmgNumbers: true, shake: true, speed: 1,
+      lang: null, muted: false, volBgm: 1, volSfx: 1, dmgNumbers: true, shake: true, speed: 1,
       debugInfo: false, invincible: false, fullPickup: false, autoPick: false, unlockAll: false,
     },
   };
@@ -136,7 +138,9 @@ export function sanitize(raw: unknown): SaveV1 | null {
     out.settings = {
       lang: s.lang === 'zh' || s.lang === 'en' ? s.lang : null,
       muted: bool(s.muted, false),
-      volume: num(s.volume, 1, 0, 1),
+      // 旧档单一 volume → 两轨默认值（用户原音量保留）；新档直接读分轨
+      volBgm: num(s.volBgm, num(s.volume, 1, 0, 1), 0, 1),
+      volSfx: num(s.volSfx, num(s.volume, 1, 0, 1), 0, 1),
       dmgNumbers: bool(s.dmgNumbers, true),
       shake: bool(s.shake, true),
       speed: s.speed === 2 ? 2 : 1,

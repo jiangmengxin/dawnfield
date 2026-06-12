@@ -27,6 +27,7 @@ export interface ZoneSpec {
   mul?: number; // haste 加速乘子（默认 1）
   tex?: string; // 区域自定义贴图（地图机制水皮/泉眼/顺风带用）
   affectsPlayer?: boolean; // slow 是否也减速玩家（武器水洼不减速玩家，机制水皮减速）
+  src?: string; // 伤害归账来源（武器 id，DPS 调试统计用；武器子上下文自动注入）
 }
 
 /** 敌方弹幕（参数化，供喷喷与 8 个 Boss 复用） */
@@ -86,7 +87,10 @@ export interface CombatContext {
   readonly fx: Effects;
   readonly isMobile: boolean;
   readonly enemyCapMul: number;
-  hitEnemy(e: Enemy, dmg: number, opts?: HitOpts): void;
+  /** 返回实际结算伤害（含浮动/暴击；目标已死/无效返回 0）——DPS 统计据此归账 */
+  hitEnemy(e: Enemy, dmg: number, opts?: HitOpts): number;
+  /** 伤害归账（M8 武器 DPS 统计；调试面板显示） */
+  dmgLog(src: string, dmg: number): void;
   onEnemyKilled(e: Enemy): void;
   damagePlayer(d: number): void;
   hitStop(sec: number): void;

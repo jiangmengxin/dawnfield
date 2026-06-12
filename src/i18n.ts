@@ -452,11 +452,11 @@ const D: Dict = {
   ach_buy25_d: ['在商店累计购买 25 次强化', 'Buy 25 upgrades at the shop'],
 
   // 设置
-  set_volume: ['音量', 'Volume'],
+  set_volBgm: ['音乐音量', 'Music Volume'],
+  set_volSfx: ['音效音量', 'SFX Volume'],
   set_dmgNum: ['伤害数字', 'Damage Numbers'],
   set_shake: ['屏幕震动', 'Screen Shake'],
   set_lang: ['语言', 'Language'],
-  set_sound: ['声音', 'Sound'],
 
   // 调试
   set_debugTitle: ['调试', 'Debug'],
@@ -465,9 +465,10 @@ const D: Dict = {
   set_fullPickup: ['全屏拾取', 'Magnet All'],
   set_autoPick: ['自动选卡', 'Auto Pick'],
   set_unlockAll: ['解锁全部内容', 'Unlock All'],
-  set_addCoins: ['金币 +1000', '+1000 Coins'],
-  set_timeSkip: ['时间 +60s', '+60s Time'],
-  set_giveWeapon: ['获得武器', 'Give Weapon'],
+  set_addCoins: ['金币+1000', 'Coins +1k'],
+  set_timeSkip: ['时间+60s', 'Time +60s'],
+  set_giveWeapon: ['获得武器', 'Weapon'],
+  set_wavePreview: ['波次预览', 'Waves'],
 };
 
 let lang: Lang = (() => {

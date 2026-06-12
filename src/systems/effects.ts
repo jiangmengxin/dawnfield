@@ -33,6 +33,11 @@ export class Effects {
     this.q = mobile ? 0.5 : 1;
   }
 
+  /** 动态画质（M8）：低帧率时粒子降档（基础系数 × 动态系数） */
+  setQuality(mul: number): void {
+    this.q = (this.mobile ? 0.5 : 1) * mul;
+  }
+
   private getParticle(tex: string): Particle {
     for (const p of this.particles) {
       if (!p.active) {

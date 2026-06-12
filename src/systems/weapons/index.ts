@@ -49,6 +49,20 @@ export class WeaponManager implements RunSystem {
 
   constructor(private ctx: CombatContext) {}
 
+  /** 武器归账子上下文（M8 DPS 统计）：hitEnemy 记账到该武器，addZone 自动注入伤害来源；
+   *  原型链委托其余成员，武器行为代码零改动 */
+  private wrapCtx(id: WeaponId): CombatContext {
+    const base = this.ctx;
+    const sub = Object.create(base) as CombatContext;
+    sub.hitEnemy = (e, dmg, opts) => {
+      const applied = base.hitEnemy(e, dmg, opts);
+      if (applied > 0) base.dmgLog(id, applied);
+      return applied;
+    };
+    sub.addZone = (z) => base.addZone(z.src === undefined ? { ...z, src: id } : z);
+    return sub;
+  }
+
   has(id: WeaponId): boolean {
     return this.list.some((w) => w.id === id);
   }
@@ -65,7 +79,7 @@ export class WeaponManager implements RunSystem {
         w.onLevelUp();
       }
     } else {
-      this.list.push(new FACTORY[id](this.ctx, id));
+      this.list.push(new FACTORY[id](this.wrapCtx(id), id));
       Meta.codexLight('weapons', id); // 图鉴首遇点亮
     }
   }

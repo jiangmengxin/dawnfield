@@ -2224,9 +2224,13 @@ const MARKERS: Record<MapId, string> = {
   bramble: 'e_berryling', nocturne: 'e_moonmote', summit: 'e_shade',
 };
 
+/** 各图懒生成纹理键登记（M8 纹理生命周期：离图释放用；草甸 Boot 常驻不在册） */
+const CREATED: Partial<Record<MapId, string[]>> = {};
+
 /** 确保某图的敌人/装饰/弹体纹理已生成（草甸在 Boot 全量生成，此处天然命中跳过） */
 export function ensureMapAssets(scene: Phaser.Scene, mapId: MapId): void {
   if (scene.textures.exists(MARKERS[mapId])) return;
+  const before = new Set(scene.textures.getTextureKeys());
   if (mapId === 'pond') createPondAssets(scene);
   else if (mapId === 'hills') createHillsAssets(scene);
   else if (mapId === 'grove') createGroveAssets(scene);
@@ -2234,4 +2238,19 @@ export function ensureMapAssets(scene: Phaser.Scene, mapId: MapId): void {
   else if (mapId === 'bramble') createBrambleAssets(scene);
   else if (mapId === 'nocturne') createNocturneAssets(scene);
   else if (mapId === 'summit') createSummitAssets(scene);
+  else return;
+  CREATED[mapId] = scene.textures.getTextureKeys().filter((k) => !before.has(k));
+}
+
+/** 纹理生命周期（M8）：释放除 keep 外所有已懒生成的地图纹理（8 图全量常驻 → 进图按需）。
+ *  仅在进图时调用（此刻其余场景已停止、无对象引用旧纹理）；
+ *  图鉴/成就/选图页需要时会经 ensureMapAssets 重新懒生成 */
+export function releaseMapAssets(scene: Phaser.Scene, keep: MapId): void {
+  for (const id of Object.keys(CREATED) as MapId[]) {
+    if (id === keep) continue;
+    for (const k of CREATED[id] ?? []) {
+      if (scene.textures.exists(k)) scene.textures.remove(k);
+    }
+    delete CREATED[id];
+  }
 }

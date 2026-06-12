@@ -1,6 +1,6 @@
 // WebAudio 程序化音频：SFX 即时合成 + 生成式五声音阶 BGM（零外部资源）
 // M5 起 BGM 按 BgmSpec 主题化（content/maps.ts）：每图各自的调式/速度/音色/打击乐/回声湿度
-// 静音/音量持久化进版本化存档（core/save），旧散键由 v0 迁移吸收
+// 静音/分轨音量（M8：BGM/SFX 各一轨）持久化进版本化存档（core/save），旧散键由 v0 迁移吸收
 import type { BgmSpec } from '../content/maps';
 import { getSave, persistSave } from '../core/save';
 
@@ -29,12 +29,15 @@ class SoundEngine {
   private bgmSpec: BgmSpec = DEFAULT_BGM;
   private noiseBuf: AudioBuffer | null = null;
   muted = false;
-  volume = 1;
+  /** M8 分轨音量：BGM / SFX 各自 0..1，合成时按声音所属轨乘入（回声随声源同轨缩放） */
+  volBgm = 1;
+  volSfx = 1;
 
   constructor() {
     const st = getSave().settings;
     this.muted = st.muted;
-    this.volume = st.volume;
+    this.volBgm = st.volBgm;
+    this.volSfx = st.volSfx;
   }
 
   /** 必须在用户手势中首次调用（移动端 AudioContext 解锁） */
@@ -47,7 +50,7 @@ class SoundEngine {
     if (!AC) return;
     this.ctx = new AC();
     this.master = this.ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : this.volume;
+    this.master.gain.value = this.muted ? 0 : 1;
     const comp = this.ctx.createDynamicsCompressor();
     comp.threshold.value = -18;
     this.master.connect(comp);
@@ -77,25 +80,31 @@ class SoundEngine {
     this.muted = m;
     getSave().settings.muted = m;
     persistSave();
-    if (this.master && this.ctx) this.master.gain.setTargetAtTime(m ? 0 : this.volume, this.ctx.currentTime, 0.05);
+    if (this.master && this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 1, this.ctx.currentTime, 0.05);
   }
 
-  setVolume(v: number): void {
-    this.volume = Math.max(0, Math.min(1, v));
-    getSave().settings.volume = this.volume;
+  /** BGM 轨音量（已发声的长音不追溯，下一拍起生效——八分音符粒度足够跟手） */
+  setVolBgm(v: number): void {
+    this.volBgm = Math.max(0, Math.min(1, v));
+    getSave().settings.volBgm = this.volBgm;
     persistSave();
-    if (this.master && this.ctx && !this.muted) {
-      this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.05);
-    }
+  }
+
+  setVolSfx(v: number): void {
+    this.volSfx = Math.max(0, Math.min(1, v));
+    getSave().settings.volSfx = this.volSfx;
+    persistSave();
   }
 
   // ---------- 基础合成单元 ----------
 
   private tone(opts: {
     freq: number; end?: number; dur: number; type?: OscillatorType;
-    vol?: number; attack?: number; delay?: number; sendEcho?: boolean;
+    vol?: number; attack?: number; delay?: number; sendEcho?: boolean; bus?: 'sfx' | 'bgm';
   }): void {
     if (!this.ctx || !this.master || this.muted) return;
+    const busVol = (opts.bus ?? 'sfx') === 'bgm' ? this.volBgm : this.volSfx;
+    if (busVol <= 0) return;
     const { ctx } = this;
     const t0 = ctx.currentTime + (opts.delay ?? 0);
     const osc = ctx.createOscillator();
@@ -103,7 +112,7 @@ class SoundEngine {
     osc.frequency.setValueAtTime(opts.freq, t0);
     if (opts.end && opts.end !== opts.freq) osc.frequency.exponentialRampToValueAtTime(Math.max(20, opts.end), t0 + opts.dur);
     const g = ctx.createGain();
-    const vol = opts.vol ?? 0.12;
+    const vol = (opts.vol ?? 0.12) * busVol;
     const atk = opts.attack ?? 0.005;
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.exponentialRampToValueAtTime(vol, t0 + atk);
@@ -115,8 +124,10 @@ class SoundEngine {
     osc.stop(t0 + opts.dur + 0.05);
   }
 
-  private noise(opts: { dur: number; vol?: number; filter?: number; q?: number; type?: BiquadFilterType; slide?: number; delay?: number }): void {
+  private noise(opts: { dur: number; vol?: number; filter?: number; q?: number; type?: BiquadFilterType; slide?: number; delay?: number; bus?: 'sfx' | 'bgm' }): void {
     if (!this.ctx || !this.master || !this.noiseBuf || this.muted) return;
+    const busVol = (opts.bus ?? 'sfx') === 'bgm' ? this.volBgm : this.volSfx;
+    if (busVol <= 0) return;
     const { ctx } = this;
     const t0 = ctx.currentTime + (opts.delay ?? 0);
     const src = ctx.createBufferSource();
@@ -129,7 +140,7 @@ class SoundEngine {
     f.Q.value = opts.q ?? 0.8;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t0);
-    g.gain.exponentialRampToValueAtTime(opts.vol ?? 0.1, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime((opts.vol ?? 0.1) * busVol, t0 + 0.008);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + opts.dur);
     src.connect(f);
     f.connect(g);
@@ -238,28 +249,28 @@ class SoundEngine {
     // 拨弦
     if (Math.random() < density) {
       const n = t.scale[Math.floor(Math.random() * t.scale.length)];
-      this.tone({ freq: n, dur: 0.5, type: t.pluckType, vol: t.pluckVol, attack: 0.004, sendEcho: true });
+      this.tone({ freq: n, dur: 0.5, type: t.pluckType, vol: t.pluckVol, attack: 0.004, sendEcho: true, bus: 'bgm' });
     }
     // 低音（每小节第一拍）
     if (s % 8 === 0) {
-      this.tone({ freq: t.bass[(s / 8) % t.bass.length], dur: stepDur * 7, type: 'sine', vol: 0.05, attack: 0.02 });
+      this.tone({ freq: t.bass[(s / 8) % t.bass.length], dur: stepDur * 7, type: 'sine', vol: 0.05, attack: 0.02, bus: 'bgm' });
     }
     // pad（每 4 小节）
     if (s % 32 === 0) {
       const ch = t.chords[(s / 32) % t.chords.length];
-      ch.forEach((f) => this.tone({ freq: f * 2, dur: stepDur * 30, type: 'sine', vol: 0.018, attack: 1.2 }));
+      ch.forEach((f) => this.tone({ freq: f * 2, dur: stepDur * 30, type: 'sine', vol: 0.018, attack: 1.2, bus: 'bgm' }));
     }
     // 主题打击乐
     if (s % 4 === 2 && Math.random() < 0.3 + this.bgmIntensity * 0.5) {
       if (t.perc === 'tick') {
-        this.noise({ dur: 0.04, vol: 0.02, type: 'highpass', filter: 6000 });
+        this.noise({ dur: 0.04, vol: 0.02, type: 'highpass', filter: 6000, bus: 'bgm' });
       } else if (t.perc === 'drip') {
         // 水滴：短促上滑的小圆音
         const f = 480 + Math.random() * 320;
-        this.tone({ freq: f, end: f * 2.1, dur: 0.09, type: 'sine', vol: 0.035, sendEcho: true });
+        this.tone({ freq: f, end: f * 2.1, dur: 0.09, type: 'sine', vol: 0.035, sendEcho: true, bus: 'bgm' });
       } else {
         // 沙锤：中频带通短噪声
-        this.noise({ dur: 0.06, vol: 0.028, type: 'bandpass', filter: 4200, q: 1.6 });
+        this.noise({ dur: 0.06, vol: 0.028, type: 'bandpass', filter: 4200, q: 1.6, bus: 'bgm' });
       }
     }
   }
