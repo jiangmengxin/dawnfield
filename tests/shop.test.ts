@@ -34,9 +34,9 @@ describe('powerUpPrice', () => {
     }
   });
 
-  it('lv≥5 高阶区间溢价 ×4', () => {
-    expect(powerUpPrice(spec('power'), 5)).toBe(240);
-    expect(powerUpPrice(spec('power'), 6)).toBe(280);
+  it('lv≥5 高阶区间阶梯溢价 ×2/×3/×4（M12 削平断崖）', () => {
+    expect(powerUpPrice(spec('power'), 5)).toBe(120);
+    expect(powerUpPrice(spec('power'), 6)).toBe(210);
     expect(powerUpPrice(spec('power'), 7)).toBe(320);
     expect(powerUpPrice(spec('haste'), 7)).toBe(384);
   });
@@ -52,9 +52,9 @@ describe('经济总池（发行方案 3.3 验收口径）', () => {
     expect(sum).toBe(1530);
   });
 
-  it('全部 15 项买满 = 9,906', () => {
+  it('全部 15 项买满 = 8,690（M12 阶梯溢价后口径）', () => {
     const sum = POWERUPS.reduce((acc, s) => acc + totalCost(s.id, s.max), 0);
-    expect(sum).toBe(9906);
+    expect(sum).toBe(8690);
   });
 
   it('M10 新 4 条目小计 = 3,000', () => {

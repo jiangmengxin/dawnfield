@@ -71,14 +71,23 @@ export class CodexScene extends UIScene {
     };
     const tab = this.tab;
 
+    // M12 详情化：每类补一行简短信息（描述/数值/进化名），字数克制不展开成百科
     if (tab === 'weapons') {
       for (const m of WEAPON_META) {
-        items.push(this.entry(tab, m.id, { icon: m.icon, title: t('w_' + m.id), color: m.color, fontScale }));
+        items.push(this.entry(tab, m.id, {
+          icon: m.icon, title: t('w_' + m.id), color: m.color, fontScale,
+          desc: t('w_' + m.id + '_d'),
+          tag: '★ ' + t('w_' + m.id + '_e'),
+          tagColor: '#C8902A',
+        }));
       }
       pushLocked(TARGET.weapons - WEAPON_META.length);
     } else if (tab === 'passives') {
       for (const m of PASSIVE_META) {
-        items.push(this.entry(tab, m.id, { icon: m.icon, title: t('p_' + m.id), color: m.color, fontScale }));
+        items.push(this.entry(tab, m.id, {
+          icon: m.icon, title: t('p_' + m.id), color: m.color, fontScale,
+          desc: t('p_' + m.id + '_d'),
+        }));
       }
       pushLocked(TARGET.passives - PASSIVE_META.length);
     } else if (tab === 'enemies') {
@@ -86,30 +95,47 @@ export class CodexScene extends UIScene {
       for (const m of MAPS) ensureMapAssets(this, m.id);
       const ids = Object.keys(ENEMIES) as EnemyId[];
       for (const id of ids) {
-        items.push(this.entry(tab, id, { icon: ENEMIES[id].tex, title: t('en_' + id), fontScale }));
+        const spec = ENEMIES[id];
+        items.push(this.entry(tab, id, {
+          icon: spec.tex, title: t('en_' + id), fontScale,
+          desc: t('codex_hp') + ' ' + spec.hp + ' · ' + t('codex_spd') + ' ' + spec.speed,
+          tag: spec.boss ? t('codex_boss') : spec.elite ? t('codex_elite') : undefined,
+          tagColor: spec.boss ? '#C06870' : spec.elite ? '#C8902A' : undefined,
+        }));
       }
     } else if (tab === 'chars') {
       for (const c of CHARACTERS) {
-        items.push(this.entry(tab, c.id, { icon: c.tex, iconScale: c.texScale * 0.85, title: t('char_' + c.id), color: c.color, fontScale }));
+        items.push(this.entry(tab, c.id, {
+          icon: c.tex, iconScale: c.texScale * 0.85, title: t('char_' + c.id), color: c.color, fontScale,
+          desc: t('char_' + c.id + '_d'),
+          tag: t('w_' + c.weapon),
+        }));
       }
       pushLocked(TARGET.chars - CHARACTERS.length);
     } else if (tab === 'arcana') {
       for (const m of ARCANA_META) {
-        items.push(this.entry(tab, m.id, { icon: m.icon, title: t('arc_' + m.id), color: m.color, fontScale }));
+        items.push(this.entry(tab, m.id, {
+          icon: m.icon, title: t('arc_' + m.id), color: m.color, fontScale,
+          desc: t('arc_' + m.id + '_d'),
+        }));
       }
       pushLocked(TARGET.arcana - ARCANA_META.length);
     } else {
       for (const m of MAPS) {
         ensureMapAssets(this, m.id);
-        items.push(this.entry(tab, m.id, { icon: m.icon, iconScale: m.iconScale * 0.85, title: t('map_' + m.id), color: m.color, fontScale }));
+        items.push(this.entry(tab, m.id, {
+          icon: m.icon, iconScale: m.iconScale * 0.85, title: t('map_' + m.id), color: m.color, fontScale,
+          desc: t('codex_boss') + '：' + t('en_' + m.bossId),
+          tag: m.minutes + ' ' + t('ui_minutes'),
+        }));
       }
       pushLocked(TARGET.maps - MAPS.length);
     }
 
     buildCardGrid(this.panel, {
       items,
-      minCellW: this.vp.bp === 'compact' ? 104 : 130,
-      aspect: 1.0,
+      minCellW: this.vp.bp === 'compact' ? 132 : 168,
+      aspect: 1.16,
     });
     this.panel.scrollY = this.savedScroll[tab] ?? 0;
 

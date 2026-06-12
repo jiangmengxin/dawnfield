@@ -7,7 +7,7 @@ import { CharacterSpec, getCharacter } from '../content/characters';
 import { DIFFICULTY } from '../content/difficulty';
 import { endlessCoinMul } from '../content/endless';
 import { PASSIVE_FX } from '../content/passives';
-import { PLAYER, xpForLevel } from '../content/player';
+import { ESSENCE, PLAYER, xpForLevel } from '../content/player';
 import { powerUpBonus, PowerUpBonus } from '../content/shop';
 import { getSave } from './save';
 
@@ -51,6 +51,10 @@ export class RunState {
   pendingArcana = false;
   /** 本局已持有的规则卡（modifier 实体在 GameScene.modifiers） */
   arcana: ArcanaId[] = [];
+  /** 晨露精华（M12 Limit Break）：满构筑后升级溢出选项的微量永续成长，本局有效不入存档 */
+  essence = { dmg: 0, cd: 0, area: 0 };
+  /** 地图升级节奏乘子（M12，= MapSpec.xpK；GameScene.create 写入） */
+  mapXpK = 1;
   difficultyHp = 1;
   passives = new Map<PassiveId, number>();
   stats: Stats;
@@ -93,10 +97,12 @@ export class RunState {
     const pu = this.pu;
     const c = this.char;
     const m = c.mods ?? {};
+    const ess = this.essence; // 晨露精华（M12）：线性微量叠加；冷却走乘方防无限叠加越过下限
     return {
-      dmg: (1 + PASSIVE_FX.power * p('power')) * (1 + pu.dmg) * (m.dmg ?? 1),
-      cd: Math.max(0.4, (1 - PASSIVE_FX.lens * p('lens')) * pu.cdMul * (m.cd ?? 1)),
-      area: (1 + PASSIVE_FX.cloud * p('cloud') + PASSIVE_FX.whistleArea * p('whistle')) * (1 + pu.area) * (m.area ?? 1),
+      dmg: (1 + PASSIVE_FX.power * p('power')) * (1 + pu.dmg) * (m.dmg ?? 1) * (1 + ESSENCE.dmg * ess.dmg),
+      cd: Math.max(0.4, (1 - PASSIVE_FX.lens * p('lens')) * pu.cdMul * (m.cd ?? 1) * Math.pow(1 - ESSENCE.cd, ess.cd)),
+      area: (1 + PASSIVE_FX.cloud * p('cloud') + PASSIVE_FX.whistleArea * p('whistle')) * (1 + pu.area) * (m.area ?? 1)
+        * (1 + ESSENCE.area * ess.area),
       magnet: PLAYER.pickup * (1 + PASSIVE_FX.battery * p('battery') + PASSIVE_FX.trellisMagnet * p('trellis') + pu.magnet) * (m.magnet ?? 1),
       moveSpeed: c.speed * (1 + PASSIVE_FX.windMove * p('wind') + PASSIVE_FX.featherMove * p('feather') + pu.speed),
       projSpeed: (1 + PASSIVE_FX.windProj * p('wind') + PASSIVE_FX.stardustProj * p('stardust') + PASSIVE_FX.whistleProj * p('whistle')) * (m.projSpeed ?? 1),
@@ -110,7 +116,7 @@ export class RunState {
   }
 
   addXp(v: number): void {
-    this.xp += v * this.stats.xpGain * DIFFICULTY[this.diff].xpMul;
+    this.xp += v * this.stats.xpGain * DIFFICULTY[this.diff].xpMul * this.mapXpK;
     while (this.xp >= this.xpNeed) {
       this.xp -= this.xpNeed;
       this.level++;

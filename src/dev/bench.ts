@@ -1,0 +1,123 @@
+// DPS 基准（M12，仅 DEV；生产构建经动态 import 摇树移除）
+// 方案：真实 GameScene 挂 bench 模式（无波次/机制/成就），三环 24 标靶
+// （r56×8 近战环 / r110×8 中环 / r260×8 远程环——比原方案 r120/r260 多一近战环，
+//  否则 petal/lantern/blade/mine 等贴身武器测不到目标），
+// 16 武器 ×{Lv5, 进化}=32 项 ×3 轮取均值，每项固定步长加速模拟 60s。
+// 注意：blade/mallet/prism/boomerang 等以 scene.time.delayedCall / tween 落伤害（真实时钟），
+// 步进时同步手动泵 scene.time 与 tweens（模拟时间驱动），否则后台标签页计时器被节流会把
+// 延迟伤害无限挂起（投射物清理也停摆，单轮可拖到分钟级）；轮间仍留短暂排空窗。
+import { WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
+import type { WeaponId } from '../content/ids';
+import { FONT, t } from '../i18n';
+import { SFX } from '../audio/sound';
+import type { Enemy } from '../systems/EnemySystem';
+import type { GameScene } from '../scenes/Game';
+
+const SIM_SECONDS = 60;
+const ROUNDS = 3;
+const DT = 1 / 60;
+const RINGS: Array<[r: number, n: number]> = [[56, 8], [110, 8], [260, 8]];
+
+const sleep = (ms: number): Promise<void> => new Promise((res) => setTimeout(res, ms));
+
+function totalFor(gs: GameScene, id: WeaponId): number {
+  let sum = 0;
+  for (const [src, , total] of gs.dps.entries()) {
+    if (src === id) sum += total;
+  }
+  return sum;
+}
+
+export async function runBench(gs: GameScene): Promise<void> {
+  const wasMuted = SFX.muted;
+  SFX.setMuted(true); // 加速模拟期高频命中音会刷爆音频图
+
+  const label = gs.add.text(16, 16, 'DPS bench…', {
+    fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: '#5A5248',
+    stroke: '#FFFFFF', strokeThickness: 4,
+  }).setScrollFactor(0).setDepth(1e9);
+
+  gs.player.setPosition(0, 0);
+
+  // 标靶：blob 换皮覆写为 不动/不伤/不退/不掉珠 的木桩
+  const targets: Enemy[] = [];
+  for (const [r, n] of RINGS) {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + r * 0.01; // 各环错相
+      targets.push(gs.enemies.spawn('blob', Math.cos(a) * r, Math.sin(a) * r));
+    }
+  }
+  const resetTargets = (): void => {
+    for (const e of targets) {
+      e.hp = e.maxHp = 1e9;
+      e.spd = 0;
+      e.dmg = 0;
+      e.xpVal = 0;
+      e.knockMul = 0;
+      e.kvx = e.kvy = 0;
+    }
+  };
+
+  // 中性化属性：商店强化/角色偏移归一；crit 压成 0（基础 0.1 + (-0.1)）保证低方差
+  const neutralize = (): void => {
+    Object.assign(gs.run.stats, {
+      dmg: 1, cd: 1, area: 1, magnet: 0, moveSpeed: 0, projSpeed: 1,
+      maxHp: 9999, xpGain: 1, coinGain: 1, armor: 0, regen: 0, crit: -1,
+    });
+  };
+
+  const results: Array<{ id: WeaponId; lv5: number; evo: number }> = [];
+  const totalSteps = WEAPON_META.length * 2 * ROUNDS;
+  let step = 0;
+  const frames = Math.round(SIM_SECONDS / DT);
+
+  for (const meta of WEAPON_META) {
+    const row = { id: meta.id, lv5: 0, evo: 0 };
+    for (const mode of ['lv5', 'evo'] as const) {
+      let acc = 0;
+      for (let round = 0; round < ROUNDS; round++) {
+        gs.weapons.removeAll();
+        gs.benchReset();
+        resetTargets();
+        for (let i = 0; i < WEAPON_MAX_LEVEL; i++) gs.weapons.addOrUpgrade(meta.id);
+        if (mode === 'evo') gs.weapons.evolve(meta.id);
+        neutralize();
+        const before = totalFor(gs, meta.id);
+        let fakeNow = performance.now();
+        for (let f = 0; f < frames; f++) {
+          fakeNow += DT * 1000;
+          gs.benchTick(DT);
+          // 手动泵场景计时器：delayedCall 伤害链按模拟时间结算（tween 仅视觉，不泵）
+          gs.time.update(fakeNow, DT * 1000);
+          if (f % 900 === 899) await sleep(0); // 让出主线程，页面保持响应
+        }
+        await sleep(60); // 残余真实时钟回调排空
+        acc += (totalFor(gs, meta.id) - before) / SIM_SECONDS;
+        step++;
+        label.setText(`DPS bench ${step}/${totalSteps} · ${t('w_' + meta.id)} ${mode}`);
+      }
+      row[mode] = acc / ROUNDS;
+    }
+    results.push(row);
+  }
+
+  // 输出：console.table + 可直接落档 docs/balance/ 的 Markdown（window.__benchResult）
+  const sorted = [...results].sort((a, b) => b.lv5 - a.lv5);
+  const lv5s = results.map((r) => r.lv5).sort((a, b) => a - b);
+  const median = (lv5s[7] + lv5s[8]) / 2;
+  const fmt = (v: number): string => v.toFixed(1);
+  const md = [
+    '| 武器 | Lv5 DPS | /中位 | 进化 DPS | 进化/Lv5 |',
+    '|------|--------:|------:|---------:|---------:|',
+    ...sorted.map((r) => `| ${r.id} | ${fmt(r.lv5)} | ${(r.lv5 / median).toFixed(2)}x | ${fmt(r.evo)} | ${(r.evo / Math.max(1, r.lv5)).toFixed(2)}x |`),
+    '',
+    `中位（Lv5）= ${fmt(median)}；标靶三环 24（r56/r110/r260 各 8）；每项 ${SIM_SECONDS}s ×${ROUNDS} 轮取均值；属性全中性、暴击关闭。`,
+  ].join('\n');
+  console.table(results.map((r) => ({
+    weapon: r.id, lv5: Math.round(r.lv5), ratio: (r.lv5 / median).toFixed(2), evo: Math.round(r.evo),
+  })));
+  (window as unknown as { __benchResult: string }).__benchResult = md;
+  SFX.setMuted(wasMuted);
+  label.setText('DPS bench 完成：console.table / window.__benchResult\n点击任意处返回主菜单');
+  gs.input.once('pointerup', () => gs.scene.start('title'));
+}

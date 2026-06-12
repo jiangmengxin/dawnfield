@@ -69,7 +69,7 @@ const strafeShoot: BehaviorFn = (e, ctx, dt, nx, ny, dist, out) => {
 };
 
 /** 蓄力—冲刺—硬直 循环（冲冲/蓟滚滚/蓟王球） */
-const dash: BehaviorFn = (e, _ctx, dt, nx, ny, dist, out) => {
+const dash: BehaviorFn = (e, ctx, dt, nx, ny, dist, out) => {
   const cfg = ENEMIES[e.id].dash ?? DASHER;
   e.stateT -= dt;
   if (e.dashState === 'walk') {
@@ -78,6 +78,8 @@ const dash: BehaviorFn = (e, _ctx, dt, nx, ny, dist, out) => {
     if (dist < cfg.triggerDist) {
       e.dashState = 'tele';
       e.stateT = cfg.telegraph;
+      // M12 telegraph 规范：蓄力期沿冲刺方向画预警线（统一警示色阶）
+      ctx.fx.teleLine(e.x, e.y, nx, ny, Math.min(cfg.dashSpeed * cfg.dashTime, dist + 60), cfg.telegraph);
     }
   } else if (e.dashState === 'tele') {
     // 蓄力抖动
@@ -145,7 +147,7 @@ const orbit: BehaviorFn = (e, _ctx, _dt, nx, ny, dist, out) => {
 };
 
 /** 瞄准—直线俯冲穿场—再瞄准（小乌鸫）：冲过头不回头，扫过式压迫 */
-const swoop: BehaviorFn = (e, _ctx, dt, nx, ny, _dist, out) => {
+const swoop: BehaviorFn = (e, ctx, dt, nx, ny, _dist, out) => {
   e.stateT -= dt;
   if (e.dashState !== 'dash') {
     // 瞄准期缓慢漂移
@@ -156,6 +158,8 @@ const swoop: BehaviorFn = (e, _ctx, dt, nx, ny, _dist, out) => {
       e.stateT = SWOOP.fly;
       e.dashDirX = nx;
       e.dashDirY = ny;
+      // M12 telegraph 规范：俯冲启动瞬间沿穿场路径画预警线（高速横穿提前可读）
+      ctx.fx.teleLine(e.x, e.y, nx, ny, e.spd * SWOOP.mul * 0.9, 0.45);
     }
   } else {
     out.mvx = e.dashDirX * e.spd * SWOOP.mul;
@@ -263,7 +267,9 @@ const ambush: BehaviorFn = (e, ctx, dt, nx, ny, dist, out) => {
       e.dashState = 'dash';
       e.stateT = AMBUSH.burst;
       e.setAlpha(1);
-      ctx.fx.ring(e.x, e.y, DEATH_COLOR[e.id], 1.8, 0.4);
+      // M12 telegraph 规范：惊醒闪白 + 警示环（时长色阶与 dash/swoop 统一）
+      ctx.fx.flash(e);
+      ctx.fx.ring(e.x, e.y, 0xe06060, 2.2, 0.45);
       SFX.swish();
     }
     return;

@@ -3,7 +3,7 @@
 // Boss 为每图门面，单独手绘（与草甸 e_boss 同待遇）
 import { BRAMBLE, GROVE, HILLS, LAVENDER, NOCTURNE, POND, PAL, SUMMIT, cssOf } from '../palette';
 import type { MapId } from '../../content/ids';
-import { blobBody, Ctx, EyeStyle, eyes, makeTex, petalShape, softGlow, star } from './core';
+import { blobBody, Ctx, EyeStyle, eyes, makeBulletTex, makeTex, petalShape, softGlow, star } from './core';
 
 function rgba(c: number, a: number): string {
   return `rgba(${(c >> 16) & 0xff},${(c >> 8) & 0xff},${c & 0xff},${a})`;
@@ -607,7 +607,7 @@ function createPondAssets(scene: Phaser.Scene): void {
   });
 
   // 泡泡弹（水枪鱼/泡泡大王弹幕）
-  makeTex(scene, 'pz_bub', 18, 18, (ctx) => {
+  makeBulletTex(scene, 'pz_bub', 18, 18, (ctx) => {
     ctx.beginPath();
     ctx.arc(9, 9, 6.5, 0, Math.PI * 2);
     ctx.fillStyle = rgba(POND.pool, 0.55);
@@ -839,7 +839,7 @@ function createHillsAssets(scene: Phaser.Scene): void {
   });
 
   // 羽毛弹（风暴鸦弹幕）
-  makeTex(scene, 'hz_feather', 20, 28, (ctx) => {
+  makeBulletTex(scene, 'hz_feather', 20, 28, (ctx) => {
     petalShape(ctx, 10, 12, 18, 5.5, 0, cssOf(HILLS.feather), cssOf(HILLS.crowEdge));
     ctx.strokeStyle = cssOf(HILLS.crowEdge);
     ctx.lineWidth = 1.2;
@@ -1081,7 +1081,7 @@ function createGroveAssets(scene: Phaser.Scene): void {
   });
 
   // 孢子弹（孢孢菇/蘑菇长老弹幕）
-  makeTex(scene, 'gz_spore', 18, 18, (ctx) => {
+  makeBulletTex(scene, 'gz_spore', 18, 18, (ctx) => {
     softGlow(ctx, 9, 9, 8, rgba(GROVE.spore, 0.6));
     ctx.beginPath();
     ctx.arc(9, 9, 5.5, 0, Math.PI * 2);
@@ -1380,7 +1380,7 @@ function createLavenderAssets(scene: Phaser.Scene): void {
   });
 
   // 刺果弹（刺莓莓）
-  makeTex(scene, 'lz_thorn', 16, 22, (ctx) => {
+  makeBulletTex(scene, 'lz_thorn', 16, 22, (ctx) => {
     petalShape(ctx, 8, 11, 15, 4.5, 0, cssOf(LAVENDER.thorn), cssOf(LAVENDER.thornDeep));
     ctx.strokeStyle = cssOf(LAVENDER.thornDeep);
     ctx.lineWidth = 1.1;
@@ -1615,7 +1615,7 @@ function createBrambleAssets(scene: Phaser.Scene): void {
   });
 
   // 莓果弹（浆果炮手/莓刺熊王弹幕）
-  makeTex(scene, 'bz_berry', 18, 18, (ctx) => {
+  makeBulletTex(scene, 'bz_berry', 18, 18, (ctx) => {
     ctx.beginPath();
     ctx.arc(9, 9, 6, 0, Math.PI * 2);
     ctx.fillStyle = cssOf(BRAMBLE.berryShot);
@@ -1867,7 +1867,7 @@ function createNocturneAssets(scene: Phaser.Scene): void {
   });
 
   // 星屑弹（星火花/星角鹿王弹幕）
-  makeTex(scene, 'nz_star', 18, 18, (ctx) => {
+  makeBulletTex(scene, 'nz_star', 18, 18, (ctx) => {
     softGlow(ctx, 9, 9, 8, rgba(NOCTURNE.starShot, 0.7));
     star(ctx, 9, 9, 5, 6.5, 3, cssOf(NOCTURNE.starShot), cssOf(NOCTURNE.starShotDeep));
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
@@ -2098,7 +2098,7 @@ function createSummitAssets(scene: Phaser.Scene): void {
   });
 
   // 夜瓣弹（夜昙昙/永夜枭弹幕）
-  makeTex(scene, 'sz_petal', 18, 24, (ctx) => {
+  makeBulletTex(scene, 'sz_petal', 18, 24, (ctx) => {
     softGlow(ctx, 9, 12, 8, rgba(SUMMIT.petalShot, 0.5));
     petalShape(ctx, 9, 12, 16, 5, 0, cssOf(SUMMIT.petalShot), cssOf(SUMMIT.petalShotDeep));
     ctx.strokeStyle = rgba(SUMMIT.petalShotDeep, 0.7);

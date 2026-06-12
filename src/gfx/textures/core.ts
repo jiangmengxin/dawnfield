@@ -28,6 +28,40 @@ export function makeTex(scene: Phaser.Scene, key: string, w: number, h: number, 
   frame.setTrim(w, h, 0, 0, w, h);
 }
 
+/** 敌方弹体统一规范（M12 可读性）：内容外套 1.2px 暗描边 + 纸白柔光外发光，
+ *  终局 300+ 同屏时弹体从尸潮/拾取物中分离可辨。画布四周加 4px 余量容纳光晕。 */
+export function makeBulletTex(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: Ctx, w: number, h: number) => void): void {
+  const pad = 4;
+  makeTex(scene, key, w + pad * 2, h + pad * 2, (ctx) => {
+    // 内容画进离屏高倍画布，再以剪影合成描边/发光（描边形状与具体弹体解耦）
+    const ss = 4;
+    const off = document.createElement('canvas');
+    off.width = w * ss;
+    off.height = h * ss;
+    const octx = off.getContext('2d') as Ctx;
+    octx.scale(ss, ss);
+    draw(octx, w, h);
+    const sil = document.createElement('canvas');
+    sil.width = off.width;
+    sil.height = off.height;
+    const sctx = sil.getContext('2d')!;
+    sctx.drawImage(off, 0, 0);
+    sctx.globalCompositeOperation = 'source-in';
+    sctx.fillStyle = 'rgba(74,62,52,0.95)';
+    sctx.fillRect(0, 0, sil.width, sil.height);
+    // 柔光外发光（纸白）+ 8 向偏移暗描边
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,253,246,0.95)';
+    ctx.shadowBlur = 3.5;
+    const o = 1.2;
+    for (const [dx, dy] of [[-o, 0], [o, 0], [0, -o], [0, o], [-o, -o], [o, -o], [-o, o], [o, o]]) {
+      ctx.drawImage(sil, 0, 0, sil.width, sil.height, pad + dx, pad + dy, w, h);
+    }
+    ctx.restore();
+    ctx.drawImage(off, 0, 0, off.width, off.height, pad, pad, w, h);
+  });
+}
+
 // ---------- 绘制辅助 ----------
 
 export function blobBody(ctx: Ctx, cx: number, cy: number, r: number, fill: number, edge: number, sx = 1, sy = 1): void {

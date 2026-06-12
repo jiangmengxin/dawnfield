@@ -95,7 +95,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   bumble:    { hp: 15,   speed: 95,  dmg: 9,  xp: 1,  radius: 10, tex: 'e_bumble',    knockMul: 0.9,  behavior: 'swoop' },
   flutter:   { hp: 18,   speed: 80,  dmg: 9,  xp: 1,  radius: 12, tex: 'e_flutter',   knockMul: 1,    behavior: 'spiral' },
   snippy:    { hp: 32,   speed: 64,  dmg: 13, xp: 2,  radius: 13, tex: 'e_snippy',    knockMul: 0.7,  behavior: 'dash',
-               dash: { triggerDist: 270, telegraph: 0.4, dashSpeed: 380, dashTime: 0.45, recover: 0.85 } },
+               dash: { triggerDist: 270, telegraph: 0.45, dashSpeed: 380, dashTime: 0.45, recover: 0.85 } }, // telegraph ≥0.45（M12 规范）
   pompon:    { hp: 26,   speed: 60,  dmg: 10, xp: 2,  radius: 13, tex: 'e_pompon',    knockMul: 1.1,  behavior: 'hop' },
   briar:     { hp: 34,   speed: 48,  dmg: 9,  xp: 2,  radius: 13, tex: 'e_briar',     knockMul: 0.8,  behavior: 'strafeShoot',
                shoot: { range: 270, cd: 3.2, speed: 170, dmg: 10, tex: 'lz_thorn' } },

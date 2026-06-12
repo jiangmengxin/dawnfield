@@ -3,14 +3,22 @@ import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { POWERUPS, PowerUpSpec, powerUpPrice } from '../content/shop';
+import type { PowerUpId } from '../content/ids';
 import { Meta } from '../core/MetaState';
 import { evalAchievements } from '../systems/AchievementTracker';
 import { UIScene } from '../ui/UIScene';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
-import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
+import { Card } from '../ui/widgets/Card';
 import { Modal } from '../ui/widgets/Modal';
 import { UIButton } from '../ui/widgets/UIButton';
 import { THEME } from '../ui/theme';
+
+// M12 商店分组（纯展示层，不动数据）：局内操控 / 战斗 / 资源
+const SHOP_GROUPS: Array<{ key: string; ids: PowerUpId[] }> = [
+  { key: 'shop_grpControl', ids: ['revive', 'reroll', 'banish', 'skip'] },
+  { key: 'shop_grpCombat', ids: ['power', 'vitality', 'haste', 'area', 'speed', 'armor', 'regen', 'luck'] },
+  { key: 'shop_grpEconomy', ids: ['magnet', 'growth', 'greed'] },
+];
 
 export class ShopScene extends UIScene {
   private panel: ScrollPanel | null = null;
@@ -49,26 +57,45 @@ export class ShopScene extends UIScene {
 
     this.panel = new ScrollPanel(this, { x: content.x, y: top, w: content.w, h: content.y + content.h - top });
 
+    // M12 三分组小节头 + 网格（沿用 CardGrid 的列宽算法；onTap 套拖动守卫）
+    const panel = this.panel;
     const fontScale = vp.bp === 'compact' ? 0.9 : 1;
-    const items: CardGridItem[] = POWERUPS.map((spec) => {
-      const lv = Meta.powerUpLevel(spec.id);
-      const maxed = lv >= spec.max;
-      const price = powerUpPrice(spec, lv);
-      return {
-        icon: spec.icon,
-        title: t('pu_' + spec.id),
-        desc: t('pu_' + spec.id + '_d') + '\n' + (maxed ? t('shop_max') : t('shop_price') + ' ' + price),
-        tag: 'Lv ' + lv + '/' + spec.max,
-        tagColor: maxed ? '#C8902A' : undefined,
-        color: lv > 0 ? 0xe2b452 : undefined,
-        fontScale,
-        onTap: () => this.tryBuy(spec),
-      };
-    });
-    buildCardGrid(this.panel, {
-      items,
-      minCellW: vp.bp === 'compact' ? 150 : 175,
-      aspect: 1.08,
+    const gap = THEME.gapSm;
+    const minCellW = vp.bp === 'compact' ? 150 : 175;
+    const cols = Math.max(1, Math.floor((panel.view.w - 10 + gap) / (minCellW + gap)));
+    const cw = (panel.view.w - 10 - gap * (cols - 1)) / cols;
+    const ch = cw * 1.08;
+    panel.setContent((add) => {
+      let y = 2;
+      for (const grp of SHOP_GROUPS) {
+        const header = this.add.text(4, y, t(grp.key), {
+          fontFamily: FONT, fontSize: vp.fs(14) + 'px', fontStyle: 'bold', color: PAL.inkSoft,
+        });
+        add(header);
+        y += header.height + 8;
+        const specs = grp.ids.map((id) => POWERUPS.find((s) => s.id === id)!);
+        specs.forEach((spec, i) => {
+          const lv = Meta.powerUpLevel(spec.id);
+          const maxed = lv >= spec.max;
+          const price = powerUpPrice(spec, lv);
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          add(new Card(this, col * (cw + gap) + cw / 2, y + row * (ch + gap) + ch / 2, {
+            w: cw, h: ch, layout: 'column',
+            icon: spec.icon,
+            title: t('pu_' + spec.id),
+            desc: t('pu_' + spec.id + '_d') + '\n' + (maxed ? t('shop_max') : t('shop_price') + ' ' + price),
+            tag: 'Lv ' + lv + '/' + spec.max,
+            tagColor: maxed ? '#C8902A' : undefined,
+            color: lv > 0 ? 0xe2b452 : undefined,
+            fontScale,
+            onTap: () => { if (!panel.dragMoved) this.tryBuy(spec); },
+          }));
+        });
+        const rows = Math.ceil(specs.length / cols);
+        y += rows * ch + (rows - 1) * gap + THEME.gapMd;
+      }
+      return y + THEME.gapSm;
     });
     this.panel.scrollY = this.savedScroll;
   }

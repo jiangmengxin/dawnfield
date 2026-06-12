@@ -2,7 +2,7 @@
 // 宝箱分层：可进化 → 进化；否则概率再得规则卡；否则 → 已持有项升级×N；无可升级 → 金币
 import { ARCANA, ARCANA_META } from '../content/arcana';
 import { CHEST, WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
-import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
+import { ESSENCE, MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
 import { PASSIVE_MAX_LEVEL, PASSIVE_META, PASSIVE_FX } from '../content/passives';
 import type { ArcanaId, PassiveId, WeaponId } from '../content/ids';
 import { PAL } from '../gfx/palette';
@@ -121,9 +121,13 @@ export class LevelUpSystem implements RunSystem {
   private buildOffers(): Offer[] {
     const cands = this.buildCands();
     if (cands.length === 0) {
+      // 晨露精华（M12 Limit Break）：满构筑后升级溢出 = 三轴微量永续成长 + 保留回血
+      // （reroll/banish 对精华卡不可用——HUD 侧禁用；skip 照常可用）
       return [
+        { kind: 'essence', essence: 'dmg', isNew: false, toLevel: 0 },
+        { kind: 'essence', essence: 'cd', isNew: false, toLevel: 0 },
+        { kind: 'essence', essence: 'area', isNew: false, toLevel: 0 },
         { kind: 'heal', isNew: false, toLevel: 0 },
-        { kind: 'gold', isNew: false, toLevel: 0 },
       ];
     }
     const out: Offer[] = [];
@@ -196,8 +200,13 @@ export class LevelUpSystem implements RunSystem {
       ctx.recomputeStats();
       if (id === 'bloom') ctx.run.heal(PASSIVE_FX.bloomHp);
       if (id === 'snack') ctx.run.heal(PASSIVE_FX.snackHp);
+    } else if (offer.kind === 'essence' && offer.essence) {
+      ctx.run.essence[offer.essence]++;
+      ctx.recomputeStats();
+      ctx.fx.ring(ctx.player.x, ctx.player.y, 0xf2cf6e, 6, 0.55);
+      SFX.chime();
     } else if (offer.kind === 'heal') {
-      ctx.run.heal(40);
+      ctx.run.heal(ESSENCE.heal);
       SFX.heal();
     } else if (offer.kind === 'gold') {
       ctx.run.addXp(40);

@@ -134,6 +134,8 @@ export class ResultScene extends Phaser.Scene {
       [t('statLevel'), String(r.level)],
       // M10 复活注记：用过才显示（金币行保持末位金色）
       ...(r.revivesUsed > 0 ? [[t('statRevives'), '♥×' + r.revivesUsed] as [string, string]] : []),
+      // M12 晨露精华：满构筑后的溢出成长张数（拿到过才显示）
+      ...(r.essence > 0 ? [[t('statEssence'), '✦×' + r.essence] as [string, string]] : []),
       [t('statCoins'), '+' + r.coins],
     ];
     const rowGap = 30;

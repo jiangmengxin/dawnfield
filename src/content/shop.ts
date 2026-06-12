@@ -11,8 +11,8 @@ export interface PowerUpSpec {
 }
 
 // M10 经济扩展：4 个新条目插列表前部（revive 最贵最显眼即广告位）；
-// 现有 6 项 max 5→8（高阶区间溢价 ×4）；speed/magnet/greed/armor/regen 保持原档
-// （移速与经济类继续扩档会破坏平衡）。总池 1,530 + 3,000 + 5,376 = 9,906 金币
+// 现有 6 项 max 5→8；speed/magnet/greed/armor/regen 保持原档（移速与经济类继续扩档会破坏平衡）。
+// M12：lv≥5 溢价 ×4 断崖改 ×2/×3/×4 阶梯。总池 1,530 + 3,000 + 4,160 = 8,690 金币
 export const POWERUPS: PowerUpSpec[] = [
   { id: 'revive',   icon: 'icon_revive',  max: 2, base: 600, costs: [600, 900] },
   { id: 'reroll',   icon: 'icon_reroll',  max: 3, base: 120, costs: [120, 240, 360] },
@@ -32,10 +32,11 @@ export const POWERUPS: PowerUpSpec[] = [
 ];
 
 /** 第 lv 级（0 起）→ lv+1 级的价格：显式价格表优先；
- *  公式条目前 5 级曲线不变（新手前 2 小时体验零变化），lv≥5 高阶区间溢价 ×4 */
+ *  公式条目前 5 级曲线不变（新手前 2 小时体验零变化），lv≥5 高阶区间阶梯溢价
+ *  ×2/×3/×4（lv5/6/7；M12 削平原 ×4 断崖） */
 export function powerUpPrice(spec: PowerUpSpec, lv: number): number {
   if (spec.costs) return spec.costs[Math.min(lv, spec.costs.length - 1)];
-  return spec.base * (lv + 1) * (lv >= 5 ? 4 : 1);
+  return spec.base * (lv + 1) * (lv >= 5 ? lv - 3 : 1);
 }
 
 // 每级效果数值（调参只改此处）

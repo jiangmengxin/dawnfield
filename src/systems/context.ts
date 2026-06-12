@@ -44,8 +44,10 @@ export interface EnemyBulletSpec {
 }
 
 export interface Offer {
-  kind: 'weapon' | 'passive' | 'heal' | 'gold';
+  kind: 'weapon' | 'passive' | 'heal' | 'gold' | 'essence';
   id?: WeaponId | PassiveId;
+  /** 晨露精华轴向（M12，kind='essence'）：满构筑后升级溢出的微量永续成长 */
+  essence?: 'dmg' | 'cd' | 'area';
   isNew: boolean;
   toLevel: number;
 }
@@ -71,6 +73,7 @@ export interface RunLaunchData {
   mapId: string;
   mode?: RunMode; // 缺省 'normal'
   diff?: 0 | 1 | 2; // 狂暴档位，缺省 0
+  bench?: boolean; // M12 DPS 基准模式（仅 DEV 响应）
 }
 
 export interface RunResult {
@@ -86,6 +89,7 @@ export interface RunResult {
   diff: 0 | 1 | 2; // 狂暴档位（M11 实装）
   cycle: number; // 无尽轮次（M11 实装，普通局恒 0）
   revivesUsed: number; // 本局已用复活次数（M10；M11 无尽记录行旁标注）
+  essence: number; // 晨露精华总张数（M12，结算页展示）
   build: Array<{ id: WeaponId; level: number; evolved: boolean }>;
 }
 
@@ -127,6 +131,8 @@ export interface CombatContext {
   spawnCoin(x: number, y: number, value: number): void;
   spawnPickup(kind: 'heart' | 'chest', x: number, y: number): void;
   recomputeStats(): void;
+  /** BGM 强度临时抬升（M12 surge 中场事件；M18 Boss 战切换复用此通道） */
+  bgmBoost(sec: number): void;
 }
 
 /** 规则卡钩子（10 张 Arcana，M9 实装于 systems/arcana.ts；调用点 M2 起全挂） */

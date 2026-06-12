@@ -181,7 +181,12 @@ export class HUDScene extends Phaser.Scene {
     this.killText.setPosition(cx - 8, safe.y + 64).setVisible(!compact);
     this.coinIcon.setPosition(cx - 23, safe.y + 92).setVisible(!compact);
     this.coinText.setPosition(cx - 8, safe.y + 92).setVisible(!compact);
-    this.levelText.setPosition(safe.x + safe.w - 14, safe.y + 12).setVisible(!compact);
+    // M12 HUD 打磨：竖屏也常显等级（右缘按钮下方小号），不再只进暂停面板
+    if (compact) {
+      this.levelText.setOrigin(1, 0).setFontSize(13).setPosition(safe.x + safe.w - 12, safe.y + 64).setVisible(true);
+    } else {
+      this.levelText.setOrigin(1, 0).setFontSize(16).setPosition(safe.x + safe.w - 14, safe.y + 12).setVisible(true);
+    }
     this.warnText.setPosition(cx, safe.y + safe.h * 0.3);
     this.debugText.setPosition(safe.x + 10, safe.y + safe.h - 8);
     this.buildIconRow();
@@ -222,13 +227,18 @@ export class HUDScene extends Phaser.Scene {
     if (hpK > 0.03) g.fillRoundedRect(hpX, hpY, Math.max(12, hpW * hpK), 16, 8);
     g.lineStyle(2, 0xe0d4bc, 1);
     g.strokeRoundedRect(hpX, hpY, hpW, 16, 8);
+    // M12 HUD 打磨：低血（<30%）红描边呼吸脉冲提示
+    if (hpK < 0.3) {
+      g.lineStyle(2.5, 0xe05060, 0.4 + 0.4 * Math.abs(Math.sin(run.elapsed * 5)));
+      g.strokeRoundedRect(hpX - 2.5, hpY - 2.5, hpW + 5, 21, 10);
+    }
     this.hpText.setPosition(hpX + 6, hpY + 8).setText(Math.ceil(run.hp) + ' / ' + run.stats.maxHp);
 
-    // 计时
+    // 计时（Boss 战期间转金色，强化阶段感）
     const sec = Math.floor(run.elapsed);
     const mm = String(Math.floor(sec / 60)).padStart(2, '0');
     const ss = String(sec % 60).padStart(2, '0');
-    this.timerText.setText(mm + ':' + ss);
+    this.timerText.setText(mm + ':' + ss).setColor(this.bossVisible ? '#C8902A' : PAL.inkCss);
 
     // 调试信息（设置中开启）：FPS / 实体计数 / 动态上限 + 波次预览 + 武器 DPS（M8）
     const dbg = getSettings();
@@ -474,6 +484,30 @@ export class HUDScene extends Phaser.Scene {
     this.overlay.push(title);
   }
 
+  /** 选卡构筑栏（M12）：标题下一行 6+6 微缩令牌 + 精华计数；矮屏（<560）空间不足时省略 */
+  private addBuildBar(): void {
+    const h = this.vp.h;
+    if (h < 560) return;
+    const w = this.vp.w;
+    const slots = [...this.weaponSlots(), ...this.passiveSlots()];
+    const gap = 4;
+    const size = Math.max(18, Math.min(24, (w - 64) / slots.length - gap));
+    const ess = this.gs.run.essence;
+    const essN = ess.dmg + ess.cd + ess.area;
+    const extraW = essN > 0 ? 44 : 0;
+    const rowW = slots.length * (size + gap) - gap;
+    const x0 = w / 2 - (rowW + extraW) / 2;
+    const y = h * 0.14 + 24;
+    this.overlay.push(...this.drawSlotRow(x0, y, size, slots, 101, gap));
+    if (essN > 0) {
+      const txt = this.add.text(x0 + rowW + 10, y + size / 2, '✦×' + essN, {
+        fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#C8902A',
+        stroke: '#FFFFFF', strokeThickness: 3,
+      }).setOrigin(0, 0.5).setDepth(101);
+      this.overlay.push(txt);
+    }
+  }
+
   private showLevelUp(offers: Offer[]): void {
     // 调试：自动选第一张卡，跳过选卡界面
     if (getSettings().autoPick && offers.length > 0) {
@@ -485,6 +519,7 @@ export class HUDScene extends Phaser.Scene {
     this.pendingOffers = offers;
     this.overlay.push(this.addVeil());
     this.addPickTitle(t('levelUpTitle'));
+    this.addBuildBar(); // M12 选卡构筑栏：当前持有一览，放逐/重抽决策有依据
     const banishLeft = this.gs.run.banishes > 0;
     offers.forEach((offer, i) => {
       // M10 放逐角标：仅 weapon/passive 卡；次数耗尽显示置灰角标
@@ -511,7 +546,9 @@ export class HUDScene extends Phaser.Scene {
       w: bw, h: 40, label: t('lvl_skip').replace('{n}', String(run.skips)),
       fontSize: 16, onTap: () => this.doSkip(),
     });
-    if (run.rerolls <= 0) reroll.setEnabled(false);
+    // 精华三选一（M12）不可重抽（重抽对永续成长卡无意义）；skip 照常可用
+    const hasEssence = this.pendingOffers.some((o) => o.kind === 'essence');
+    if (run.rerolls <= 0 || hasEssence) reroll.setEnabled(false);
     if (run.skips <= 0) skip.setEnabled(false);
     reroll.setDepth(101);
     skip.setDepth(101);
@@ -666,6 +703,18 @@ export class HUDScene extends Phaser.Scene {
 
   private offerInfo(offer: Offer): PickCardInfo {
     const tagColor = offer.isNew ? '#C06870' : '#B8924A';
+    if (offer.kind === 'essence') {
+      // 晨露精华（M12 满构筑溢出）：金边卡 + 永续标签
+      const icon = offer.essence === 'dmg' ? 'icon_power' : offer.essence === 'cd' ? 'icon_lens' : 'icon_cloud';
+      return {
+        icon,
+        name: t('ess_' + offer.essence),
+        desc: t('ess_' + offer.essence + '_d'),
+        color: 0xe2b452,
+        tag: t('essTag'),
+        tagColor: '#C8902A',
+      };
+    }
     if (offer.kind === 'weapon') {
       const meta = WEAPON_META.find((m) => m.id === offer.id)!;
       return {
@@ -1060,6 +1109,24 @@ export class HUDScene extends Phaser.Scene {
       const aW = arcana.length * (aSize + aGap) - aGap;
       this.overlay.push(...this.drawArcanaRow(w / 2 - aW / 2, rowsBottom + 2, aSize, arcana, 101, aGap));
       rowsBottom += aSize + 12;
+    }
+    // M12 构筑总览：六项核心属性实时值 + 晨露精华计数（矮屏 <560 省略，保按钮区不溢出）
+    if (h >= 560) {
+      const s = this.gs.run.stats;
+      const ess = this.gs.run.essence;
+      const essN = ess.dmg + ess.cd + ess.area;
+      const pct = (v: number) => (v >= 1 ? '+' : '−') + Math.abs(Math.round((v - 1) * 100)) + '%';
+      const cdTxt = s.cd <= 1 ? '−' + Math.round((1 - s.cd) * 100) + '%' : '+' + Math.round((s.cd - 1) * 100) + '%';
+      const line1 = t('st_dmg') + ' ' + pct(s.dmg) + ' · ' + t('st_cd') + ' ' + cdTxt + ' · ' + t('st_area') + ' ' + pct(s.area);
+      const line2 = t('st_move') + ' ' + Math.round(s.moveSpeed) + ' · ' + t('st_magnet') + ' ' + Math.round(s.magnet)
+        + ' · ' + t('st_armor') + ' ' + s.armor
+        + (essN > 0 ? ' · ✦' + t('essTag') + ' ×' + essN : '');
+      const statTxt = this.add.text(w / 2, rowsBottom + 4, line1 + '\n' + line2, {
+        fontFamily: FONT, fontSize: '13px', color: PAL.inkSoft, align: 'center', lineSpacing: 5,
+        stroke: '#FFFFFF', strokeThickness: 3,
+      }).setOrigin(0.5, 0).setDepth(101);
+      this.overlay.push(statTxt);
+      rowsBottom += statTxt.height + 12;
     }
     // 四个按钮统一规格；矮屏且持卡时按钮区下移并压缩间距，避免与令牌行相叠
     const bw = THEME.btnW;

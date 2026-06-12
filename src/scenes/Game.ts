@@ -1,6 +1,6 @@
 // 主场景：编排器 — 创建世界、注册系统按序更新、实现 CombatContext、胜负判定
 import Phaser from 'phaser';
-import { CRIT, DROPS, PLAYER } from '../content/player';
+import { CRIT, DROPS, HITFEEL, PLAYER } from '../content/player';
 import { getMap, MapSpec } from '../content/maps';
 import { DEATH_COLOR, PAL } from '../gfx/palette';
 import { ENDLESS } from '../content/endless';
@@ -65,6 +65,12 @@ export class GameScene extends Phaser.Scene {
   /** 模式与难度（公共契约：M10 预留，M11 实装无尽与狂暴） */
   private mode: RunMode = 'normal';
   private diff: 0 | 1 | 2 = 0;
+  /** hitstop 预算（M12 打击感分级）：每秒回充，超预算的微顿帧静默丢弃 */
+  private hitStopBudget = HITFEEL.budgetPerSec;
+  /** BGM 强度临时抬升剩余秒数（M12 surge；M18 Boss 战复用） */
+  private bgmBoostT = 0;
+  /** DPS 基准模式（M12，仅 DEV）：无波次/机制/成就，src/dev/bench.ts 驱动 */
+  benchMode = false;
 
   constructor() {
     super('game');
@@ -77,6 +83,7 @@ export class GameScene extends Phaser.Scene {
     this.mapId = this.map.id; // 未知 id 兜底草甸后回写
     this.mode = data?.mode ?? 'normal';
     this.diff = data?.diff ?? 0;
+    this.benchMode = data?.bench === true && import.meta.env.DEV;
   }
 
   get speed(): 1 | 2 {
@@ -93,13 +100,16 @@ export class GameScene extends Phaser.Scene {
 
     // 重置局内状态（场景可重开）；角色差异（HP/移速/体积/偏移）经 RunState.char 生效
     this.run = new RunState(this.charId, this.mode, this.diff);
+    this.run.mapXpK = this.map.xpK; // 升级节奏随时长档（M12：短图加快）
     this.modifiers.length = 0; // 规则卡逐局重置（LevelUpSystem 持同一数组引用，不可换新）
-    this.run.pendingArcana = getSettings().arcana; // 开局三选一（设置可关；关闭即与 M8 等价）
+    this.run.pendingArcana = getSettings().arcana && !this.benchMode; // 开局三选一（设置可关；关闭即与 M8 等价）
     this.facing = { x: 1, y: 0 };
     this.grid = new SpatialGrid<Enemy>(72);
     this.lastKillSfx = 0;
     this.dynCapMul = 1;
     this.fpsSampleT = 0;
+    this.hitStopBudget = HITFEEL.budgetPerSec;
+    this.bgmBoostT = 0;
     this.dps = new DpsTracker();
 
     releaseMapAssets(this, this.map.id); // 纹理生命周期（M8）：释放其它图的懒生成纹理
@@ -124,26 +134,39 @@ export class GameScene extends Phaser.Scene {
     this.waveDir = new WaveDirector(this.ctx, this.enemies);
 
     // 按帧序注册（与拆分前 update 顺序一致；地图机制紧随波次导演）
-    this.systems = [
-      this.playerSys,
-      { update: () => this.grid.rebuild(this.enemies.actives) },
-      this.waveDir,
-      ...(this.map.mechanic ? [new MapMechanicSystem(this.ctx, this.map.mechanic)] : []),
-      this.enemies,
-      this.weapons,
-      pickups,
-      projectiles,
-      zones,
-      this.playerSys.contact,
-      new DecorSystem(this.ctx),
-      this.fx,
-      this.levelUp,
-      new AchievementTracker(this.ctx, this.weapons),
-    ];
+    // bench 模式（M12 DEV）：无波次/机制/成就/玩家系统，标靶静止，只跑武器与结算链路
+    this.systems = this.benchMode
+      ? [
+          { update: () => this.grid.rebuild(this.enemies.actives) },
+          this.enemies,
+          this.weapons,
+          pickups,
+          projectiles,
+          zones,
+          this.fx,
+        ]
+      : [
+          this.playerSys,
+          { update: () => this.grid.rebuild(this.enemies.actives) },
+          this.waveDir,
+          ...(this.map.mechanic ? [new MapMechanicSystem(this.ctx, this.map.mechanic)] : []),
+          this.enemies,
+          this.weapons,
+          pickups,
+          projectiles,
+          zones,
+          this.playerSys.contact,
+          new DecorSystem(this.ctx),
+          this.fx,
+          this.levelUp,
+          new AchievementTracker(this.ctx, this.weapons),
+        ];
 
-    // 图鉴首遇点亮：本局角色与地图
-    Meta.codexLight('chars', this.charId);
-    Meta.codexLight('maps', this.mapId);
+    // 图鉴首遇点亮：本局角色与地图（bench 不计）
+    if (!this.benchMode) {
+      Meta.codexLight('chars', this.charId);
+      Meta.codexLight('maps', this.mapId);
+    }
 
     this.recomputeStats();
     this.weapons.addOrUpgrade(this.run.char.weapon); // 初始武器（角色配对）
@@ -156,10 +179,15 @@ export class GameScene extends Phaser.Scene {
     this.scale.on('resize', this.updateZoom, this);
     this.cameras.main.startFollow(this.player, false, 0.12, 0.12);
 
-    this.scene.launch('hud');
-    this.run.running = true;
-    this.setSpeed(getSettings().speed);
-    SFX.startBgm(this.map.bgm); // 每图 BGM 主题（调式/速度/音色/打击乐）
+    if (this.benchMode) {
+      // bench（M12 DEV）：不开 HUD/BGM，run.running 保持 false（主循环旁路），驱动器手动步进
+      void import('../dev/bench').then((m) => m.runBench(this));
+    } else {
+      this.scene.launch('hud');
+      this.run.running = true;
+      this.setSpeed(getSettings().speed);
+      SFX.startBgm(this.map.bgm); // 每图 BGM 主题（调式/速度/音色/打击乐）
+    }
 
     this.events.on('shutdown', () => {
       this.scale.off('resize', this.updateZoom, this);
@@ -189,7 +217,7 @@ export class GameScene extends Phaser.Scene {
       dmgLog: (src, dmg) => g.dps.add(src, dmg),
       onEnemyKilled: (e) => g.onEnemyKilled(e),
       damagePlayer: (d) => g.damagePlayer(d),
-      hitStop: (sec) => g.clock.hitStop(sec),
+      hitStop: (sec) => g.requestHitStop(sec), // M12：系统侧顿帧统一走预算（演出级直用 clock）
       addZone: (z) => g.zonesRef.add(z),
       slowAt: (x, y) => g.zonesRef.slowAt(x, y),
       playerSlowAt: (x, y) => g.zonesRef.playerSlowAt(x, y),
@@ -200,6 +228,7 @@ export class GameScene extends Phaser.Scene {
       spawnCoin: (x, y, v) => g.pickupsRef.spawnCoin(x, y, v),
       spawnPickup: (kind, x, y) => g.pickupsRef.spawnPickup(kind, x, y),
       recomputeStats: () => g.recomputeStats(),
+      bgmBoost: (sec) => { g.bgmBoostT = Math.max(g.bgmBoostT, sec); },
     };
   }
 
@@ -242,7 +271,11 @@ export class GameScene extends Phaser.Scene {
     for (const m of this.modifiers) m.onTick?.(dt, this.ctx);
     this.dps.update(dt);
     this.sampleFpsCap(raw);
-    SFX.setIntensity((this.run.elapsed * this.map.timeK) / 600); // 长图情绪曲线同步放缓
+    // hitstop 预算回充（M12 打击感分级）
+    this.hitStopBudget = Math.min(HITFEEL.budgetPerSec, this.hitStopBudget + HITFEEL.budgetPerSec * dt);
+    // 长图情绪曲线同步放缓；surge 等事件期临时抬升
+    this.bgmBoostT = Math.max(0, this.bgmBoostT - dt);
+    SFX.setIntensity((this.run.elapsed * this.map.timeK) / 600 + (this.bgmBoostT > 0 ? 0.35 : 0));
   }
 
   /** FPS 采样动态敌人上限（M8）：每秒采样，低帧率（<45）逐档压低刷怪上限并降档粒子，
@@ -266,6 +299,13 @@ export class GameScene extends Phaser.Scene {
 
   // ---------- 战斗结算 ----------
 
+  /** 预算化微顿帧（M12 打击感分级）：超预算静默丢弃，防 spark 链电/petal 多段叠成幻灯片 */
+  requestHitStop(sec: number): void {
+    if (this.hitStopBudget < sec) return;
+    this.hitStopBudget -= sec;
+    this.clock.hitStop(sec);
+  }
+
   /** 返回实际结算伤害（DPS 统计归账用；目标已死/无效返回 0） */
   hitEnemy(e: Enemy, dmg: number, opts: HitOpts = {}): number {
     if (!e.active || e.dying) return 0;
@@ -277,9 +317,12 @@ export class GameScene extends Phaser.Scene {
     }
     e.hp -= final;
     if (!opts.quiet) {
+      // 打击感分级（M12）：大伤害/暴击 → 微顿帧（预算化）+ 数字分级 + 音高上抬
+      const big = final >= HITFEEL.bigHitMul * this.run.stats.dmg;
       this.fx.flash(e);
-      this.fx.number(e.x, e.y - e.radius, final, crit);
-      SFX.hit(opts.pitch ?? 1);
+      this.fx.number(e.x, e.y - e.radius, final, crit, big, e);
+      SFX.hit((opts.pitch ?? 1) * (crit || big ? 1.3 : 1));
+      if (crit || big) this.requestHitStop(HITFEEL.microStop);
     }
     if (opts.kb && e.knockMul > 0) {
       e.kvx += (opts.kx ?? 0) * opts.kb * e.knockMul;
@@ -301,8 +344,12 @@ export class GameScene extends Phaser.Scene {
     }
     for (const m of this.modifiers) m.onEnemyKilled?.(e, this.ctx);
     if (e.isElite) {
+      // 精英死亡 = 小高潮（M12）：冲击波双环 + 顿帧 + 低频闷响（精英是宝箱载体）
       this.run.eliteKills++;
-      this.clock.hitStop(0.09);
+      this.clock.hitStop(HITFEEL.eliteStop);
+      this.fx.ring(e.x, e.y, DEATH_COLOR[e.id], 10, 0.65);
+      this.fx.ring(e.x, e.y, 0xfff2c0, 7, 0.45);
+      SFX.boom(true);
       if (getSettings().shake) this.cameras.main.shake(180, 0.005);
       this.pickupsRef.spawnPickup('chest', e.x, e.y);
       for (let i = 0; i < DROPS.eliteCoinN; i++) {
@@ -433,6 +480,7 @@ export class GameScene extends Phaser.Scene {
       diff: this.diff,
       cycle: this.run.cycle,
       revivesUsed: this.run.revivesUsed,
+      essence: this.run.essence.dmg + this.run.essence.cd + this.run.essence.area,
       build: this.weapons.list.map((w) => ({ id: w.id, level: w.level, evolved: w.evolved })),
     };
     this.scene.stop('hud');
@@ -454,5 +502,22 @@ export class GameScene extends Phaser.Scene {
   /** 调试：时间跳跃（波次/事件/成长曲线随 elapsed 前进） */
   debugTimeSkip(sec: number): void {
     this.run.elapsed += sec;
+  }
+
+  // ---------- DPS 基准（M12，仅 DEV；驱动器在 src/dev/bench.ts） ----------
+
+  /** bench 步进一帧：绕开真实时钟（run.running=false 时主循环旁路），固定步长手动驱动 */
+  benchTick(dt: number): void {
+    this.run.frame++;
+    this.run.elapsed += dt;
+    for (const s of this.systems) s.update(dt);
+    this.dps.update(dt);
+  }
+
+  /** bench 配置切换之间清场：残留区域/弹体清空 + DPS 统计归零 */
+  benchReset(): void {
+    this.zonesRef.clearAll();
+    this.projectilesRef.clearAll();
+    this.dps = new DpsTracker();
   }
 }

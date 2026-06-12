@@ -1,5 +1,5 @@
 // 地图表（纯数据层，禁止依赖 Phaser）：MapSpec 全链路
-// 每图差异化：时长（12/15/18 分钟）/ 纸底配色 / 装饰层 / 专属敌人池与波次节奏 /
+// 每图差异化：时长（M12 起三档：10 / 20 / 30 分钟）/ 纸底配色 / 装饰层 / 专属敌人池与波次节奏 /
 // 轻量机制（无→减速水皮→定时大风）/ BGM 主题（调式/速度/音色/打击乐）/ Boss / 解锁链
 import type { AchievementId, EnemyId, MapId } from './ids';
 
@@ -13,10 +13,12 @@ export interface WavePhase {
   types: Array<[EnemyId, number]>; // [类型, 权重]
 }
 
+// surge（M12）：中场强敌成群——n 只精英环形包围 + 横幅 + 保底宝箱兜底；
+// 一次性事件，时点必须落在无尽重放窗口 [bossT−300, bossT] 之外（tests/endless.test.ts 卡口）
 export interface WaveEvent {
   t: number;
-  kind: 'ring' | 'elite' | 'boss';
-  enemy?: EnemyId; // ring 必填；elite 缺省用 MapSpec.eliteId
+  kind: 'ring' | 'elite' | 'boss' | 'surge';
+  enemy?: EnemyId; // ring 必填；elite/surge 缺省用 MapSpec.eliteId
   n?: number;
 }
 
@@ -65,8 +67,9 @@ export interface BgmSpec {
 
 export interface MapSpec {
   id: MapId;
-  minutes: number; // 名义时长（Boss 苏醒时刻）
+  minutes: number; // 名义时长（Boss 苏醒时刻；M12 起三档 10/20/30）
   timeK: number; // 成长曲线时间缩放（= 12/minutes，长图成长更平缓）
+  xpK: number; // 升级节奏乘子（M12）：短图加快补偿总刷怪量缩减，长图微缓——避免短图升级慢
   icon: string;
   iconScale: number;
   color: number; // UI 卡片主题色
@@ -194,11 +197,12 @@ const SUMMIT_BGM: BgmSpec = {
 };
 
 export const MAPS: MapSpec[] = [
-  // ---------- 1. 晨光草甸：基准节奏，12 分钟（M2 原波次不变） ----------
+  // ---------- 1. 晨光草甸：基准节奏，10 分钟（M12 短档；波次自 M2 表等比压缩） ----------
   {
     id: 'meadow',
-    minutes: 12,
-    timeK: 1,
+    minutes: 10,
+    timeK: 12 / 10,
+    xpK: 1.2,
     icon: 'd_flower1',
     iconScale: 2.4,
     color: 0xa8cd8c,
@@ -207,24 +211,24 @@ export const MAPS: MapSpec[] = [
     eliteId: 'elite',
     waves: [
       { from: 0,   interval: 1.15, burst: 1, maxAlive: 22,  types: [['blob', 1]] },
-      { from: 55,  interval: 1.0,  burst: 2, maxAlive: 42,  types: [['blob', 3], ['midge', 2]] },
-      { from: 115, interval: 0.9,  burst: 2, maxAlive: 58,  types: [['blob', 3], ['midge', 2], ['splitter', 1.5]] },
-      { from: 175, interval: 0.85, burst: 3, maxAlive: 78,  types: [['blob', 3], ['midge', 2], ['splitter', 1.5], ['shelly', 1]] },
-      { from: 235, interval: 0.8,  burst: 3, maxAlive: 100, types: [['blob', 2.5], ['midge', 2], ['splitter', 1.5], ['shelly', 1], ['dasher', 1.2]] },
-      { from: 300, interval: 0.75, burst: 3, maxAlive: 120, types: [['blob', 2], ['midge', 2], ['splitter', 1.5], ['shelly', 1.2], ['dasher', 1.2], ['spitter', 1]] },
-      { from: 360, interval: 0.6,  burst: 4, maxAlive: 150, types: [['blob', 2], ['midge', 2.5], ['splitter', 1.5], ['shelly', 1.4], ['dasher', 1.4], ['spitter', 1.2]] },
-      { from: 480, interval: 0.55, burst: 4, maxAlive: 185, types: [['blob', 1.5], ['midge', 2], ['splitter', 2], ['shelly', 2], ['dasher', 1.6], ['spitter', 1.4]] },
-      { from: 600, interval: 0.45, burst: 5, maxAlive: 230, types: [['midge', 2], ['splitter', 2], ['shelly', 2.4], ['dasher', 2], ['spitter', 1.6]] },
-      { from: 720, interval: 1.0,  burst: 2, maxAlive: 70,  types: [['midge', 2], ['dasher', 1.5], ['blob', 1]] }, // Boss 阶段轻刷
+      { from: 45,  interval: 1.0,  burst: 2, maxAlive: 42,  types: [['blob', 3], ['midge', 2]] },
+      { from: 95,  interval: 0.9,  burst: 2, maxAlive: 58,  types: [['blob', 3], ['midge', 2], ['splitter', 1.5]] },
+      { from: 145, interval: 0.85, burst: 3, maxAlive: 78,  types: [['blob', 3], ['midge', 2], ['splitter', 1.5], ['shelly', 1]] },
+      { from: 195, interval: 0.8,  burst: 3, maxAlive: 100, types: [['blob', 2.5], ['midge', 2], ['splitter', 1.5], ['shelly', 1], ['dasher', 1.2]] },
+      { from: 250, interval: 0.75, burst: 3, maxAlive: 120, types: [['blob', 2], ['midge', 2], ['splitter', 1.5], ['shelly', 1.2], ['dasher', 1.2], ['spitter', 1]] },
+      { from: 300, interval: 0.6,  burst: 4, maxAlive: 150, types: [['blob', 2], ['midge', 2.5], ['splitter', 1.5], ['shelly', 1.4], ['dasher', 1.4], ['spitter', 1.2]] },
+      { from: 400, interval: 0.55, burst: 4, maxAlive: 185, types: [['blob', 1.5], ['midge', 2], ['splitter', 2], ['shelly', 2], ['dasher', 1.6], ['spitter', 1.4]] },
+      { from: 500, interval: 0.45, burst: 5, maxAlive: 230, types: [['midge', 2], ['splitter', 2], ['shelly', 2.4], ['dasher', 2], ['spitter', 1.6]] },
+      { from: 600, interval: 1.0,  burst: 2, maxAlive: 70,  types: [['midge', 2], ['dasher', 1.5], ['blob', 1]] }, // Boss 阶段轻刷
     ],
     events: [
-      { t: 200, kind: 'ring', enemy: 'blob', n: 18 },
-      { t: 330, kind: 'elite' },
-      { t: 430, kind: 'ring', enemy: 'midge', n: 26 },
-      { t: 510, kind: 'elite' },
-      { t: 565, kind: 'ring', enemy: 'splitter', n: 14 },
-      { t: 660, kind: 'ring', enemy: 'shelly', n: 12 },
-      { t: 720, kind: 'boss' },
+      { t: 165, kind: 'ring', enemy: 'blob', n: 18 },
+      { t: 275, kind: 'elite' },
+      { t: 355, kind: 'ring', enemy: 'midge', n: 26 },
+      { t: 425, kind: 'elite' },
+      { t: 470, kind: 'ring', enemy: 'splitter', n: 14 },
+      { t: 550, kind: 'ring', enemy: 'shelly', n: 12 },
+      { t: 600, kind: 'boss' },
     ],
     decor: [
       { keys: ['d_grass0', 'd_grass1', 'd_grass2'], nMin: 3, nMax: 6, chance: 1 },
@@ -236,12 +240,13 @@ export const MAPS: MapSpec[] = [
     unlockAch: null,
   },
 
-  // ---------- 2. 露珠池塘：厚重慢节奏 + 减速水皮，15 分钟 ----------
+  // ---------- 2. 露珠池塘：厚重慢节奏 + 减速水皮，10 分钟（M12 短档） ----------
   // 敌人少而硬（蜗蜗 95 血坦克、水枪鱼炮台、水母绕轨），考验集火与水皮间走位
   {
     id: 'pond',
-    minutes: 15,
-    timeK: 12 / 15,
+    minutes: 10,
+    timeK: 12 / 10,
+    xpK: 1.5,
     icon: 'pd_lotus',
     iconScale: 2.2,
     color: 0x8cc4ce,
@@ -250,28 +255,28 @@ export const MAPS: MapSpec[] = [
     eliteId: 'bigbubble',
     waves: [
       { from: 0,   interval: 1.3,  burst: 1, maxAlive: 20,  types: [['tad', 1]] },
-      { from: 50,  interval: 1.1,  burst: 2, maxAlive: 36,  types: [['tad', 3], ['bubble', 2]] },
-      { from: 110, interval: 1.0,  burst: 2, maxAlive: 50,  types: [['tad', 3], ['bubble', 2], ['frog', 1.2]] },
-      { from: 180, interval: 0.95, burst: 2, maxAlive: 64,  types: [['tad', 2.5], ['bubble', 2], ['frog', 1.5], ['snail', 1]] },
-      { from: 255, interval: 0.9,  burst: 3, maxAlive: 80,  types: [['bubble', 2], ['frog', 1.6], ['snail', 1.2], ['jelly', 1.2], ['tad', 1.5]] },
-      { from: 330, interval: 0.85, burst: 3, maxAlive: 96,  types: [['frog', 1.6], ['snail', 1.4], ['jelly', 1.4], ['squirt', 1], ['bubble', 1.6]] },
-      { from: 420, interval: 0.8,  burst: 3, maxAlive: 115, types: [['frog', 1.6], ['snail', 1.6], ['jelly', 1.6], ['squirt', 1.2], ['tad', 1.6]] },
-      { from: 540, interval: 0.7,  burst: 4, maxAlive: 140, types: [['snail', 2], ['jelly', 1.8], ['squirt', 1.4], ['frog', 1.8], ['bubble', 1.5]] },
-      { from: 660, interval: 0.6,  burst: 4, maxAlive: 170, types: [['snail', 2.2], ['jelly', 2], ['squirt', 1.6], ['frog', 2], ['tad', 2]] },
-      { from: 780, interval: 0.55, burst: 5, maxAlive: 200, types: [['jelly', 2.2], ['snail', 2.4], ['squirt', 1.8], ['frog', 2.2]] },
-      { from: 900, interval: 1.1,  burst: 2, maxAlive: 60,  types: [['tad', 2], ['bubble', 1.5], ['frog', 1]] }, // Boss 阶段轻刷
+      { from: 35,  interval: 1.1,  burst: 2, maxAlive: 36,  types: [['tad', 3], ['bubble', 2]] },
+      { from: 75,  interval: 1.0,  burst: 2, maxAlive: 50,  types: [['tad', 3], ['bubble', 2], ['frog', 1.2]] },
+      { from: 120, interval: 0.95, burst: 2, maxAlive: 64,  types: [['tad', 2.5], ['bubble', 2], ['frog', 1.5], ['snail', 1]] },
+      { from: 170, interval: 0.9,  burst: 3, maxAlive: 80,  types: [['bubble', 2], ['frog', 1.6], ['snail', 1.2], ['jelly', 1.2], ['tad', 1.5]] },
+      { from: 220, interval: 0.85, burst: 3, maxAlive: 96,  types: [['frog', 1.6], ['snail', 1.4], ['jelly', 1.4], ['squirt', 1], ['bubble', 1.6]] },
+      { from: 280, interval: 0.8,  burst: 3, maxAlive: 115, types: [['frog', 1.6], ['snail', 1.6], ['jelly', 1.6], ['squirt', 1.2], ['tad', 1.6]] },
+      { from: 360, interval: 0.7,  burst: 4, maxAlive: 140, types: [['snail', 2], ['jelly', 1.8], ['squirt', 1.4], ['frog', 1.8], ['bubble', 1.5]] },
+      { from: 440, interval: 0.6,  burst: 4, maxAlive: 170, types: [['snail', 2.2], ['jelly', 2], ['squirt', 1.6], ['frog', 2], ['tad', 2]] },
+      { from: 520, interval: 0.55, burst: 5, maxAlive: 200, types: [['jelly', 2.2], ['snail', 2.4], ['squirt', 1.8], ['frog', 2.2]] },
+      { from: 600, interval: 1.1,  burst: 2, maxAlive: 60,  types: [['tad', 2], ['bubble', 1.5], ['frog', 1]] }, // Boss 阶段轻刷
     ],
     events: [
-      { t: 150, kind: 'ring', enemy: 'bubble', n: 16 },
-      { t: 240, kind: 'elite' },
-      { t: 350, kind: 'ring', enemy: 'frog', n: 12 },
-      { t: 430, kind: 'elite' },
-      { t: 520, kind: 'ring', enemy: 'tad', n: 24 },
-      { t: 610, kind: 'elite' },
-      { t: 700, kind: 'ring', enemy: 'jelly', n: 14 },
-      { t: 790, kind: 'elite' },
-      { t: 850, kind: 'ring', enemy: 'snail', n: 12 },
-      { t: 900, kind: 'boss' },
+      { t: 100, kind: 'ring', enemy: 'bubble', n: 16 },
+      { t: 160, kind: 'elite' },
+      { t: 235, kind: 'ring', enemy: 'frog', n: 12 },
+      { t: 285, kind: 'elite' },
+      { t: 345, kind: 'ring', enemy: 'tad', n: 24 },
+      { t: 405, kind: 'elite' },
+      { t: 465, kind: 'ring', enemy: 'jelly', n: 14 },
+      { t: 525, kind: 'elite' },
+      { t: 565, kind: 'ring', enemy: 'snail', n: 12 },
+      { t: 600, kind: 'boss' },
     ],
     decor: [
       { keys: ['pd_lily0', 'pd_lily1', 'pd_lily2'], nMin: 2, nMax: 4, chance: 1 },
@@ -285,12 +290,13 @@ export const MAPS: MapSpec[] = [
     unlockAch: 'meadowClear',
   },
 
-  // ---------- 3. 晚霞山岗：轻血海量快节奏 + 定时大风，18 分钟 ----------
+  // ---------- 3. 晚霞山岗：轻血海量快节奏 + 定时大风，10 分钟（M12 短档） ----------
   // 敌人多而脆（谷粒海、乌鸫俯冲、蓟球冲刺、风灵闪现），大风周期打乱站位
   {
     id: 'hills',
-    minutes: 18,
-    timeK: 12 / 18,
+    minutes: 10,
+    timeK: 12 / 10,
+    xpK: 1.8,
     icon: 'hd_daisy',
     iconScale: 2.4,
     color: 0xe0a868,
@@ -298,32 +304,32 @@ export const MAPS: MapSpec[] = [
     bossId: 'galecrow',
     eliteId: 'bigthistle',
     waves: [
-      { from: 0,    interval: 0.95, burst: 2, maxAlive: 30,  types: [['leafy', 1]] },
-      { from: 45,   interval: 0.85, burst: 2, maxAlive: 50,  types: [['leafy', 3], ['grain', 1.5]] },
-      { from: 100,  interval: 0.8,  burst: 3, maxAlive: 70,  types: [['leafy', 3], ['grain', 2], ['crow', 1.2]] },
-      { from: 160,  interval: 0.75, burst: 3, maxAlive: 92,  types: [['leafy', 2.5], ['grain', 2], ['crow', 1.4], ['thistle', 1.2]] },
-      { from: 230,  interval: 0.7,  burst: 3, maxAlive: 115, types: [['leafy', 2], ['crow', 1.6], ['thistle', 1.4], ['wheatling', 1.4], ['grain', 1.5]] },
-      { from: 300,  interval: 0.65, burst: 4, maxAlive: 140, types: [['crow', 1.8], ['thistle', 1.5], ['wheatling', 1.6], ['cone', 1.2], ['leafy', 1.6]] },
-      { from: 390,  interval: 0.6,  burst: 4, maxAlive: 165, types: [['thistle', 1.6], ['wheatling', 1.8], ['cone', 1.4], ['gust', 1.2], ['crow', 1.8]] },
-      { from: 480,  interval: 0.55, burst: 4, maxAlive: 190, types: [['wheatling', 2], ['cone', 1.6], ['gust', 1.4], ['thistle', 1.8], ['leafy', 1.4]] },
-      { from: 600,  interval: 0.5,  burst: 5, maxAlive: 215, types: [['cone', 1.8], ['gust', 1.6], ['thistle', 2], ['wheatling', 2], ['crow', 2]] },
-      { from: 750,  interval: 0.45, burst: 5, maxAlive: 245, types: [['gust', 1.8], ['cone', 2], ['thistle', 2.2], ['wheatling', 2.2]] },
-      { from: 900,  interval: 0.4,  burst: 6, maxAlive: 270, types: [['gust', 2], ['cone', 2.2], ['thistle', 2.4], ['crow', 2.4], ['grain', 2]] },
-      { from: 1080, interval: 0.9,  burst: 3, maxAlive: 80,  types: [['crow', 2], ['leafy', 1.5], ['grain', 1.5]] }, // Boss 阶段轻刷
+      { from: 0,   interval: 0.95, burst: 2, maxAlive: 30,  types: [['leafy', 1]] },
+      { from: 25,  interval: 0.85, burst: 2, maxAlive: 50,  types: [['leafy', 3], ['grain', 1.5]] },
+      { from: 55,  interval: 0.8,  burst: 3, maxAlive: 70,  types: [['leafy', 3], ['grain', 2], ['crow', 1.2]] },
+      { from: 90,  interval: 0.75, burst: 3, maxAlive: 92,  types: [['leafy', 2.5], ['grain', 2], ['crow', 1.4], ['thistle', 1.2]] },
+      { from: 130, interval: 0.7,  burst: 3, maxAlive: 115, types: [['leafy', 2], ['crow', 1.6], ['thistle', 1.4], ['wheatling', 1.4], ['grain', 1.5]] },
+      { from: 165, interval: 0.65, burst: 4, maxAlive: 140, types: [['crow', 1.8], ['thistle', 1.5], ['wheatling', 1.6], ['cone', 1.2], ['leafy', 1.6]] },
+      { from: 215, interval: 0.6,  burst: 4, maxAlive: 165, types: [['thistle', 1.6], ['wheatling', 1.8], ['cone', 1.4], ['gust', 1.2], ['crow', 1.8]] },
+      { from: 265, interval: 0.55, burst: 4, maxAlive: 190, types: [['wheatling', 2], ['cone', 1.6], ['gust', 1.4], ['thistle', 1.8], ['leafy', 1.4]] },
+      { from: 335, interval: 0.5,  burst: 5, maxAlive: 215, types: [['cone', 1.8], ['gust', 1.6], ['thistle', 2], ['wheatling', 2], ['crow', 2]] },
+      { from: 415, interval: 0.45, burst: 5, maxAlive: 245, types: [['gust', 1.8], ['cone', 2], ['thistle', 2.2], ['wheatling', 2.2]] },
+      { from: 500, interval: 0.4,  burst: 6, maxAlive: 270, types: [['gust', 2], ['cone', 2.2], ['thistle', 2.4], ['crow', 2.4], ['grain', 2]] },
+      { from: 600, interval: 0.9,  burst: 3, maxAlive: 80,  types: [['crow', 2], ['leafy', 1.5], ['grain', 1.5]] }, // Boss 阶段轻刷
     ],
     events: [
-      { t: 120,  kind: 'ring', enemy: 'leafy', n: 18 },
-      { t: 210,  kind: 'elite' },
-      { t: 300,  kind: 'ring', enemy: 'crow', n: 20 },
-      { t: 380,  kind: 'ring', enemy: 'grain', n: 30 },
-      { t: 460,  kind: 'elite' },
-      { t: 560,  kind: 'ring', enemy: 'thistle', n: 14 },
-      { t: 660,  kind: 'ring', enemy: 'cone', n: 12 },
-      { t: 740,  kind: 'elite' },
-      { t: 830,  kind: 'ring', enemy: 'gust', n: 12 },
-      { t: 920,  kind: 'elite' },
-      { t: 1000, kind: 'ring', enemy: 'crow', n: 26 },
-      { t: 1080, kind: 'boss' },
+      { t: 65,  kind: 'ring', enemy: 'leafy', n: 18 },
+      { t: 115, kind: 'elite' },
+      { t: 165, kind: 'ring', enemy: 'crow', n: 20 },
+      { t: 210, kind: 'ring', enemy: 'grain', n: 30 },
+      { t: 255, kind: 'elite' },
+      { t: 310, kind: 'ring', enemy: 'thistle', n: 14 },
+      { t: 365, kind: 'ring', enemy: 'cone', n: 12 },
+      { t: 410, kind: 'elite' },
+      { t: 460, kind: 'ring', enemy: 'gust', n: 12 },
+      { t: 510, kind: 'elite' },
+      { t: 555, kind: 'ring', enemy: 'crow', n: 26 },
+      { t: 600, kind: 'boss' },
     ],
     decor: [
       { keys: ['hd_wheat0', 'hd_wheat1', 'hd_wheat2'], nMin: 3, nMax: 6, chance: 1 },
@@ -337,12 +343,13 @@ export const MAPS: MapSpec[] = [
     unlockAch: 'pondClear',
   },
 
-  // ---------- 4. 萤暮林地：中速韧性 + 治愈泉，21 分钟 ----------
+  // ---------- 4. 萤暮林地：中速韧性 + 治愈泉，20 分钟（M12 中档） ----------
   // 敌人有黏性（害羞菇潜伏惊醒、孢孢菇炮台、滚滚甲冲滚），治愈泉逼迫主动走位换血
   {
     id: 'grove',
-    minutes: 21,
-    timeK: 12 / 21,
+    minutes: 20,
+    timeK: 12 / 20,
+    xpK: 1.05,
     icon: 'gd_shroom0',
     iconScale: 2.2,
     color: 0x9cb887,
@@ -351,31 +358,31 @@ export const MAPS: MapSpec[] = [
     eliteId: 'eldercap',
     waves: [
       { from: 0,    interval: 1.2,  burst: 1, maxAlive: 24,  types: [['shroom', 1]] },
-      { from: 50,   interval: 1.05, burst: 2, maxAlive: 40,  types: [['shroom', 3], ['glimmer', 2]] },
-      { from: 110,  interval: 0.95, burst: 2, maxAlive: 56,  types: [['shroom', 3], ['glimmer', 2], ['mottle', 1.2]] },
-      { from: 180,  interval: 0.9,  burst: 3, maxAlive: 75,  types: [['shroom', 2.5], ['glimmer', 2], ['mottle', 1.5], ['snapcap', 1]] },
-      { from: 260,  interval: 0.85, burst: 3, maxAlive: 95,  types: [['glimmer', 2], ['mottle', 1.6], ['snapcap', 1.3], ['roller', 1.2], ['shroom', 1.6]] },
-      { from: 350,  interval: 0.8,  burst: 3, maxAlive: 115, types: [['mottle', 1.6], ['snapcap', 1.5], ['roller', 1.4], ['puffcap', 1], ['glimmer', 1.6]] },
-      { from: 450,  interval: 0.72, burst: 4, maxAlive: 140, types: [['snapcap', 1.7], ['roller', 1.6], ['puffcap', 1.2], ['mottle', 1.8], ['shroom', 1.4]] },
-      { from: 570,  interval: 0.65, burst: 4, maxAlive: 165, types: [['roller', 1.8], ['puffcap', 1.4], ['snapcap', 1.9], ['mottle', 2], ['glimmer', 1.7]] },
-      { from: 700,  interval: 0.6,  burst: 4, maxAlive: 190, types: [['puffcap', 1.6], ['snapcap', 2.1], ['roller', 2], ['mottle', 2.2]] },
-      { from: 850,  interval: 0.55, burst: 5, maxAlive: 215, types: [['snapcap', 2.2], ['roller', 2.2], ['puffcap', 1.8], ['mottle', 2.4], ['glimmer', 2]] },
-      { from: 1020, interval: 0.5,  burst: 5, maxAlive: 240, types: [['roller', 2.4], ['puffcap', 2], ['snapcap', 2.4], ['mottle', 2.6], ['shroom', 2]] },
-      { from: 1260, interval: 1.0,  burst: 2, maxAlive: 70,  types: [['glimmer', 2], ['shroom', 1.5], ['mottle', 1]] }, // Boss 阶段轻刷
+      { from: 48,   interval: 1.05, burst: 2, maxAlive: 40,  types: [['shroom', 3], ['glimmer', 2]] },
+      { from: 105,  interval: 0.95, burst: 2, maxAlive: 56,  types: [['shroom', 3], ['glimmer', 2], ['mottle', 1.2]] },
+      { from: 170,  interval: 0.9,  burst: 3, maxAlive: 75,  types: [['shroom', 2.5], ['glimmer', 2], ['mottle', 1.5], ['snapcap', 1]] },
+      { from: 250,  interval: 0.85, burst: 3, maxAlive: 95,  types: [['glimmer', 2], ['mottle', 1.6], ['snapcap', 1.3], ['roller', 1.2], ['shroom', 1.6]] },
+      { from: 335,  interval: 0.8,  burst: 3, maxAlive: 115, types: [['mottle', 1.6], ['snapcap', 1.5], ['roller', 1.4], ['puffcap', 1], ['glimmer', 1.6]] },
+      { from: 430,  interval: 0.72, burst: 4, maxAlive: 140, types: [['snapcap', 1.7], ['roller', 1.6], ['puffcap', 1.2], ['mottle', 1.8], ['shroom', 1.4]] },
+      { from: 545,  interval: 0.65, burst: 4, maxAlive: 165, types: [['roller', 1.8], ['puffcap', 1.4], ['snapcap', 1.9], ['mottle', 2], ['glimmer', 1.7]] },
+      { from: 665,  interval: 0.6,  burst: 4, maxAlive: 190, types: [['puffcap', 1.6], ['snapcap', 2.1], ['roller', 2], ['mottle', 2.2]] },
+      { from: 810,  interval: 0.55, burst: 5, maxAlive: 215, types: [['snapcap', 2.2], ['roller', 2.2], ['puffcap', 1.8], ['mottle', 2.4], ['glimmer', 2]] },
+      { from: 970,  interval: 0.5,  burst: 5, maxAlive: 240, types: [['roller', 2.4], ['puffcap', 2], ['snapcap', 2.4], ['mottle', 2.6], ['shroom', 2]] },
+      { from: 1200, interval: 1.0,  burst: 2, maxAlive: 70,  types: [['glimmer', 2], ['shroom', 1.5], ['mottle', 1]] }, // Boss 阶段轻刷
     ],
     events: [
-      { t: 140,  kind: 'ring', enemy: 'shroom', n: 16 },
-      { t: 230,  kind: 'elite' },
-      { t: 330,  kind: 'ring', enemy: 'glimmer', n: 24 },
-      { t: 420,  kind: 'elite' },
-      { t: 520,  kind: 'ring', enemy: 'mottle', n: 14 },
-      { t: 620,  kind: 'elite' },
-      { t: 720,  kind: 'ring', enemy: 'snapcap', n: 12 },
-      { t: 820,  kind: 'elite' },
-      { t: 930,  kind: 'ring', enemy: 'roller', n: 12 },
-      { t: 1040, kind: 'elite' },
-      { t: 1150, kind: 'ring', enemy: 'mottle', n: 24 },
-      { t: 1260, kind: 'boss' },
+      { t: 135,  kind: 'ring', enemy: 'shroom', n: 16 },
+      { t: 220,  kind: 'elite' },
+      { t: 315,  kind: 'ring', enemy: 'glimmer', n: 24 },
+      { t: 400,  kind: 'elite' },
+      { t: 495,  kind: 'ring', enemy: 'mottle', n: 14 },
+      { t: 590,  kind: 'elite' },
+      { t: 685,  kind: 'ring', enemy: 'snapcap', n: 12 },
+      { t: 780,  kind: 'elite' },
+      { t: 885,  kind: 'ring', enemy: 'roller', n: 12 },
+      { t: 990,  kind: 'elite' },
+      { t: 1095, kind: 'ring', enemy: 'mottle', n: 24 },
+      { t: 1200, kind: 'boss' },
     ],
     decor: [
       { keys: ['gd_fern0', 'gd_fern1'], nMin: 3, nMax: 6, chance: 1 },
@@ -389,12 +396,13 @@ export const MAPS: MapSpec[] = [
     unlockAch: 'hillsClear',
   },
 
-  // ---------- 5. 紫露花田：轻快缠绕 + 花浪阵风，24 分钟 ----------
+  // ---------- 5. 紫露花田：轻快缠绕 + 花浪阵风，20 分钟（M12 中档 + 中点 surge） ----------
   // 敌人轻而缠人（紫蝶螺旋盘入、嗡嗡蜂俯冲、绒球弹跳），顺风带敌我同加速
   {
     id: 'lavender',
-    minutes: 24,
-    timeK: 12 / 24,
+    minutes: 20,
+    timeK: 12 / 20,
+    xpK: 1.2,
     icon: 'ld_lav0',
     iconScale: 2.0,
     color: 0xa888cc,
@@ -403,35 +411,36 @@ export const MAPS: MapSpec[] = [
     eliteId: 'queenbee',
     waves: [
       { from: 0,    interval: 0.9,  burst: 2, maxAlive: 32,  types: [['budling', 1]] },
-      { from: 45,   interval: 0.8,  burst: 2, maxAlive: 52,  types: [['budling', 3], ['bumble', 1.5]] },
-      { from: 100,  interval: 0.75, burst: 3, maxAlive: 75,  types: [['budling', 3], ['bumble', 2], ['flutter', 1.2]] },
-      { from: 165,  interval: 0.7,  burst: 3, maxAlive: 98,  types: [['budling', 2.5], ['bumble', 2], ['flutter', 1.5], ['pompon', 1.2]] },
-      { from: 240,  interval: 0.65, burst: 3, maxAlive: 120, types: [['bumble', 2], ['flutter', 1.7], ['pompon', 1.5], ['snippy', 1.3], ['budling', 1.6]] },
-      { from: 320,  interval: 0.6,  burst: 4, maxAlive: 145, types: [['flutter', 1.8], ['pompon', 1.6], ['snippy', 1.5], ['briar', 1.1], ['budling', 1.5]] },
-      { from: 420,  interval: 0.55, burst: 4, maxAlive: 170, types: [['snippy', 1.7], ['briar', 1.3], ['flutter', 2], ['pompon', 1.8], ['bumble', 1.8]] },
-      { from: 540,  interval: 0.5,  burst: 4, maxAlive: 195, types: [['briar', 1.5], ['snippy', 1.9], ['pompon', 2], ['flutter', 2.2], ['budling', 1.4]] },
-      { from: 680,  interval: 0.48, burst: 5, maxAlive: 220, types: [['snippy', 2.1], ['briar', 1.7], ['flutter', 2.4], ['pompon', 2.2], ['bumble', 2]] },
-      { from: 840,  interval: 0.45, burst: 5, maxAlive: 245, types: [['briar', 1.9], ['snippy', 2.3], ['flutter', 2.6], ['pompon', 2.4]] },
-      { from: 1020, interval: 0.42, burst: 6, maxAlive: 265, types: [['snippy', 2.5], ['briar', 2.1], ['flutter', 2.8], ['bumble', 2.4], ['budling', 2]] },
-      { from: 1220, interval: 0.4,  burst: 6, maxAlive: 285, types: [['briar', 2.3], ['snippy', 2.7], ['flutter', 3], ['pompon', 2.6]] },
-      { from: 1440, interval: 0.9,  burst: 3, maxAlive: 85,  types: [['bumble', 2], ['budling', 1.5], ['flutter', 1]] }, // Boss 阶段轻刷
+      { from: 40,   interval: 0.8,  burst: 2, maxAlive: 52,  types: [['budling', 3], ['bumble', 1.5]] },
+      { from: 85,   interval: 0.75, burst: 3, maxAlive: 75,  types: [['budling', 3], ['bumble', 2], ['flutter', 1.2]] },
+      { from: 140,  interval: 0.7,  burst: 3, maxAlive: 98,  types: [['budling', 2.5], ['bumble', 2], ['flutter', 1.5], ['pompon', 1.2]] },
+      { from: 200,  interval: 0.65, burst: 3, maxAlive: 120, types: [['bumble', 2], ['flutter', 1.7], ['pompon', 1.5], ['snippy', 1.3], ['budling', 1.6]] },
+      { from: 265,  interval: 0.6,  burst: 4, maxAlive: 145, types: [['flutter', 1.8], ['pompon', 1.6], ['snippy', 1.5], ['briar', 1.1], ['budling', 1.5]] },
+      { from: 350,  interval: 0.55, burst: 4, maxAlive: 170, types: [['snippy', 1.7], ['briar', 1.3], ['flutter', 2], ['pompon', 1.8], ['bumble', 1.8]] },
+      { from: 450,  interval: 0.5,  burst: 4, maxAlive: 195, types: [['briar', 1.5], ['snippy', 1.9], ['pompon', 2], ['flutter', 2.2], ['budling', 1.4]] },
+      { from: 565,  interval: 0.48, burst: 5, maxAlive: 220, types: [['snippy', 2.1], ['briar', 1.7], ['flutter', 2.4], ['pompon', 2.2], ['bumble', 2]] },
+      { from: 700,  interval: 0.45, burst: 5, maxAlive: 245, types: [['briar', 1.9], ['snippy', 2.3], ['flutter', 2.6], ['pompon', 2.4]] },
+      { from: 850,  interval: 0.42, burst: 6, maxAlive: 265, types: [['snippy', 2.5], ['briar', 2.1], ['flutter', 2.8], ['bumble', 2.4], ['budling', 2]] },
+      { from: 1015, interval: 0.4,  burst: 6, maxAlive: 285, types: [['briar', 2.3], ['snippy', 2.7], ['flutter', 3], ['pompon', 2.6]] },
+      { from: 1200, interval: 0.9,  burst: 3, maxAlive: 85,  types: [['bumble', 2], ['budling', 1.5], ['flutter', 1]] }, // Boss 阶段轻刷
     ],
     events: [
-      { t: 120,  kind: 'ring', enemy: 'budling', n: 18 },
-      { t: 200,  kind: 'elite' },
-      { t: 290,  kind: 'ring', enemy: 'bumble', n: 20 },
-      { t: 380,  kind: 'ring', enemy: 'flutter', n: 22 },
-      { t: 470,  kind: 'elite' },
-      { t: 570,  kind: 'ring', enemy: 'pompon', n: 14 },
-      { t: 670,  kind: 'elite' },
-      { t: 770,  kind: 'ring', enemy: 'snippy', n: 14 },
-      { t: 870,  kind: 'elite' },
-      { t: 970,  kind: 'ring', enemy: 'briar', n: 12 },
-      { t: 1070, kind: 'elite' },
-      { t: 1170, kind: 'ring', enemy: 'flutter', n: 28 },
-      { t: 1280, kind: 'elite' },
-      { t: 1370, kind: 'ring', enemy: 'bumble', n: 26 },
-      { t: 1440, kind: 'boss' },
+      { t: 100,  kind: 'ring', enemy: 'budling', n: 18 },
+      { t: 165,  kind: 'elite' },
+      { t: 240,  kind: 'ring', enemy: 'bumble', n: 20 },
+      { t: 315,  kind: 'ring', enemy: 'flutter', n: 22 },
+      { t: 390,  kind: 'elite' },
+      { t: 475,  kind: 'ring', enemy: 'pompon', n: 14 },
+      { t: 555,  kind: 'elite' },
+      { t: 600,  kind: 'surge', n: 2 }, // M12 中场事件（中点；不进无尽重放窗口）
+      { t: 640,  kind: 'ring', enemy: 'snippy', n: 14 },
+      { t: 725,  kind: 'elite' },
+      { t: 810,  kind: 'ring', enemy: 'briar', n: 12 },
+      { t: 890,  kind: 'elite' },
+      { t: 975,  kind: 'ring', enemy: 'flutter', n: 28 },
+      { t: 1065, kind: 'elite' },
+      { t: 1140, kind: 'ring', enemy: 'bumble', n: 26 },
+      { t: 1200, kind: 'boss' },
     ],
     decor: [
       { keys: ['ld_lav0', 'ld_lav1', 'ld_lav2'], nMin: 3, nMax: 6, chance: 1 },
@@ -445,12 +454,13 @@ export const MAPS: MapSpec[] = [
     unlockAch: 'groveClear',
   },
 
-  // ---------- 6. 莓果灌丛：中坚黏人 + 荆棘地皮，26 分钟 ----------
+  // ---------- 6. 莓果灌丛：中坚黏人 + 荆棘地皮，20 分钟（M12 中档 + 中点 surge） ----------
   // 敌人结实缠斗（钻钻鼠地下突进、莓爪崽扑袭、浆果炮手压制），刺丛挤压走位空间
   {
     id: 'bramble',
-    minutes: 26,
-    timeK: 12 / 26,
+    minutes: 20,
+    timeK: 12 / 20,
+    xpK: 1.3,
     icon: 'bd_berry',
     iconScale: 2.2,
     color: 0xc07888,
@@ -459,36 +469,37 @@ export const MAPS: MapSpec[] = [
     eliteId: 'bigberry',
     waves: [
       { from: 0,    interval: 1.0,  burst: 2, maxAlive: 30,  types: [['berryling', 1]] },
-      { from: 50,   interval: 0.9,  burst: 2, maxAlive: 52,  types: [['berryling', 3], ['bristle', 1.5]] },
-      { from: 110,  interval: 0.85, burst: 3, maxAlive: 75,  types: [['berryling', 3], ['bristle', 2], ['magpie', 1.2]] },
-      { from: 180,  interval: 0.8,  burst: 3, maxAlive: 98,  types: [['berryling', 2.5], ['bristle', 2], ['magpie', 1.5], ['mole', 1.2]] },
-      { from: 260,  interval: 0.75, burst: 3, maxAlive: 120, types: [['bristle', 2], ['magpie', 1.7], ['mole', 1.5], ['cubby', 1.2], ['berryling', 1.6]] },
-      { from: 350,  interval: 0.7,  burst: 4, maxAlive: 145, types: [['magpie', 1.8], ['mole', 1.6], ['cubby', 1.5], ['gourd', 1.1], ['berryling', 1.5]] },
-      { from: 450,  interval: 0.62, burst: 4, maxAlive: 170, types: [['mole', 1.7], ['cubby', 1.7], ['gourd', 1.3], ['bristle', 1.8], ['magpie', 1.8]] },
-      { from: 570,  interval: 0.58, burst: 4, maxAlive: 195, types: [['cubby', 1.9], ['gourd', 1.5], ['mole', 1.9], ['bristle', 2], ['magpie', 2]] },
-      { from: 700,  interval: 0.54, burst: 5, maxAlive: 220, types: [['gourd', 1.7], ['cubby', 2.1], ['mole', 2.1], ['bristle', 2.2]] },
-      { from: 850,  interval: 0.5,  burst: 5, maxAlive: 245, types: [['cubby', 2.3], ['gourd', 1.9], ['mole', 2.3], ['magpie', 2.4], ['berryling', 2]] },
-      { from: 1020, interval: 0.46, burst: 6, maxAlive: 268, types: [['gourd', 2.1], ['cubby', 2.5], ['bristle', 2.6], ['mole', 2.5]] },
-      { from: 1200, interval: 0.44, burst: 6, maxAlive: 288, types: [['cubby', 2.7], ['gourd', 2.3], ['magpie', 2.8], ['mole', 2.7], ['berryling', 2.2]] },
-      { from: 1380, interval: 0.42, burst: 6, maxAlive: 300, types: [['gourd', 2.5], ['cubby', 2.9], ['bristle', 3], ['mole', 2.9]] },
-      { from: 1560, interval: 0.95, burst: 3, maxAlive: 85,  types: [['berryling', 2], ['magpie', 1.5], ['bristle', 1]] }, // Boss 阶段轻刷
+      { from: 40,   interval: 0.9,  burst: 2, maxAlive: 52,  types: [['berryling', 3], ['bristle', 1.5]] },
+      { from: 85,   interval: 0.85, burst: 3, maxAlive: 75,  types: [['berryling', 3], ['bristle', 2], ['magpie', 1.2]] },
+      { from: 140,  interval: 0.8,  burst: 3, maxAlive: 98,  types: [['berryling', 2.5], ['bristle', 2], ['magpie', 1.5], ['mole', 1.2]] },
+      { from: 200,  interval: 0.75, burst: 3, maxAlive: 120, types: [['bristle', 2], ['magpie', 1.7], ['mole', 1.5], ['cubby', 1.2], ['berryling', 1.6]] },
+      { from: 270,  interval: 0.7,  burst: 4, maxAlive: 145, types: [['magpie', 1.8], ['mole', 1.6], ['cubby', 1.5], ['gourd', 1.1], ['berryling', 1.5]] },
+      { from: 345,  interval: 0.62, burst: 4, maxAlive: 170, types: [['mole', 1.7], ['cubby', 1.7], ['gourd', 1.3], ['bristle', 1.8], ['magpie', 1.8]] },
+      { from: 440,  interval: 0.58, burst: 4, maxAlive: 195, types: [['cubby', 1.9], ['gourd', 1.5], ['mole', 1.9], ['bristle', 2], ['magpie', 2]] },
+      { from: 540,  interval: 0.54, burst: 5, maxAlive: 220, types: [['gourd', 1.7], ['cubby', 2.1], ['mole', 2.1], ['bristle', 2.2]] },
+      { from: 655,  interval: 0.5,  burst: 5, maxAlive: 245, types: [['cubby', 2.3], ['gourd', 1.9], ['mole', 2.3], ['magpie', 2.4], ['berryling', 2]] },
+      { from: 785,  interval: 0.46, burst: 6, maxAlive: 268, types: [['gourd', 2.1], ['cubby', 2.5], ['bristle', 2.6], ['mole', 2.5]] },
+      { from: 925,  interval: 0.44, burst: 6, maxAlive: 288, types: [['cubby', 2.7], ['gourd', 2.3], ['magpie', 2.8], ['mole', 2.7], ['berryling', 2.2]] },
+      { from: 1060, interval: 0.42, burst: 6, maxAlive: 300, types: [['gourd', 2.5], ['cubby', 2.9], ['bristle', 3], ['mole', 2.9]] },
+      { from: 1200, interval: 0.95, burst: 3, maxAlive: 85,  types: [['berryling', 2], ['magpie', 1.5], ['bristle', 1]] }, // Boss 阶段轻刷
     ],
     events: [
-      { t: 130,  kind: 'ring', enemy: 'berryling', n: 18 },
-      { t: 210,  kind: 'elite' },
-      { t: 300,  kind: 'ring', enemy: 'magpie', n: 20 },
-      { t: 390,  kind: 'ring', enemy: 'bristle', n: 16 },
-      { t: 480,  kind: 'elite' },
-      { t: 580,  kind: 'ring', enemy: 'mole', n: 14 },
-      { t: 680,  kind: 'elite' },
-      { t: 780,  kind: 'ring', enemy: 'cubby', n: 12 },
-      { t: 880,  kind: 'elite' },
-      { t: 990,  kind: 'ring', enemy: 'gourd', n: 12 },
-      { t: 1100, kind: 'elite' },
-      { t: 1210, kind: 'ring', enemy: 'magpie', n: 26 },
-      { t: 1320, kind: 'elite' },
-      { t: 1430, kind: 'ring', enemy: 'berryling', n: 30 },
-      { t: 1560, kind: 'boss' },
+      { t: 100,  kind: 'ring', enemy: 'berryling', n: 18 },
+      { t: 160,  kind: 'elite' },
+      { t: 230,  kind: 'ring', enemy: 'magpie', n: 20 },
+      { t: 300,  kind: 'ring', enemy: 'bristle', n: 16 },
+      { t: 370,  kind: 'elite' },
+      { t: 445,  kind: 'ring', enemy: 'mole', n: 14 },
+      { t: 525,  kind: 'elite' },
+      { t: 580,  kind: 'ring', enemy: 'cubby', n: 12 },
+      { t: 600,  kind: 'surge', n: 2 }, // M12 中场事件（中点；不进无尽重放窗口）
+      { t: 675,  kind: 'elite' },
+      { t: 760,  kind: 'ring', enemy: 'gourd', n: 12 },
+      { t: 845,  kind: 'elite' },
+      { t: 930,  kind: 'ring', enemy: 'magpie', n: 26 },
+      { t: 1015, kind: 'elite' },
+      { t: 1100, kind: 'ring', enemy: 'berryling', n: 30 },
+      { t: 1200, kind: 'boss' },
     ],
     decor: [
       { keys: ['bd_bush0', 'bd_bush1'], nMin: 3, nMax: 5, chance: 1 },
@@ -502,12 +513,13 @@ export const MAPS: MapSpec[] = [
     unlockAch: 'lavenderClear',
   },
 
-  // ---------- 7. 星语夜原：夜行游击 + 流星雨，28 分钟 ----------
+  // ---------- 7. 星语夜原：夜行游击 + 流星雨，30 分钟（M12 长档 + 中点 surge） ----------
   // 敌人忽明忽暗（星闪闪闪现、月相灵变速、小枭枭绕飞），流星敌我同伤可借力清群
   {
     id: 'nocturne',
-    minutes: 28,
-    timeK: 12 / 28,
+    minutes: 30,
+    timeK: 12 / 30,
+    xpK: 0.95,
     icon: 'nd_bell',
     iconScale: 2.2,
     color: 0x8890c8,
@@ -516,37 +528,38 @@ export const MAPS: MapSpec[] = [
     eliteId: 'cometlord',
     waves: [
       { from: 0,    interval: 0.95, burst: 2, maxAlive: 32,  types: [['moonmote', 1]] },
-      { from: 50,   interval: 0.85, burst: 2, maxAlive: 54,  types: [['moonmote', 3], ['nightmoth', 1.5]] },
-      { from: 110,  interval: 0.8,  burst: 3, maxAlive: 78,  types: [['moonmote', 3], ['nightmoth', 2], ['owlet', 1.2]] },
-      { from: 180,  interval: 0.75, burst: 3, maxAlive: 100, types: [['moonmote', 2.5], ['nightmoth', 2], ['owlet', 1.5], ['twinkle', 1.2]] },
-      { from: 260,  interval: 0.7,  burst: 3, maxAlive: 124, types: [['nightmoth', 2], ['owlet', 1.7], ['twinkle', 1.5], ['lunaling', 1.2], ['moonmote', 1.6]] },
-      { from: 350,  interval: 0.65, burst: 4, maxAlive: 148, types: [['owlet', 1.8], ['twinkle', 1.6], ['lunaling', 1.5], ['sparkler', 1.1], ['moonmote', 1.5]] },
-      { from: 460,  interval: 0.6,  burst: 4, maxAlive: 172, types: [['twinkle', 1.7], ['lunaling', 1.7], ['sparkler', 1.3], ['nightmoth', 1.9], ['owlet', 1.9]] },
-      { from: 580,  interval: 0.56, burst: 4, maxAlive: 196, types: [['lunaling', 1.9], ['sparkler', 1.5], ['twinkle', 1.9], ['owlet', 2.1], ['nightmoth', 2]] },
-      { from: 720,  interval: 0.52, burst: 5, maxAlive: 220, types: [['sparkler', 1.7], ['lunaling', 2.1], ['twinkle', 2.1], ['owlet', 2.2]] },
-      { from: 880,  interval: 0.48, burst: 5, maxAlive: 245, types: [['lunaling', 2.3], ['sparkler', 1.9], ['nightmoth', 2.5], ['twinkle', 2.3], ['moonmote', 2]] },
-      { from: 1060, interval: 0.45, burst: 6, maxAlive: 268, types: [['sparkler', 2.1], ['lunaling', 2.5], ['owlet', 2.6], ['twinkle', 2.5]] },
-      { from: 1250, interval: 0.43, burst: 6, maxAlive: 288, types: [['lunaling', 2.7], ['sparkler', 2.3], ['nightmoth', 2.9], ['owlet', 2.8], ['moonmote', 2.2]] },
-      { from: 1460, interval: 0.41, burst: 6, maxAlive: 305, types: [['sparkler', 2.5], ['lunaling', 2.9], ['twinkle', 2.9], ['owlet', 3]] },
-      { from: 1680, interval: 0.9,  burst: 3, maxAlive: 90,  types: [['moonmote', 2], ['nightmoth', 1.5], ['owlet', 1]] }, // Boss 阶段轻刷
+      { from: 55,   interval: 0.85, burst: 2, maxAlive: 54,  types: [['moonmote', 3], ['nightmoth', 1.5]] },
+      { from: 120,  interval: 0.8,  burst: 3, maxAlive: 78,  types: [['moonmote', 3], ['nightmoth', 2], ['owlet', 1.2]] },
+      { from: 195,  interval: 0.75, burst: 3, maxAlive: 100, types: [['moonmote', 2.5], ['nightmoth', 2], ['owlet', 1.5], ['twinkle', 1.2]] },
+      { from: 280,  interval: 0.7,  burst: 3, maxAlive: 124, types: [['nightmoth', 2], ['owlet', 1.7], ['twinkle', 1.5], ['lunaling', 1.2], ['moonmote', 1.6]] },
+      { from: 375,  interval: 0.65, burst: 4, maxAlive: 148, types: [['owlet', 1.8], ['twinkle', 1.6], ['lunaling', 1.5], ['sparkler', 1.1], ['moonmote', 1.5]] },
+      { from: 495,  interval: 0.6,  burst: 4, maxAlive: 172, types: [['twinkle', 1.7], ['lunaling', 1.7], ['sparkler', 1.3], ['nightmoth', 1.9], ['owlet', 1.9]] },
+      { from: 620,  interval: 0.56, burst: 4, maxAlive: 196, types: [['lunaling', 1.9], ['sparkler', 1.5], ['twinkle', 1.9], ['owlet', 2.1], ['nightmoth', 2]] },
+      { from: 770,  interval: 0.52, burst: 5, maxAlive: 220, types: [['sparkler', 1.7], ['lunaling', 2.1], ['twinkle', 2.1], ['owlet', 2.2]] },
+      { from: 945,  interval: 0.48, burst: 5, maxAlive: 245, types: [['lunaling', 2.3], ['sparkler', 1.9], ['nightmoth', 2.5], ['twinkle', 2.3], ['moonmote', 2]] },
+      { from: 1135, interval: 0.45, burst: 6, maxAlive: 268, types: [['sparkler', 2.1], ['lunaling', 2.5], ['owlet', 2.6], ['twinkle', 2.5]] },
+      { from: 1340, interval: 0.43, burst: 6, maxAlive: 288, types: [['lunaling', 2.7], ['sparkler', 2.3], ['nightmoth', 2.9], ['owlet', 2.8], ['moonmote', 2.2]] },
+      { from: 1565, interval: 0.41, burst: 6, maxAlive: 305, types: [['sparkler', 2.5], ['lunaling', 2.9], ['twinkle', 2.9], ['owlet', 3]] },
+      { from: 1800, interval: 0.9,  burst: 3, maxAlive: 90,  types: [['moonmote', 2], ['nightmoth', 1.5], ['owlet', 1]] }, // Boss 阶段轻刷
     ],
     events: [
-      { t: 130,  kind: 'ring', enemy: 'moonmote', n: 20 },
-      { t: 220,  kind: 'elite' },
-      { t: 310,  kind: 'ring', enemy: 'nightmoth', n: 20 },
-      { t: 400,  kind: 'ring', enemy: 'owlet', n: 16 },
-      { t: 490,  kind: 'elite' },
-      { t: 600,  kind: 'ring', enemy: 'twinkle', n: 14 },
-      { t: 710,  kind: 'elite' },
-      { t: 820,  kind: 'ring', enemy: 'lunaling', n: 14 },
-      { t: 930,  kind: 'elite' },
-      { t: 1040, kind: 'ring', enemy: 'sparkler', n: 12 },
-      { t: 1150, kind: 'elite' },
-      { t: 1260, kind: 'ring', enemy: 'nightmoth', n: 28 },
-      { t: 1380, kind: 'elite' },
-      { t: 1500, kind: 'ring', enemy: 'moonmote', n: 32 },
-      { t: 1600, kind: 'elite' },
-      { t: 1680, kind: 'boss' },
+      { t: 140,  kind: 'ring', enemy: 'moonmote', n: 20 },
+      { t: 235,  kind: 'elite' },
+      { t: 330,  kind: 'ring', enemy: 'nightmoth', n: 20 },
+      { t: 430,  kind: 'ring', enemy: 'owlet', n: 16 },
+      { t: 525,  kind: 'elite' },
+      { t: 645,  kind: 'ring', enemy: 'twinkle', n: 14 },
+      { t: 760,  kind: 'elite' },
+      { t: 870,  kind: 'ring', enemy: 'lunaling', n: 14 },
+      { t: 900,  kind: 'surge', n: 3 }, // M12 中场事件（中点；不进无尽重放窗口）
+      { t: 995,  kind: 'elite' },
+      { t: 1115, kind: 'ring', enemy: 'sparkler', n: 12 },
+      { t: 1230, kind: 'elite' },
+      { t: 1350, kind: 'ring', enemy: 'nightmoth', n: 28 },
+      { t: 1480, kind: 'elite' },
+      { t: 1605, kind: 'ring', enemy: 'moonmote', n: 32 },
+      { t: 1715, kind: 'elite' },
+      { t: 1800, kind: 'boss' },
     ],
     decor: [
       { keys: ['nd_grass0', 'nd_grass1'], nMin: 3, nMax: 6, chance: 1 },
@@ -560,12 +573,13 @@ export const MAPS: MapSpec[] = [
     unlockAch: 'brambleClear',
   },
 
-  // ---------- 8. 破晓之巅：终局长夜 + 晨光柱，30 分钟 ----------
+  // ---------- 8. 破晓之巅：终局长夜 + 晨光柱，30 分钟（M12 长档 + 中点 surge） ----------
   // 影群海量缠斗（影伏伏伏击、蚀月轮滚撞、夜昙昙压制），晨光柱是黎明前的安全岛
   {
     id: 'summit',
     minutes: 30,
     timeK: 12 / 30,
+    xpK: 0.9,
     icon: 'sd_bloom',
     iconScale: 2.2,
     color: 0xc8a050,
@@ -598,7 +612,8 @@ export const MAPS: MapSpec[] = [
       { t: 580,  kind: 'ring', enemy: 'gloom', n: 16 },
       { t: 690,  kind: 'elite' },
       { t: 800,  kind: 'ring', enemy: 'lurker', n: 12 },
-      { t: 910,  kind: 'elite' },
+      { t: 900,  kind: 'surge', n: 3 }, // M12 中场事件（中点；不进无尽重放窗口）
+      { t: 950,  kind: 'elite' },
       { t: 1020, kind: 'ring', enemy: 'eclipse', n: 12 },
       { t: 1130, kind: 'elite' },
       { t: 1240, kind: 'ring', enemy: 'nightbloom', n: 12 },

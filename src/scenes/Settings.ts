@@ -118,10 +118,10 @@ export class SettingsScene extends UIScene {
     toggleRow('set_unlockAll', s.unlockAll, boolSetting('unlockAll'));
 
     // 调试操作行：加币 / 时间跳跃 / 指定武器 / 波次预览 / 规则卡直给（后四者仅对进行中的局生效）
+    // + DPS 基准（M12，仅 DEV 构建出现，随调试隔离一起被 PROD 隐藏）
     const opCy = y + rowH / 2;
     rowBg(opCy);
     const btnH = Math.min(THEME.hitMin, rowH - 12);
-    const cells = hstack(rect(x0 - 4, opCy - btnH / 2, maxW + 8, btnH), THEME.gapXs, ['flex', 'flex', 'flex', 'flex', 'flex']);
     const ops: Array<[string, () => void]> = [
       [t('set_addCoins'), () => {
         Meta.addCoins(1000, false); // 调试加币不计入累计获得（不触发金币成就）
@@ -135,6 +135,13 @@ export class SettingsScene extends UIScene {
       [t('set_wavePreview'), () => this.openWavePreview()],
       [t('set_giveArcana'), () => this.openArcanaPicker()],
     ];
+    if (import.meta.env.DEV) {
+      ops.push([t('set_bench'), () => {
+        this.scene.stop('hud');
+        this.scene.start('game', { charId: 'spark', mapId: 'meadow', bench: true });
+      }]);
+    }
+    const cells = hstack(rect(x0 - 4, opCy - btnH / 2, maxW + 8, btnH), THEME.gapXs, ops.map(() => 'flex' as const));
     cells.forEach((c, i) => {
       new UIButton(this, c.x + c.w / 2, c.y + c.h / 2, {
         w: c.w, h: c.h, label: ops[i][0], fontSize: vp.fs(12), onTap: ops[i][1],
@@ -205,7 +212,10 @@ export class SettingsScene extends UIScene {
       });
     });
     for (const ev of map.events) {
-      const tag = ev.kind === 'boss' ? '★ Boss' : ev.kind === 'elite' ? '◆ 精英' : '◯ 包围环';
+      const tag = ev.kind === 'boss' ? '★ Boss'
+        : ev.kind === 'elite' ? '◆ 精英'
+        : ev.kind === 'surge' ? '◈ 强敌成群'
+        : '◯ 包围环';
       lines.push({
         hot: false,
         text: (elapsed >= ev.t ? '   ' : ' · ') + fmt(ev.t) + '  ' + tag +

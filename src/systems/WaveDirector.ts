@@ -17,11 +17,13 @@ export class WaveDirector implements RunSystem {
   private eventIdx = 0;
   /** Boss 苏醒时刻（= 无尽循环窗口右端；各图 events 的 boss 项与 minutes 对齐） */
   private readonly bossT: number;
-  /** 无尽重放窗口事件：t ∈ [bossT−cycleLen, bossT]；一次性事件（M15 surge 类）不得进窗口 */
+  /** 无尽重放窗口事件：t ∈ [bossT−cycleLen, bossT]；一次性事件（surge）不得进窗口 */
   private readonly loopEvents: WaveEvent[];
   private loopIdx = 0;
   /** 当前重放窗口所属轮次（Boss 事件落在轮末 = 下一轮边界，独立于 run.cycle 推进，防跳过） */
   private loopCycle = 1;
+  /** surge 保底（M12）：触发后 75s 内精英击杀数未增加 → 玩家旁直接掉 1 宝箱（弱者保护） */
+  private surgeGuard: { until: number; baseKills: number } | null = null;
 
   constructor(private ctx: CombatContext, private enemies: EnemySystem) {
     this.bossT = ctx.map.minutes * 60;
@@ -93,6 +95,14 @@ export class WaveDirector implements RunSystem {
       this.fire(events[this.eventIdx++], 0);
     }
 
+    // surge 保底宝箱（M12）
+    if (this.surgeGuard && run.elapsed >= this.surgeGuard.until) {
+      if (run.eliteKills <= this.surgeGuard.baseKills) {
+        ctx.spawnPickup('chest', ctx.player.x + 60, ctx.player.y - 10);
+      }
+      this.surgeGuard = null;
+    }
+
     // 无尽：窗口事件按轮偏移重放（Boss 事件 t=bossT 自然落在每轮末）
     if (run.mode === 'endless' && this.loopEvents.length > 0) {
       const loopStart = this.bossT - ENDLESS.cycleLen;
@@ -141,6 +151,22 @@ export class WaveDirector implements RunSystem {
       }
       emitEvent(ctx.scene.game, 'hud:warn', 'eliteWarn');
       SFX.warning();
+    } else if (ev.kind === 'surge') {
+      // M12 中场事件：n 只精英环形均布包围 + 横幅 + BGM 强度抬升；保底宝箱兜底见 update
+      const cam = ctx.scene.cameras.main;
+      const r = Math.hypot(cam.width, cam.height) / 2 / cam.zoom + 60;
+      const n = ev.n ?? 2;
+      const a0 = Math.random() * Math.PI * 2;
+      for (let i = 0; i < n; i++) {
+        const a = a0 + (i / n) * Math.PI * 2;
+        this.enemies.spawn(ev.enemy ?? map.eliteId, ctx.player.x + Math.cos(a) * r, ctx.player.y + Math.sin(a) * r);
+      }
+      this.surgeGuard = { until: ctx.run.elapsed + 75, baseKills: ctx.run.eliteKills };
+      ctx.bgmBoost(18);
+      emitEvent(ctx.scene.game, 'hud:warn', 'surgeWarn');
+      SFX.warning();
+      ctx.scene.time.delayedCall(280, () => SFX.warning());
+      if (getSettings().shake) ctx.scene.cameras.main.shake(350, 0.004);
     } else if (ev.kind === 'boss') {
       const [x, y] = this.enemies.edgePos();
       this.enemies.spawn(map.bossId, x, y);

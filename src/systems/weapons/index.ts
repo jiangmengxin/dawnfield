@@ -111,6 +111,12 @@ export class WeaponManager implements RunSystem {
     this.get(id)?.onEvolve();
   }
 
+  /** 清空全部武器（M12 bench 配置切换用） */
+  removeAll(): void {
+    this.list.forEach((w) => w.destroy());
+    this.list.length = 0;
+  }
+
   update(dt: number): void {
     for (const w of this.list) w.update(dt);
   }

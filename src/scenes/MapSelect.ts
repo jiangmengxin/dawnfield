@@ -1,10 +1,10 @@
-// 地图选择：8 格（解锁链 = 通关上一图的成就）；卡片标注各图名义时长
-// M11 改版：顶部「普通 / 无尽」Tabs——无尽页只开放已通关图并展示最佳记录；
-// 已通关图点击弹难度弹窗（普通 / 狂暴 I / 狂暴 II），无任何解锁时保持现状直接开局
-import { t } from '../i18n';
-import { MAPS, MapSpec } from '../content/maps';
+// 地图选择（M12 改版）：地图网格上方两组模式开关——模式（普通/无尽）+ 难度（普通/狂暴 I/II），
+// 点击地图直接开局（取代 M11 的难度弹窗，少一步且当前选择常显）；
+// 逐图解锁约束（无尽/狂暴需通关、狂暴 II 需狂暴 I 通关）以卡面锁定提示表达
+import { FONT, t } from '../i18n';
+import { PAL } from '../gfx/palette';
+import { MAPS } from '../content/maps';
 import { ACHIEVEMENTS } from '../content/achievements';
-import { ENEMIES } from '../content/enemies';
 import { ensureMapAssets } from '../gfx/textures';
 import { Meta } from '../core/MetaState';
 import { getSettings } from '../core/settings';
@@ -13,9 +13,8 @@ import { UIScene } from '../ui/UIScene';
 import { THEME } from '../ui/theme';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { Tabs } from '../ui/widgets/Tabs';
-import { Modal } from '../ui/widgets/Modal';
-import { Card } from '../ui/widgets/Card';
 import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
+import type { MapId } from '../content/ids';
 import type { RunLaunchData, RunMode } from '../systems/context';
 
 const TARGET_MAPS = 8; // 1.0 目标量级
@@ -23,6 +22,7 @@ const TARGET_MAPS = 8; // 1.0 目标量级
 export class MapSelectScene extends UIScene {
   private charId = 'spark';
   private tab: RunMode = 'normal';
+  private diff: 0 | 1 | 2 = 0;
 
   constructor() {
     super('mapselect');
@@ -31,6 +31,7 @@ export class MapSelectScene extends UIScene {
   init(data: { charId?: string }): void {
     this.charId = data.charId ?? 'spark';
     this.tab = 'normal';
+    this.diff = 0;
   }
 
   /** 该图是否已通关（狂暴 I / 无尽的解锁条件）；调试「解锁全部内容」一并放行 */
@@ -38,24 +39,48 @@ export class MapSelectScene extends UIScene {
     return Meta.hasAch(mapId + 'Clear') || getSettings().unlockAll;
   }
 
+  /** 狂暴 II：该图狂暴 I 已通关 */
+  private hyper2(mapId: MapId): boolean {
+    return (Meta.save.hyper[mapId] ?? 0) >= 1 || getSettings().unlockAll;
+  }
+
   protected buildLayout(): void {
     const content = this.buildHeader(t('scn_mapSelect'));
     const compact = this.vp.bp === 'compact';
     const fontScale = compact ? 0.9 : 1;
+    const rowH = Math.max(38, this.vp.s(42));
+    const wide = content.w >= 540;
 
-    // 模式 Tabs（rebuild 全量重建，activeId 由场景字段保持）
-    const tabsH = Math.max(40, this.vp.s(44));
-    new Tabs(this, { x: content.x, y: content.y, w: content.w, h: tabsH }, [
+    // 模式 + 难度开关（rebuild 全量重建，选中态由场景字段保持）：宽屏并排 / 窄屏两行
+    const modeW = wide ? content.w * 0.36 : content.w;
+    const diffW = wide ? content.w * 0.6 : content.w;
+    new Tabs(this, { x: content.x, y: content.y, w: modeW, h: rowH }, [
       { id: 'normal', label: t('tab_normal') },
       { id: 'endless', label: t('tab_endless') },
     ], (id) => {
       this.tab = id as RunMode;
       this.rebuild();
     }, this.tab);
+    const diffY = wide ? content.y : content.y + rowH + THEME.gapXs;
+    new Tabs(this, { x: content.x + (wide ? content.w - diffW : 0), y: diffY, w: diffW, h: rowH }, [
+      { id: '0', label: t('diff_normal') },
+      { id: '1', label: t('diff_hyper1') },
+      { id: '2', label: t('diff_hyper2') },
+    ], (id) => {
+      this.diff = Number(id) as 0 | 1 | 2;
+      this.rebuild();
+    }, String(this.diff));
+
+    // 当前难度一行小字说明（取代 M11 难度弹窗的信息位，页面保持清爽）
+    const diffKey = this.diff === 0 ? 'diff_normal_d' : this.diff === 1 ? 'diff_hyper1_d' : 'diff_hyper2_d';
+    const togglesH = (wide ? rowH : rowH * 2 + THEME.gapXs) + 6;
+    const hint = this.add.text(content.x + content.w / 2, content.y + togglesH, t(diffKey), {
+      fontFamily: FONT, fontSize: this.vp.fs(13) + 'px', color: PAL.inkSoft,
+    }).setOrigin(0.5, 0);
+    const top = content.y + togglesH + hint.height + THEME.gapSm;
 
     const panel = new ScrollPanel(this, {
-      x: content.x, y: content.y + tabsH + THEME.gapSm,
-      w: content.w, h: content.h - tabsH - THEME.gapSm,
+      x: content.x, y: top, w: content.w, h: content.y + content.h - top,
     });
 
     const items: CardGridItem[] = MAPS.map((m) => {
@@ -69,27 +94,36 @@ export class MapSelectScene extends UIScene {
           fontScale,
         };
       }
-      // 无尽页：未通关图锁定（通关后解锁该图无尽）
-      if (this.tab === 'endless' && !this.cleared(m.id)) {
-        return { title: '???', desc: t('ui_endlessLocked'), locked: true, fontScale };
-      }
       ensureMapAssets(this, m.id); // 图标纹理懒生成（幂等）
+      // 当前模式/难度下该图的解锁约束（不满足 → 卡面提示，点击不放行）
+      const lockMsg = this.tab === 'endless' && !this.cleared(m.id)
+        ? t('ui_endlessLocked')
+        : this.diff >= 1 && !this.cleared(m.id)
+          ? t('ui_needClear')
+          : this.diff === 2 && !this.hyper2(m.id)
+            ? t('ui_needHyper1')
+            : null;
       const rec = Meta.save.endless[m.id];
-      const tag = this.tab === 'endless'
-        ? rec
-          ? t('endlessRecord').replace('{n}', String(rec.cycle)).replace('{t}', fmtTime(rec.sec))
-          : t('ui_noRecord')
-        : m.minutes + ' ' + t('ui_minutes');
+      const tag = lockMsg
+        ? t('ui_locked')
+        : this.tab === 'endless'
+          ? rec
+            ? t('endlessRecord').replace('{n}', String(rec.cycle)).replace('{t}', fmtTime(rec.sec))
+            : t('ui_noRecord')
+          : m.minutes + ' ' + t('ui_minutes');
       return {
         icon: m.icon,
         iconScale: m.iconScale,
         title: t('map_' + m.id),
-        desc: compact ? undefined : t('map_' + m.id + '_d'),
+        desc: lockMsg ?? (compact ? undefined : t('map_' + m.id + '_d')),
         tag,
-        tagColor: this.tab === 'endless' && rec ? '#C8902A' : undefined,
+        tagColor: lockMsg ? '#C06870' : this.tab === 'endless' && rec ? '#C8902A' : undefined,
         color: m.color,
         fontScale,
-        onTap: () => this.pick(m),
+        onTap: () => {
+          if (lockMsg) this.toast(lockMsg);
+          else this.launch(m.id);
+        },
       };
     });
     for (let i = MAPS.length; i < TARGET_MAPS; i++) {
@@ -103,47 +137,28 @@ export class MapSelectScene extends UIScene {
     });
   }
 
-  /** 点击已解锁图：有额外难度选项 → 弹窗；否则保持现状直接开局 */
-  private pick(m: MapSpec): void {
-    if (this.tab === 'normal' && !this.cleared(m.id)) {
-      this.launch(m.id, 0);
-      return;
-    }
-    const hyper2 = (Meta.save.hyper[m.id] ?? 0) >= 1 || getSettings().unlockAll;
-    const opts: Array<{ diff: 0 | 1 | 2; name: string; desc: string; icon: string; color?: number }> = [
-      { diff: 0, name: t('diff_normal'), desc: t('diff_normal_d'), icon: m.icon },
-      { diff: 1, name: t('diff_hyper1'), desc: t('diff_hyper1_d'), icon: ENEMIES[m.eliteId].tex, color: 0xe0a868 },
-    ];
-    if (hyper2) {
-      opts.push({ diff: 2, name: t('diff_hyper2'), desc: t('diff_hyper2_d'), icon: ENEMIES[m.bossId].tex, color: 0xc06870 });
-    }
-    const rowH = 68;
-    const gap = THEME.gapSm;
-    Modal.open(this, {
-      title: (this.tab === 'endless' ? t('tab_endless') : t('diffPick')) + ' · ' + t('map_' + m.id),
-      w: 420,
-      h: 100 + opts.length * (rowH + gap),
-      build: (panel, inner) => {
-        opts.forEach((o, i) => {
-          const card = new Card(this, inner.x + inner.w / 2, inner.y + 6 + i * (rowH + gap) + rowH / 2, {
-            w: inner.w, h: rowH,
-            layout: 'row',
-            icon: o.icon,
-            title: o.name,
-            desc: o.desc,
-            color: o.color,
-            onTap: () => this.launch(m.id, o.diff),
-          });
-          panel.add(card);
+  private launch(mapId: string): void {
+    resetStack();
+    const data: RunLaunchData = { charId: this.charId, mapId, mode: this.tab, diff: this.diff };
+    this.scene.start('game', data);
+  }
+
+  /** 轻量提示横幅（点击未解锁约束的地图时说明条件） */
+  private toast(msg: string): void {
+    const safe = this.vp.safe;
+    const txt = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.16, msg, {
+      fontFamily: FONT, fontSize: this.vp.fs(17) + 'px', fontStyle: 'bold', color: '#C06870',
+      stroke: '#FFFFFF', strokeThickness: 5,
+    }).setOrigin(0.5).setDepth(600).setAlpha(0);
+    this.tweens.add({
+      targets: txt, alpha: 1, duration: 180,
+      onComplete: () => {
+        this.tweens.add({
+          targets: txt, alpha: 0, delay: 1200, duration: 300,
+          onComplete: () => txt.destroy(),
         });
       },
     });
-  }
-
-  private launch(mapId: string, diff: 0 | 1 | 2): void {
-    resetStack();
-    const data: RunLaunchData = { charId: this.charId, mapId, mode: this.tab, diff };
-    this.scene.start('game', data);
   }
 }
 

@@ -49,7 +49,7 @@ export class PickupSystem implements RunSystem {
     }
     let o = pool.find((i) => !i.active);
     if (!o) {
-      o = { img: this.ctx.scene.add.image(0, 0, tex).setDepth(500), value: 0, magnet: false, active: false, born: 0 };
+      o = { img: this.ctx.scene.add.image(0, 0, tex), value: 0, magnet: false, active: false, born: 0 };
       pool.push(o);
     }
     o.active = true;
@@ -57,6 +57,8 @@ export class PickupSystem implements RunSystem {
     o.value = value;
     o.born = this.ctx.run.elapsed;
     o.img.setPosition(x + (Math.random() - 0.5) * 14, y + (Math.random() - 0.5) * 14).setVisible(true);
+    // M12 可读性：拾取物层级提到敌人（1000 + y×0.01）之上，终局尸潮不再淹没光珠/金币
+    o.img.setDepth(1100 + o.img.y * 0.01);
     if (tex === 'gem') {
       o.img.setScale(value >= 5 ? 1.25 : 0.9).setTint(value >= 5 ? PAL.gemBig : PAL.gem);
     } else {
@@ -88,12 +90,14 @@ export class PickupSystem implements RunSystem {
     if (this.suppressDrops) return;
     let p = this.pickups.find((i) => !i.active);
     if (!p) {
-      p = { img: this.ctx.scene.add.image(0, 0, kind).setDepth(600), kind, active: false };
+      p = { img: this.ctx.scene.add.image(0, 0, kind), kind, active: false };
       this.pickups.push(p);
     }
     p.kind = kind;
     p.active = true;
     p.img.setTexture(kind).setPosition(x, y).setVisible(true).setScale(0);
+    // M12 可读性：红心/宝箱层级在敌人与光珠之上（与 spawnOrb 同一基准）
+    p.img.setDepth(1110 + y * 0.01);
     this.ctx.scene.tweens.add({ targets: p.img, scale: 1, duration: 300, ease: 'Back.easeOut' });
   }
 

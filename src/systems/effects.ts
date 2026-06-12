@@ -76,6 +76,19 @@ export class Effects {
     }
   }
 
+  /** 预警线（M12 telegraph 规范）：冲刺/俯冲路径预示——统一警示色、双层粗细、淡入淡出 */
+  teleLine(x: number, y: number, nx: number, ny: number, len: number, dur: number): void {
+    const g = this.scene.add.graphics().setDepth(DEPTH_FX - 1).setAlpha(0);
+    g.lineStyle(9, 0xe06060, 0.16);
+    g.lineBetween(x, y, x + nx * len, y + ny * len);
+    g.lineStyle(3.5, 0xe06060, 0.45);
+    g.lineBetween(x, y, x + nx * len, y + ny * len);
+    this.scene.tweens.add({
+      targets: g, alpha: 1, duration: dur * 1000 * 0.35, yoyo: true, hold: dur * 1000 * 0.3,
+      onComplete: () => g.destroy(),
+    });
+  }
+
   /** 扩散环（爆炸/冲击波视觉） */
   ring(x: number, y: number, color: number, toScale: number, dur = 0.35): void {
     const img = this.scene.add.image(x, y, 'p_ring').setDepth(DEPTH_FX).setTint(color).setScale(0.2).setAlpha(0.9);
@@ -97,9 +110,23 @@ export class Effects {
     });
   }
 
-  /** 伤害飘字（可在设置中关闭） */
-  number(x: number, y: number, value: number, crit: boolean): void {
+  /** 短窗内同目标数字合并（M12 打击感分级：多段武器不刷屏） */
+  private numMerge = new Map<object, { txt: Phaser.GameObjects.Text; value: number; at: number; crit: boolean; big: boolean }>();
+
+  /** 伤害飘字（可在设置中关闭）；crit/big 分级配色字号，key（敌人）相同且 120ms 内合并数值 */
+  number(x: number, y: number, value: number, crit: boolean, big = false, key?: object): void {
     if (!getSettings().dmgNumbers) return;
+    const now = this.scene.time.now;
+    if (key) {
+      const m = this.numMerge.get(key);
+      if (m && m.txt.visible && now - m.at < 120) {
+        m.value += value;
+        m.crit = m.crit || crit;
+        m.big = m.big || big;
+        this.styleNumber(m.txt, m.value, m.crit, m.big);
+        return;
+      }
+    }
     let txt: Phaser.GameObjects.Text | undefined;
     for (const t of this.texts) {
       if (!t.visible) { txt = t; break; }
@@ -116,13 +143,12 @@ export class Effects {
       }).setDepth(DEPTH_FX + 1).setOrigin(0.5);
       this.texts.push(txt);
     }
-    txt.setText(String(Math.round(value)))
-      .setColor(crit ? '#E84838' : '#F08838')
-      .setFontSize(crit ? 22 : 16)
-      .setPosition(x + (Math.random() - 0.5) * 16, y - 14)
+    this.styleNumber(txt, value, crit, big);
+    txt.setPosition(x + (Math.random() - 0.5) * 16, y - 14)
       .setAlpha(1)
-      .setScale(crit ? 1.2 : 1)
+      .setScale(crit || big ? 1.25 : 1)
       .setVisible(true);
+    if (key) this.numMerge.set(key, { txt, value, at: now, crit, big });
     this.scene.tweens.add({
       targets: txt,
       y: txt.y - 34,
@@ -131,6 +157,13 @@ export class Effects {
       ease: 'Cubic.easeOut',
       onComplete: () => txt.setVisible(false),
     });
+  }
+
+  /** 分级样式：普通橙 16 / 大伤害金橙 21 / 暴击红 22（暴击+大伤害 24） */
+  private styleNumber(txt: Phaser.GameObjects.Text, value: number, crit: boolean, big: boolean): void {
+    txt.setText(String(Math.round(value)))
+      .setColor(crit ? '#E84838' : big ? '#E89018' : '#F08838')
+      .setFontSize(crit ? (big ? 24 : 22) : big ? 21 : 16);
   }
 
   update(dt: number): void {
@@ -157,5 +190,6 @@ export class Effects {
     this.texts.forEach((t) => t.destroy());
     this.particles = [];
     this.texts = [];
+    this.numMerge.clear();
   }
 }

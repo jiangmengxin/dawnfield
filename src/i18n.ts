@@ -30,6 +30,27 @@ const D: Dict = {
   evolveTag: ['进化', 'EVOLVE'],
   maxTag: ['满级', 'MAX'],
 
+  // 晨露精华（M12 Limit Break：满构筑后升级溢出 → 微量永续成长）
+  essTag: ['永续', 'ESSENCE'],
+  ess_dmg: ['晨露精华·破晓', 'Dew Essence: Daybreak'],
+  ess_dmg_d: ['伤害 +2%（本局永续，可无限叠加）', 'Damage +2% (lasts this run, stacks forever)'],
+  ess_cd: ['晨露精华·疾风', 'Dew Essence: Swiftwind'],
+  ess_cd_d: ['冷却 −1.5%（本局永续，可无限叠加）', 'Cooldown −1.5% (lasts this run, stacks forever)'],
+  ess_area: ['晨露精华·绽放', 'Dew Essence: Fullbloom'],
+  ess_area_d: ['范围 +2%（本局永续，可无限叠加）', 'Area +2% (lasts this run, stacks forever)'],
+  statEssence: ['晨露精华', 'Dew Essence'],
+
+  // surge 中场事件（M12）
+  surgeWarn: ['!! 强敌成群来袭 !!', '!! Elites swarm in !!'],
+
+  // 暂停面板构筑总览（M12）
+  st_dmg: ['伤害', 'DMG'],
+  st_cd: ['冷却', 'CD'],
+  st_area: ['范围', 'Area'],
+  st_move: ['移速', 'Move'],
+  st_magnet: ['磁吸', 'Magnet'],
+  st_armor: ['护甲', 'Armor'],
+
   // 构筑操控（M10）：重抽 / 放逐 / 跳过
   lvl_reroll: ['↻ 重抽 ×{n}', '↻ Reroll ×{n}'],
   lvl_skip: ['▸ 跳过 ×{n}', '▸ Skip ×{n}'],
@@ -43,6 +64,8 @@ const D: Dict = {
   tab_normal: ['普通', 'Standard'],
   tab_endless: ['无尽', 'Endless'],
   ui_endlessLocked: ['通关该图后解锁无尽', 'Clear this map to unlock Endless'],
+  ui_needClear: ['通关该图后可选狂暴', 'Clear this map to unlock Hyper'],
+  ui_needHyper1: ['狂暴 I 通关后可选', 'Clear Hyper I here first'],
   ui_noRecord: ['暂无记录', 'No record yet'],
   endlessRecord: ['第{n}轮 · {t}', 'Round {n} · {t}'],
   endlessCycleBanner: ['第 {n} 轮！', 'Round {n}!'],
@@ -50,7 +73,6 @@ const D: Dict = {
   endlessTitle: ['坚守了 {n} 轮', 'Held for {n} rounds'],
   statCycle: ['坚守轮次', 'Rounds Held'],
   newRecord: ['新纪录！', 'New Record!'],
-  diffPick: ['选择难度', 'Choose Difficulty'],
   diff_normal: ['普通', 'Normal'],
   diff_normal_d: ['标准的晨野之旅', 'The standard journey'],
   diff_hyper1: ['狂暴 I', 'Hyper I'],
@@ -384,6 +406,9 @@ const D: Dict = {
 
   // 商店（永久强化）
   shop_hint: ['永久强化对所有角色生效，可随时全额重置返还', 'Permanent boosts for every hero; reset any time for a full refund'],
+  shop_grpControl: ['局内操控', 'Run Control'],
+  shop_grpCombat: ['战斗', 'Combat'],
+  shop_grpEconomy: ['资源', 'Resources'],
   shop_price: ['价格', 'Cost'],
   shop_max: ['已满级', 'MAX'],
   shop_noCoins: ['金币不足', 'Not enough coins'],
@@ -430,6 +455,10 @@ const D: Dict = {
   codex_maps: ['地图', 'Fields'],
   codex_arcana: ['规则卡', 'Arcana'],
   codex_hint: ['游玩中遇见即点亮', 'Encounter things in a run to light them up'],
+  codex_hp: ['生命', 'HP'],
+  codex_spd: ['移速', 'SPD'],
+  codex_elite: ['精英', 'Elite'],
+  codex_boss: ['首领', 'Boss'],
 
   // 成就
   achUnlocked: ['成就达成！', 'Achievement!'],
@@ -547,6 +576,7 @@ const D: Dict = {
   set_giveWeapon: ['获得武器', 'Weapon'],
   set_wavePreview: ['波次预览', 'Waves'],
   set_giveArcana: ['获得规则卡', 'Arcana'],
+  set_bench: ['DPS 基准', 'DPS Bench'],
 };
 
 let lang: Lang = (() => {

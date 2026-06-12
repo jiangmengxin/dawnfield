@@ -31,3 +31,20 @@ export const DROPS = {
 };
 
 export const CRIT = { chance: 0.1, mul: 1.6 };
+
+// 晨露精华（M12 Limit Break）：满构筑（武器/被动槽满且全满级）后，升级三选一替换为
+// 微量永续成长卡，可无限叠加（XP ^1.85 曲线自限实际次数）；同时充当无尽模式玩家侧轮次补偿
+export const ESSENCE = {
+  dmg: 0.02,   // 伤害 +2% / 张（线性叠加）
+  cd: 0.015,   // 冷却 −1.5% / 张（乘方叠加，受 0.4 下限保护）
+  area: 0.02,  // 范围 +2% / 张（线性叠加）
+  heal: 40,    // 保留的第四张回血卡数额
+};
+
+// 打击感分级（M12）：大伤害/暴击微顿帧 + hitstop 预算（防高频武器把游戏卡成幻灯片）
+export const HITFEEL = {
+  bigHitMul: 80,     // 单次伤害 ≥ bigHitMul × stats.dmg 视为大伤害
+  microStop: 0.03,   // 大伤害/暴击微顿帧（秒）
+  eliteStop: 0.08,   // 精英死亡顿帧（秒）
+  budgetPerSec: 0.12, // 每秒 hitstop 预算（超出静默丢弃）
+};

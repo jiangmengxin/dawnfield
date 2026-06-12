@@ -44,6 +44,40 @@ describe('无尽循环窗口前提', () => {
       expect(win[win.length - 1].kind, m.id).toBe('boss');
     }
   });
+
+  it('surge 是一次性事件，不得落入无尽重放窗口（M12）', () => {
+    for (const m of MAPS) {
+      const bossT = m.minutes * 60;
+      for (const ev of m.events.filter((e) => e.kind === 'surge')) {
+        expect(ev.t, m.id).toBeLessThan(bossT - ENDLESS.cycleLen);
+      }
+    }
+  });
+});
+
+describe('地图时长三档与升级节奏（M12）', () => {
+  it('全部地图时长 ∈ {10, 20, 30}，timeK = 12/minutes', () => {
+    for (const m of MAPS) {
+      expect([10, 20, 30], m.id).toContain(m.minutes);
+      expect(m.timeK, m.id).toBeCloseTo(12 / m.minutes);
+    }
+  });
+
+  it('短图升级节奏加快（xpK ≥ 1.2），长图不快于基准', () => {
+    for (const m of MAPS) {
+      if (m.minutes === 10) expect(m.xpK, m.id).toBeGreaterThanOrEqual(1.2);
+      if (m.minutes === 30) expect(m.xpK, m.id).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('后 4 图各有一个 surge（中点），前 4 图没有', () => {
+    for (const m of MAPS) {
+      const surges = m.events.filter((e) => e.kind === 'surge');
+      const last4 = ['lavender', 'bramble', 'nocturne', 'summit'].includes(m.id);
+      expect(surges.length, m.id).toBe(last4 ? 1 : 0);
+      if (last4) expect(surges[0].t, m.id).toBe(m.minutes * 30);
+    }
+  });
 });
 
 describe('狂暴乘区表（发行方案 §4.2 对表）', () => {

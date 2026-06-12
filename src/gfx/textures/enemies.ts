@@ -1,6 +1,6 @@
 // 敌人纹理（M5 起换皮管线扩展：makeEnemy(shape, palette, face) 按图懒生成）
 import { PAL, cssOf } from '../palette';
-import { blobBody, eyes, makeTex, petalShape, softGlow } from './core';
+import { blobBody, eyes, makeBulletTex, makeTex, petalShape, softGlow } from './core';
 
 export function createEnemyTextures(scene: Phaser.Scene): void {
   makeTex(scene, 'e_blob', 36, 36, (ctx) => {
@@ -169,7 +169,7 @@ export function createEnemyTextures(scene: Phaser.Scene): void {
   });
 
   // === 敌人墨弹 ===
-  makeTex(scene, 'inkball', 16, 16, (ctx) => {
+  makeBulletTex(scene, 'inkball', 16, 16, (ctx) => {
     blobBody(ctx, 8, 8, 5.5, PAL.inkball, PAL.blobEdge);
   });
 }

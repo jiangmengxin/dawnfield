@@ -32,6 +32,12 @@ export class ZoneSystem implements RunSystem {
     return this.zones.length;
   }
 
+  /** 全部清除（M12 bench 配置切换用） */
+  clearAll(): void {
+    for (const z of this.zones) z.img.destroy();
+    this.zones.length = 0;
+  }
+
   add(spec: ZoneSpec): void {
     const scene = this.ctx.scene;
     const hasTex = spec.tex !== undefined || spec.effect === 'slow';
