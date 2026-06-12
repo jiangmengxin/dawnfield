@@ -71,14 +71,14 @@ export class GameScene extends Phaser.Scene {
     this.isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
     this.enemyCapMul = this.isMobile ? 0.75 : 1;
 
-    // 重置局内状态（场景可重开）
-    this.run = new RunState();
+    // 重置局内状态（场景可重开）；角色差异（HP/移速/体积/偏移）经 RunState.char 生效
+    this.run = new RunState(this.charId);
     this.facing = { x: 1, y: 0 };
     this.grid = new SpatialGrid<Enemy>(72);
     this.lastKillSfx = 0;
 
     this.cameras.main.setBackgroundColor(PAL.paperCss);
-    this.player = this.add.image(0, 0, 'player').setDepth(1000);
+    this.player = this.add.image(0, 0, this.run.char.tex).setDepth(1000);
 
     this.ctx = this.buildContext();
     this.fx = new Effects(this, this.isMobile);
@@ -116,7 +116,7 @@ export class GameScene extends Phaser.Scene {
     Meta.codexLight('maps', this.mapId);
 
     this.recomputeStats();
-    this.weapons.addOrUpgrade('blade'); // 初始武器
+    this.weapons.addOrUpgrade(this.run.char.weapon); // 初始武器（角色配对）
 
     const kb = this.input.keyboard!;
     kb.on('keydown-ESC', () => emitEvent(this.game, 'hud:togglepause'));
@@ -294,6 +294,8 @@ export class GameScene extends Phaser.Scene {
       kills: this.run.kills,
       level: this.run.level,
       coins: Math.round(this.run.coins),
+      charId: this.charId,
+      mapId: this.mapId,
       build: this.weapons.list.map((w) => ({ id: w.id, level: w.level, evolved: w.evolved })),
     };
     this.scene.stop('hud');

@@ -16,6 +16,8 @@ export const PASSIVE_META: PassiveMeta[] = [
   { id: 'cloud',   color: 0xd8e8f8, icon: 'icon_cloud' },
   { id: 'battery', color: 0xf8e090, icon: 'icon_battery' },
   { id: 'wind',    color: 0xc0e8c8, icon: 'icon_wind' },
+  { id: 'ladybug', color: 0xf09898, icon: 'icon_ladybug' },
+  { id: 'honey',   color: 0xf0c878, icon: 'icon_honey' },
 ];
 
 // 被动数值（每级）
@@ -27,4 +29,6 @@ export const PASSIVE_FX = {
   battery: 0.3,  // 磁吸 +30%/级
   windMove: 0.07,
   windProj: 0.1,
+  ladybugCrit: 0.04, // 暴击率 +4%/级
+  honeyRegen: 0.5,   // 每秒回复 +0.5/级
 };

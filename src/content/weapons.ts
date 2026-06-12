@@ -19,6 +19,7 @@ export const WEAPON_META: WeaponMeta[] = [
   { id: 'spark',     color: 0xffe070, icon: 'icon_spark',     evolvesWith: 'battery' },
   { id: 'boomerang', color: 0x88d8b0, icon: 'icon_boomerang', evolvesWith: 'wind' },
   { id: 'mine',      color: 0xc0a0e8, icon: 'icon_mine',      evolvesWith: null },
+  { id: 'puff',      color: 0xd8c8a0, icon: 'icon_puff',      evolvesWith: 'ladybug' },
 ];
 
 // ---------- 平衡数值（每武器一表） ----------
@@ -89,6 +90,21 @@ export const W_MINE = {
   max: [8, 9, 10, 11, 12],
   evoDmgMul: 1.4,
   evoRadiusMul: 1.5,
+};
+
+/** 蒲公英 / 漫天飞絮 */
+export const W_PUFF = {
+  dmg: [8, 10, 12, 15, 19], // 单粒种子伤害（齐射伤害靠多粒命中）
+  cd: [1.7, 1.6, 1.5, 1.4, 1.25],
+  n: [5, 6, 7, 8, 10], // 齐射种子数
+  spread: 0.8, // 扇形张角（弧度）
+  speed: 330,
+  life: 0.85, // 飞行寿命（射程 = speed×life×area）
+  pierce: 2, // 单粒最多命中敌人数
+  evoCd: 1.15,
+  evoN: 16, // 进化：全周环射
+  evoDmgMul: 1.3,
+  evoHoming: 130, // 进化种子缓追转向力
 };
 
 // ---------- 宝箱分层 ----------

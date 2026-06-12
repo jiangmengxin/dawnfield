@@ -146,8 +146,10 @@ export class SettingsScene extends UIScene {
   private openWeaponPicker(): void {
     const gs = this.liveGame();
     if (!gs) return;
-    const btnH = 40;
     const gap = THEME.gapXs;
+    // 行高随武器数量与屏高自适应（8 武器后矮屏不再溢出 Modal 钳制高度）
+    const availH = Math.min(this.vp.h - 48, 560) - 64 - THEME.gapMd * 2;
+    const btnH = Math.max(30, Math.min(40, Math.floor(availH / WEAPON_META.length) - gap));
     const btns: Array<{ btn: UIButton; id: WeaponId }> = [];
     const refresh = (): void => {
       for (const { btn, id } of btns) {

@@ -34,12 +34,16 @@ export class AchievementsScene extends UIScene {
     panel.setContent((add) => {
       ACHIEVEMENTS.forEach((spec, i) => {
         const unlocked = Meta.hasAch(spec.id);
+        // 附带角色解锁奖励的成就：描述里点明（角色名在达成前不剧透，显示 ???）
+        const reward = spec.unlockChar
+          ? ' · ' + t('ach_reward').replace('{c}', unlocked ? t('char_' + spec.unlockChar) : '???')
+          : '';
         const card = new Card(this, rowW / 2, i * (rowH + gap) + rowH / 2, {
           w: rowW, h: rowH,
           layout: 'row',
           icon: spec.icon,
           title: t('ach_' + spec.id),
-          desc: t('ach_' + spec.id + '_d'),
+          desc: t('ach_' + spec.id + '_d') + reward,
           tag: unlocked ? '★' : undefined,
           tagColor: '#C8902A',
           color: unlocked ? 0xe2b452 : undefined,

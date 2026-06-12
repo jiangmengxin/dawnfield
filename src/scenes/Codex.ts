@@ -3,7 +3,7 @@
 import { t } from '../i18n';
 import { FONT } from '../i18n';
 import { PAL } from '../gfx/palette';
-import { PASSIVE_META, WEAPON_META, ENEMIES, EnemyId } from '../content';
+import { PASSIVE_META, WEAPON_META, ENEMIES, EnemyId, CHARACTERS } from '../content';
 import { CodexCat } from '../core/save';
 import { Meta } from '../core/MetaState';
 import { UIScene } from '../ui/UIScene';
@@ -15,10 +15,7 @@ import { THEME } from '../ui/theme';
 // 1.0 目标量级（锁定占位补齐到这些数字）
 const TARGET = { weapons: 16, passives: 16, enemies: 14, chars: 16, maps: 8 } as const;
 
-// 已实装的角色 / 地图（M4/M5 起从 content/characters、content/maps 读取）
-const CHARS: Array<{ id: string; icon: string; iconScale: number; color: number }> = [
-  { id: 'spark', icon: 'player', iconScale: 1.3, color: 0xe2b452 },
-];
+// 已实装的地图（M5 起从 content/maps 读取）；角色已迁至 content/characters
 const MAPS: Array<{ id: string; icon: string; iconScale: number; color: number }> = [
   { id: 'meadow', icon: 'd_flower1', iconScale: 2, color: 0xa8cd8c },
 ];
@@ -94,10 +91,10 @@ export class CodexScene extends UIScene {
       }
       pushLocked(TARGET.enemies - ids.length);
     } else if (tab === 'chars') {
-      for (const c of CHARS) {
-        items.push(this.entry(tab, c.id, { icon: c.icon, iconScale: c.iconScale, title: t('char_' + c.id), color: c.color, fontScale }));
+      for (const c of CHARACTERS) {
+        items.push(this.entry(tab, c.id, { icon: c.tex, iconScale: c.texScale * 0.85, title: t('char_' + c.id), color: c.color, fontScale }));
       }
-      pushLocked(TARGET.chars - CHARS.length);
+      pushLocked(TARGET.chars - CHARACTERS.length);
     } else {
       for (const m of MAPS) {
         items.push(this.entry(tab, m.id, { icon: m.icon, iconScale: m.iconScale, title: t('map_' + m.id), color: m.color, fontScale }));

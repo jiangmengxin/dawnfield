@@ -36,6 +36,11 @@ export const PAL = {
   spark: 0xffe070, sparkDeep: 0xf0b830,
   boom: 0x88d8b0, boomDeep: 0x50b080,
   mine: 0xc0a0e8, mineDeep: 0x9068c8,
+  puff: 0xf5eedc, puffDeep: 0xb8a878,
+
+  // 被动主题色（新增被动图标用）
+  ladybug: 0xe87878, ladybugDeep: 0xb84848,
+  honey: 0xf0b850, honeyDeep: 0xc08828,
 
   // 拾取物
   gem: 0xa8e0f8, gemBig: 0xffd870,
@@ -62,6 +67,18 @@ import type { EnemyId } from '../content/ids';
 export const DEATH_COLOR: Record<EnemyId, number> = {
   blob: PAL.blob, midge: PAL.midge, shelly: PAL.shelly, spitter: PAL.spitter,
   dasher: PAL.dasher, splitter: PAL.splitter, mini: PAL.splitter, elite: PAL.elite, boss: PAL.boss,
+};
+
+// 角色配色（makeCharacter 配方用；body 主体 / edge 描边）
+import type { CharacterId } from '../content/ids';
+export const CHAR_PAL: Record<Exclude<CharacterId, 'spark'>, { body: number; edge: number }> = {
+  rosa:   { body: 0xf8b0c4, edge: 0xd87898 },
+  dew:    { body: 0xaad4f0, edge: 0x6ba3d0 },
+  gale:   { body: 0xa8e0c0, edge: 0x68b890 },
+  lumen:  { body: 0xd8d0f0, edge: 0x9a8cc8 },
+  volt:   { body: 0xffe070, edge: 0xe0a830 },
+  pebble: { body: 0xd8c0a0, edge: 0xa88860 },
+  fluff:  { body: 0xf0e4cc, edge: 0xa89468 }, // 奶油色：与纸底拉开对比，白绒毛圈才显形
 };
 
 export function cssOf(c: number): string {

@@ -70,9 +70,10 @@ export class Card extends Phaser.GameObjects.Container {
         }).setOrigin(1, 0));
       }
       if (opts.desc) {
+        // useAdvancedWrap：中文无空格也能按宽断行
         this.add(scene.add.text(textX, -opts.h / 2 + 38 * k, opts.desc, {
           fontFamily: FONT, fontSize: Math.round(13 * k) + 'px', color: PAL.inkSoft,
-          wordWrap: { width: opts.w - (textX + opts.w / 2) - 16 },
+          wordWrap: { width: opts.w - (textX + opts.w / 2) - 16, useAdvancedWrap: true },
         }));
       }
     } else {
@@ -103,7 +104,7 @@ export class Card extends Phaser.GameObjects.Container {
       if (opts.desc) {
         this.add(scene.add.text(0, nextY, opts.desc, {
           fontFamily: FONT, fontSize: Math.round(13 * k) + 'px', color: PAL.inkSoft,
-          align: 'center', wordWrap: { width: opts.w - 22 },
+          align: 'center', wordWrap: { width: opts.w - 22, useAdvancedWrap: true },
         }).setOrigin(0.5, 0));
       }
     }

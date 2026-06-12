@@ -57,6 +57,8 @@ export interface RunResult {
   kills: number;
   level: number;
   coins: number; // 局内获得金币（结算页入账 MetaState）
+  charId: string; // 本局角色/地图（结算页谢幕 + 「再来一局」沿用）
+  mapId: string;
   build: Array<{ id: WeaponId; level: number; evolved: boolean }>;
 }
 

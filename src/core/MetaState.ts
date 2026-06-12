@@ -1,6 +1,7 @@
 // 局外状态（MetaState）：金币 / 商店强化 / 图鉴点亮 / 成就 / 解锁 / 累计统计
 // 存档读写经 core/save；与局内 RunState 配对
 import type { PowerUpId } from '../content/ids';
+import { ACHIEVEMENTS } from '../content/achievements';
 import { POWERUPS, PowerUpSpec, powerUpPrice } from '../content/shop';
 import { CodexCat, flushSave, getSave, persistSave, SaveV1 } from './save';
 
@@ -118,12 +119,21 @@ class MetaStateImpl {
     return this.save.achievements.includes(id);
   }
 
-  /** 返回是否为新解锁 */
+  /** 返回是否为新解锁；同时应用成就携带的角色解锁 */
   unlockAch(id: string): boolean {
     if (this.hasAch(id)) return false;
     this.save.achievements.push(id);
+    const spec = ACHIEVEMENTS.find((a) => a.id === id);
+    if (spec?.unlockChar) this.unlock('chars', spec.unlockChar);
     persistSave();
     return true;
+  }
+
+  /** 启动时补同步：旧档已有成就 → 应用其角色解锁（成就表后补 unlockChar 时也能追授） */
+  syncAchUnlocks(): void {
+    for (const a of ACHIEVEMENTS) {
+      if (a.unlockChar && this.hasAch(a.id)) this.unlock('chars', a.unlockChar);
+    }
   }
 
   // ---------- 解锁 ----------

@@ -7,7 +7,7 @@
 晨野 Dawnfield：Phaser 4.1 + Vite 7 + TypeScript 5.8 的吸血鬼幸存者类网页游戏。
 1.0 目标：16 角色 / 8 地图 / 16 武器+16 超武 / 16 被动，分 9 个里程碑（M1-M9）实施。
 
-**当前进度：M3 已完成（版本化存档 dawnfield.save、MetaState、金币掉落+结算入账、商店 11 项永久强化、成就引擎首批 12 个、图鉴首遇点亮+New 角标、调试面板补充）。下一步 M4：角色系统 + 内容批次 A（角色 1-8）。**
+**当前进度：M4 已完成（8 角色 CharacterSpec 全链路差异化、新武器蒲公英+漫天飞絮、被动 6→8（瓢虫结/蜜糖罐）、textures 拆 6 域模块+makeCharacter 参数化配方、成就解锁角色接入+旧档回填、图鉴角色页、选人页实装）。下一步 M5：地图框架 + 地图 2-3 + 轻机制 + 倍速细化。**
 
 ## 常用命令
 
@@ -28,16 +28,18 @@ npm run build                             # 生产构建
 ## 架构速览
 
 ```
-src/content/   ★ 纯数据层（无 Phaser）：ids player weapons(含平衡表) passives enemies(波次/Boss/行为指派)
-               shop(11 项永久强化+价格公式) achievements(12 成就+check 条件)
-src/core/      events(类型化事件) router settings(门面→save) RunState TimeController registry
+src/content/   ★ 纯数据层（无 Phaser）：ids player characters(8 角色 Spec) weapons(含平衡表) passives
+               enemies(波次/Boss/行为指派) shop(11 项永久强化+价格公式) achievements(12 成就+check+unlockChar)
+src/core/      events(类型化事件) router settings(门面→save) RunState(按角色重算) TimeController registry
                save/(schema/migrations/storage：v1+迁移链+损坏自愈+debounce) MetaState(局外状态单例)
                input/(键盘/触控/手柄stub)
 src/ui/        Viewport(安全区/断点/缩放) UIScene(菜单基类) layout theme widgets/(8 组件)
 src/scenes/    Boot Title CharacterSelect MapSelect Shop Codex Achievements Settings Game(编排器) HUD Result
 src/systems/   context(CombatContext/RunSystem/RunModifier) WaveDirector EnemySystem behaviors BossController
-               weapons/(基类+7武器) PlayerSystem PickupSystem(光珠+金币) ProjectileSystem ZoneSystem
+               weapons/(基类+8武器) PlayerSystem PickupSystem(光珠+金币) ProjectileSystem ZoneSystem
                LevelUpSystem AchievementTracker DecorSystem grid effects joystick
+src/gfx/       palette(全游戏配色+CHAR_PAL) textures/(core+makeTex 工具｜characters+makeCharacter 配方｜
+               enemies｜weapons｜icons｜misc，M4 起按域拆分)
 ```
 
 关键模式：对象池（敌人/粒子/弹体）、类型化事件总线（`core/events` 的 `hud:*`）、配置驱动（数值全在 content/ 调参，不碰行为代码）、空间网格索引、系统编排（GameScene 持 `RunSystem[]` 按帧序 update，系统只看 `CombatContext`）。
@@ -58,6 +60,9 @@ src/systems/   context(CombatContext/RunSystem/RunModifier) WaveDirector EnemySy
 - **设置即时生效**：屏幕震动（所有 `cameras.main.shake` 调用点都有 `getSettings().shake` 守卫）、伤害数字（`Effects.number` 入口守卫）、无敌/全屏拾取（调试用），新增同类效果时记得加守卫。
 - **携带上限**：`MAX_WEAPONS/MAX_PASSIVES = 6`，选卡 offer 构建已按上限过滤。
 - **进化条件**：`WeaponManager.evolvable()` = 武器满级 + 持有配对被动（mine 为任意被动满级）。
+- **角色差异化**（M4 起）：`content/characters.ts` 的 `CharacterSpec` 是唯一来源——初始武器一一配对、基础 HP/移速/体积（radius）为绝对值、`mods` 属性偏移（dmg/cd/area/magnet/projSpeed/xpGain/coinGain 乘、armor/regen/crit 加）、`trail` 移动拖尾粒子（PlayerSystem 发射）；`RunState` 构造时按 charId 取 Spec，体积经 `run.char.radius` 进接触判定/影子/血条；角色纹理用 `makeCharacter` 配方（gfx/textures/characters.ts），新角色 = 一行 Spec + 一行配方 + i18n 两键。
+- **角色 vs 敌人的美术分界**：敌人 = 扁平粉彩圆团 + 小点眼（`blobBody`），静态单帧；角色独占 体色径向渐变 + 异形剪影（round/drop/gem/stone/egg）+ 大双高光眼 + 常驻腮红 + 专属饰件 + 移动拖尾 + 4 帧动效（`makeCharacter` 自动生成 `key/_p1/_k/_p1_k` = 姿态A/B × 睁眼/眨眼；PlayerSystem.updateFrame 驱动：移动 0.22s/静止 0.5s 摆动一次、1.6-4.4s 随机眨眼 0.16s，困倦/眯眼角色眨眼帧反而睁眼偷看）。新增敌人不要用渐变/多帧，新增角色不要用 blobBody，保持两侧辨识差。
+- **角色解锁**：成就表 `unlockChar` 字段；`Meta.unlockAch` 即时应用，Boot 调 `Meta.syncAchUnlocks()` 为旧档回填。
 - **宝箱分层**（`LevelUpSystem.buildChestReward`）：可进化→进化；否则→已持有项升级×N（`CHEST.upgradeCount`）；无可升级→金币+治疗（`CHEST.goldCoins/goldHeal`）。
 - **局内状态**全在 `core/RunState`（hp/xp/coins/kills/passives/stats…），HUD 经 `gs.run` 读取；新系统实现 `RunSystem` 并在 `GameScene.create` 的 systems 数组注册（顺序即帧序）。
 - **局外状态**全经 `core/MetaState` 的 `Meta` 单例（金币/强化/图鉴/成就/解锁/统计），改动自动 debounce 落档；商店永久强化在 `RunState.computeStats` 汇入基础值（开局快照）。
@@ -86,6 +91,9 @@ src/systems/   context(CombatContext/RunSystem/RunModifier) WaveDirector EnemySy
 - dev 服务长时间运行后 Vite 可能给出**陈旧的模块转换缓存**（部分文件新、部分旧的诡异混合）；怀疑时直接重启 dev 服务。
 - resize 后 UIScene 重建有 150ms 防抖 + 二次校验，截图前等约 1-2 秒。
 - 调试钩子：`window.__game`（Phaser.Game）、`window.__errs`（运行时错误数组）。
+- **`preview_screenshot` 在后台标签页会超时**（合成器不产帧）。替代：`game.renderer.snapshot(cb)` 注册回调 → 同步泵帧触发渲染 → 回调里把图画到 2D canvas 缩放转 JPEG base64，`fetch` POST 给本地临时 Node HTTP 接收器（加 `Access-Control-Allow-Origin: *`）落盘 `.shots/`，再用 Read 工具查看。直接 `canvas.toDataURL` 拿不到 WebGL 帧（非 preserveDrawingBuffer）。
+- **预览视口可能塌缩成 1×N**（预览窗格隐藏时）；Phaser 以创建时的 innerWidth 定画布，必须先 `preview_resize` 恢复尺寸再 reload。
+- **删除/移动模块文件后 Vite 模块图可能仍指向旧路径**（404 ERR_ABORTED 循环），重启 dev 服务即可。
 - 快速到达指定状态：设置页打开「无敌/全屏拾取」可加速验证；强制结算可在 eval 中调 `gs.defeat()`。
 
 ## 本地存储键

@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
+import { getCharacter } from '../content/characters';
 import { Meta } from '../core/MetaState';
 import { evalAchievements } from '../systems/AchievementTracker';
 import { makeButton } from '../ui/widgets';
@@ -93,8 +94,9 @@ export class ResultScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '16px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(2);
 
-    // 主角谢幕
-    const hero = this.add.image(cx, h * 0.33, 'player').setScale(1.8).setDepth(2);
+    // 主角谢幕（本局角色）
+    const heroTex = getCharacter(r.charId).tex;
+    const hero = this.add.image(cx, h * 0.33, heroTex).setScale(1.8).setDepth(2);
     if (!r.win) hero.setAlpha(0.55).setAngle(14);
     else this.tweens.add({ targets: hero, y: '-=10', duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
@@ -148,7 +150,7 @@ export class ResultScene extends Phaser.Scene {
 
     const retry = makeButton(this, cx, h * 0.82, THEME.btnW, THEME.btnH, t('retry'), () => {
       this.cleanup();
-      this.scene.start('game');
+      this.scene.start('game', { charId: r.charId, mapId: r.mapId }); // 同角色同图再来一局
     }, { fontSize: THEME.btnFs });
     const menu = makeButton(this, cx, h * 0.82 + 68, THEME.btnW, THEME.btnH, t('quit'), () => {
       this.cleanup();

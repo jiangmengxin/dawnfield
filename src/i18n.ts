@@ -78,6 +78,10 @@ const D: Dict = {
   w_mine_d: ['沿途布下星雷，触碰即爆', 'Drops star mines that burst on contact'],
   w_mine_e: ['新星', 'Supernova'],
   w_mine_e_d: ['巨大爆炸，留下灼热星尘场', 'Huge blasts that leave searing stardust'],
+  w_puff: ['蒲公英', 'Dandelion Puff'],
+  w_puff_d: ['扇形吹出一捧飘摇的种子', 'Blows a drifting fan of seeds'],
+  w_puff_e: ['漫天飞絮', 'Wishstorm'],
+  w_puff_e_d: ['种子四面纷飞，乘风追逐敌人', 'Seeds swirl in all directions, riding the wind after foes'],
 
   // 被动
   p_power: ['力量护符', 'Power Charm'],
@@ -92,6 +96,10 @@ const D: Dict = {
   p_battery_d: ['拾取范围 +30%', 'Pickup range +30%'],
   p_wind: ['风袋', 'Wind Pouch'],
   p_wind_d: ['移速 +7%，弹速 +10%', 'Move +7%, projectile speed +10%'],
+  p_ladybug: ['瓢虫结', 'Ladybug Charm'],
+  p_ladybug_d: ['暴击率 +4%', 'Crit chance +4%'],
+  p_honey: ['蜜糖罐', 'Honey Pot'],
+  p_honey_d: ['每秒回复 0.5 生命', 'Regenerate 0.5 HP/s'],
 
   // 兜底卡
   c_heal: ['野莓甜点', 'Berry Treat'],
@@ -116,6 +124,7 @@ const D: Dict = {
   ui_cancel: ['取消', 'Cancel'],
   ui_locked: ['未解锁', 'Locked'],
   ui_lockedHint: ['达成条件后解锁', 'Unlocks via achievements'],
+  ui_unlockBy: ['达成「{a}」解锁', 'Unlock: “{a}”'],
   ui_comingSoon: ['敬请期待', 'Coming soon'],
   ui_select: ['选择', 'Select'],
   ui_minutes: ['分钟', 'min'],
@@ -134,10 +143,23 @@ const D: Dict = {
   scn_achievements: ['成就', 'Achievements'],
   scn_settings: ['设置', 'Settings'],
 
-  // 角色
+  // 角色（_d 描述同时点明性能差异）
   char_spark: ['小萤', 'Flicker'],
-  char_spark_d: ['草甸晨光中的萤光小精灵，挥舞光刃', 'A glimmer sprite of the meadow, wielding the Light Blade'],
-  char_spark_w: ['初始武器：光刃', 'Starts with: Light Blade'],
+  char_spark_d: ['萤光小精灵，各项均衡', 'Glimmer sprite, balanced all around'],
+  char_rosa: ['蔷蔷', 'Rosie'],
+  char_rosa_d: ['小巧轻快，花环更大更易暴击', 'Tiny and quick, bigger ring, extra crits'],
+  char_dew: ['露露', 'Dewy'],
+  char_dew_d: ['生命厚实自带回复，走得慢', 'Thick HP and self-healing, but slow'],
+  char_gale: ['风风', 'Gusty'],
+  char_gale_d: ['全场最快、飞镖更急，拳头偏软', 'Fastest feet, quicker throws, softer hits'],
+  char_lumen: ['琉璃', 'Lumen'],
+  char_lumen_d: ['伤害爆表，身板最脆', 'Huge damage, fragile body'],
+  char_volt: ['闪闪', 'Zappy'],
+  char_volt_d: ['施法飞快磁吸超大，血量偏少', 'Rapid casts, huge magnet, lower HP'],
+  char_pebble: ['墩墩', 'Pebble'],
+  char_pebble_d: ['全场最大最耐打，慢慢走不慌', 'Biggest and toughest, in no hurry'],
+  char_fluff: ['蒲蒲', 'Fluff'],
+  char_fluff_d: ['金币经验双丰收，自带小幸运', 'Bonus coins and XP, a pinch of luck'],
 
   // 地图
   map_meadow: ['晨光草甸', 'Morning Meadow'],
@@ -189,6 +211,7 @@ const D: Dict = {
   // 成就
   achUnlocked: ['成就达成！', 'Achievement!'],
   ach_count: ['已达成', 'Unlocked'],
+  ach_reward: ['解锁角色：{c}', 'Unlocks hero: {c}'],
   ach_swarm100: ['百敌斩', 'Centurion'],
   ach_swarm100_d: ['单局击败 100 个敌人', 'Defeat 100 foes in one run'],
   ach_survive5: ['晨光初照', 'First Light'],

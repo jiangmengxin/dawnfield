@@ -1,4 +1,4 @@
-// 武器系统：7 种机制完全不同的武器 + 各自的进化形态
+// 武器系统：8 种机制完全不同的武器 + 各自的进化形态
 // 行为代码按武器分文件；平衡数值在 content/weapons.ts
 import { PASSIVE_MAX_LEVEL } from '../../content/passives';
 import { WEAPON_MAX_LEVEL, WEAPON_META } from '../../content/weapons';
@@ -13,6 +13,7 @@ import { RainWeapon } from './rain';
 import { SparkWeapon } from './spark';
 import { BoomerangWeapon } from './boomerang';
 import { MineWeapon } from './mine';
+import { PuffWeapon } from './puff';
 
 export { Weapon } from './base';
 
@@ -24,6 +25,7 @@ const FACTORY: Record<WeaponId, new (ctx: CombatContext, id: WeaponId) => Weapon
   spark: SparkWeapon,
   boomerang: BoomerangWeapon,
   mine: MineWeapon,
+  puff: PuffWeapon,
 };
 
 export class WeaponManager implements RunSystem {
