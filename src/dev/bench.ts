@@ -18,7 +18,13 @@ const ROUNDS = 3;
 const DT = 1 / 60;
 const RINGS: Array<[r: number, n: number]> = [[56, 8], [110, 8], [260, 8]];
 
-const sleep = (ms: number): Promise<void> => new Promise((res) => setTimeout(res, ms));
+// 让出主线程：MessageChannel 宏任务不受隐藏页 setTimeout 节流（intensive throttling
+// 会把后台 setTimeout 钳到 1 次/分钟，整套 bench 会被拖到小时级）
+const yieldTask = (): Promise<void> => new Promise((res) => {
+  const ch = new MessageChannel();
+  ch.port1.onmessage = () => res();
+  ch.port2.postMessage(0);
+});
 
 function totalFor(gs: GameScene, id: WeaponId): number {
   let sum = 0;
@@ -87,11 +93,25 @@ export async function runBench(gs: GameScene): Promise<void> {
         for (let f = 0; f < frames; f++) {
           fakeNow += DT * 1000;
           gs.benchTick(DT);
-          // 手动泵场景计时器：delayedCall 伤害链按模拟时间结算（tween 仅视觉，不泵）
+          // 手动泵场景计时器：delayedCall 伤害链按模拟时间结算；
+          // preUpdate 把新建计时器从 pending 队列激活——缺了它本帧 delayedCall 永不触发
+          gs.time.preUpdate();
           gs.time.update(fakeNow, DT * 1000);
-          if (f % 900 === 899) await sleep(0); // 让出主线程，页面保持响应
+          // 手动泵 tween（内部按 Date.now 墙钟走）：rain/mallet 的伤害在 tween onComplete 里，
+          // 隐藏页无 RAF 时若不泵则永不结算
+          gs.tweens.update();
+          if (f % 900 === 899) await yieldTask(); // 让出主线程，页面保持响应
         }
-        await sleep(60); // 残余真实时钟回调排空
+        // 排空窗：tween 伤害按墙钟成熟（rain 雨滴 360ms / mallet 前摇 160ms），
+        // 继续泵 ~600ms 墙钟时间让尾部伤害入账（不用 setTimeout——隐藏页会被钳到分钟级）
+        const drainUntil = Date.now() + 600;
+        while (Date.now() < drainUntil) {
+          fakeNow += DT * 1000;
+          gs.time.preUpdate();
+          gs.time.update(fakeNow, DT * 1000);
+          gs.tweens.update();
+          await yieldTask();
+        }
         acc += (totalFor(gs, meta.id) - before) / SIM_SECONDS;
         step++;
         label.setText(`DPS bench ${step}/${totalSteps} · ${t('w_' + meta.id)} ${mode}`);

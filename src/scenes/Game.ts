@@ -180,7 +180,9 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, false, 0.12, 0.12);
 
     if (this.benchMode) {
-      // bench（M12 DEV）：不开 HUD/BGM，run.running 保持 false（主循环旁路），驱动器手动步进
+      // bench（M12 DEV）：不开 HUD/BGM；running 须为 true（武器延迟伤害回调以
+      // !run.running 守卫），真实主循环改由 update 的 benchMode 旁路，驱动器手动步进
+      this.run.running = true;
       void import('../dev/bench').then((m) => m.runBench(this));
     } else {
       this.scene.launch('hud');
@@ -260,7 +262,7 @@ export class GameScene extends Phaser.Scene {
 
   update(_t: number, dtMs: number): void {
     const raw = Math.min(dtMs, 50) / 1000;
-    if (!this.run.running) {
+    if (!this.run.running || this.benchMode) {
       this.fx.update(raw);
       return;
     }
