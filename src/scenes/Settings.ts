@@ -142,25 +142,30 @@ export class SettingsScene extends UIScene {
     return null;
   }
 
-  /** 指定武器弹窗：点选即为当前局添加/升级该武器；弹窗保持打开可连续操作，满级/满槽置灰 */
+  /** 指定武器弹窗：点选即为当前局添加/升级该武器，满级后再点直接进化为超武（调试绕过被动配对）；
+   *  弹窗保持打开可连续操作，已进化/满槽置灰 */
   private openWeaponPicker(): void {
     const gs = this.liveGame();
     if (!gs) return;
     const gap = THEME.gapXs;
-    // 行高随武器数量与屏高自适应（8 武器后矮屏不再溢出 Modal 钳制高度）
+    // 行高随武器数量与屏高自适应（12 武器后矮屏不再溢出 Modal 钳制高度）
     const availH = Math.min(this.vp.h - 48, 560) - 64 - THEME.gapMd * 2;
-    const btnH = Math.max(30, Math.min(40, Math.floor(availH / WEAPON_META.length) - gap));
+    const btnH = Math.max(26, Math.min(40, Math.floor(availH / WEAPON_META.length) - gap));
     const btns: Array<{ btn: UIButton; id: WeaponId }> = [];
     const refresh = (): void => {
       for (const { btn, id } of btns) {
         const w = gs.weapons.get(id);
-        // 未持有且已满 6 槽不可再塞入（与正常选卡规则一致）；满级/已进化不可再升
+        // 未持有且已满 6 槽不可再塞入（与正常选卡规则一致）；满级未进化 → 显示进化引导；已进化置灰
         const slotFull = !w && gs.weapons.list.length >= MAX_WEAPONS;
-        const maxed = !!w && (w.evolved || w.level >= WEAPON_MAX_LEVEL);
-        btn.setLabel(t('w_' + id) + (w
-          ? '  Lv ' + w.level + (w.evolved ? '★' : maxed ? ' · ' + t('maxTag') : '')
-          : ''));
-        btn.setEnabled(!slotFull && !maxed);
+        const evolvable = !!w && !w.evolved && w.level >= WEAPON_MAX_LEVEL;
+        btn.setLabel(w
+          ? (w.evolved
+            ? '★ ' + t('w_' + id + '_e')
+            : evolvable
+              ? t('w_' + id) + ' → ' + t('evolveTag') + '「' + t('w_' + id + '_e') + '」'
+              : t('w_' + id) + '  Lv ' + w.level)
+          : t('w_' + id));
+        btn.setEnabled(!slotFull && !(w && w.evolved));
       }
     };
     Modal.open(this, {
@@ -175,7 +180,13 @@ export class SettingsScene extends UIScene {
             label: '',
             fontSize: 15,
             onTap: () => {
-              gs.weapons.addOrUpgrade(m.id);
+              const w = gs.weapons.get(m.id);
+              if (w && !w.evolved && w.level >= WEAPON_MAX_LEVEL) {
+                gs.weapons.evolve(m.id); // 调试直评超武：跳过满级+配对被动+宝箱链路
+                SFX.evolve();
+              } else {
+                gs.weapons.addOrUpgrade(m.id);
+              }
               refresh();
             },
           });
