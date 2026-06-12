@@ -47,11 +47,26 @@ export class RunState {
   passives = new Map<PassiveId, number>();
   stats: Stats;
 
+  // M10 构筑操控：基础次数免费送 1，商店永久升级追加（开局快照，局中不变）
+  rerolls: number;
+  banishes: number;
+  skips: number;
+  /** 已放逐项（'w_blade' / 'p_power'），局内持久，不入存档 */
+  banished = new Set<string>();
+  // M10 复活：本局剩余次数 = 商店等级（最高 2）；任何来源均可 +1（M13 机制卡复用）
+  revivesLeft: number;
+  revivesUsed = 0;
+
   /** 商店永久强化加成（开局快照，局中不变） */
   private readonly pu: PowerUpBonus = powerUpBonus(getSave().powerUps);
 
   constructor(charId = 'spark') {
     this.char = getCharacter(charId);
+    const puLv = getSave().powerUps;
+    this.rerolls = 1 + (puLv.reroll ?? 0);
+    this.banishes = 1 + (puLv.banish ?? 0);
+    this.skips = 1 + (puLv.skip ?? 0);
+    this.revivesLeft = puLv.revive ?? 0;
     this.stats = this.computeStats();
     this.hp = this.stats.maxHp;
   }

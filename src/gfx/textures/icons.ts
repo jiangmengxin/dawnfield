@@ -1037,6 +1037,112 @@ export function createIcons(scene: Phaser.Scene): void {
     ctx.stroke();
   });
 
+  // ---------- 商店 M10 新条目（复活 / 重抽 / 放逐 / 跳过） ----------
+
+  // 复活：金色光环托起的心（晨曦重绽）
+  makeTex(scene, 'icon_revive', 40, 40, (ctx) => {
+    bg(ctx);
+    // 升起的光芒
+    ctx.strokeStyle = '#F0C860';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + (i - 2) * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(20 + Math.cos(a) * 12, 19 + Math.sin(a) * 12);
+      ctx.lineTo(20 + Math.cos(a) * 16.5, 19 + Math.sin(a) * 16.5);
+      ctx.stroke();
+    }
+    ctx.save();
+    ctx.translate(11.5, 13);
+    ctx.scale(0.78, 0.78);
+    ctx.beginPath();
+    ctx.moveTo(11, 18);
+    ctx.bezierCurveTo(0, 10, 2, 1.5, 8, 2.5);
+    ctx.bezierCurveTo(10, 3, 11, 5, 11, 6);
+    ctx.bezierCurveTo(11, 5, 12, 3, 14, 2.5);
+    ctx.bezierCurveTo(20, 1.5, 22, 10, 11, 18);
+    ctx.fillStyle = cssOf(PAL.heart);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#D86870';
+    ctx.stroke();
+    ctx.restore();
+    star(ctx, 20, 18, 4, 3.6, 1.5, '#FFF6D8');
+  });
+
+  // 重抽：环形双箭头（↻）
+  makeTex(scene, 'icon_reroll', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = '#78A8D8';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    const arrow = (a0: number): void => {
+      ctx.beginPath();
+      ctx.arc(20, 20, 9.5, a0, a0 + Math.PI * 0.75);
+      ctx.stroke();
+      const tip = a0 + Math.PI * 0.75;
+      const tx = 20 + Math.cos(tip) * 9.5;
+      const ty = 20 + Math.sin(tip) * 9.5;
+      ctx.fillStyle = '#78A8D8';
+      ctx.beginPath();
+      ctx.moveTo(tx + Math.cos(tip + Math.PI / 2) * 5.5, ty + Math.sin(tip + Math.PI / 2) * 5.5);
+      ctx.lineTo(tx + Math.cos(tip) * 3.5, ty + Math.sin(tip) * 3.5);
+      ctx.lineTo(tx - Math.cos(tip) * 3.5, ty - Math.sin(tip) * 3.5);
+      ctx.closePath();
+      ctx.fill();
+    };
+    arrow(-Math.PI * 0.85);
+    arrow(Math.PI * 0.15);
+  });
+
+  // 放逐：圆环 + 斜杠压着的小卡
+  makeTex(scene, 'icon_banish', 40, 40, (ctx) => {
+    bg(ctx);
+    // 小卡
+    ctx.save();
+    ctx.translate(20, 20);
+    ctx.rotate(-0.18);
+    ctx.fillStyle = '#FFFDF6';
+    ctx.strokeStyle = '#B8A888';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.rect(-6.5, -9, 13, 18);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    // 禁止环
+    ctx.strokeStyle = '#C06870';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.arc(20, 20, 12.5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(11.5, 28);
+    ctx.lineTo(28.5, 12);
+    ctx.stroke();
+  });
+
+  // 跳过：双右箭头（▸▸）
+  makeTex(scene, 'icon_skip', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.fillStyle = '#9AB87A';
+    ctx.strokeStyle = '#7A9858';
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
+    const tri = (x: number): void => {
+      ctx.beginPath();
+      ctx.moveTo(x, 12);
+      ctx.lineTo(x + 9, 20);
+      ctx.lineTo(x, 28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    };
+    tri(11);
+    tri(21);
+  });
+
   // ---------- 规则卡 Arcana（M9）：10 张 ----------
 
   // 花开满野：满圈花瓣

@@ -66,6 +66,7 @@ export interface RunResult {
   coins: number; // 局内获得金币（结算页入账 MetaState）
   charId: string; // 本局角色/地图（结算页谢幕 + 「再来一局」沿用）
   mapId: string;
+  revivesUsed: number; // 本局已用复活次数（M10；M11 无尽记录行旁标注）
   build: Array<{ id: WeaponId; level: number; evolved: boolean }>;
 }
 

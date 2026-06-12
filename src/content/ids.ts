@@ -55,7 +55,9 @@ export type ArcanaId =
 /** 商店永久强化（金币唯一用途，可全额重置） */
 export type PowerUpId =
   | 'power' | 'vitality' | 'haste' | 'area' | 'speed' | 'magnet'
-  | 'growth' | 'greed' | 'armor' | 'regen' | 'luck';
+  | 'growth' | 'greed' | 'armor' | 'regen' | 'luck'
+  // M10 构筑操控与复活（次数类：等级 → 每局次数，不走 powerUpBonus 乘区）
+  | 'revive' | 'reroll' | 'banish' | 'skip';
 
 /** 成就（M7：40 个全量） */
 export type AchievementId =

@@ -30,6 +30,15 @@ const D: Dict = {
   evolveTag: ['进化', 'EVOLVE'],
   maxTag: ['满级', 'MAX'],
 
+  // 构筑操控（M10）：重抽 / 放逐 / 跳过
+  lvl_reroll: ['↻ 重抽 ×{n}', '↻ Reroll ×{n}'],
+  lvl_skip: ['▸ 跳过 ×{n}', '▸ Skip ×{n}'],
+  banishToast: ['已放逐：本局不再出现', 'Banished: gone for the rest of this run'],
+
+  // 复活（M10）
+  reviveBanner: ['再次绽放！剩余复活 ×{n}', 'Bloom again! Revives left ×{n}'],
+  statRevives: ['使用复活', 'Revives Used'],
+
   // 宝箱
   chestTitle: ['晨光宝箱', 'Dawn Chest'],
   chestOpen: ['点击开启', 'Tap to open'],
@@ -359,6 +368,14 @@ const D: Dict = {
   shop_resetTitle: ['重置永久强化', 'Reset Upgrades'],
   shop_resetDesc: ['将清空全部强化并返还 {n} 金币，确定吗？', 'Clear all upgrades and refund {n} coins?'],
 
+  pu_revive: ['晨曦重绽', 'Second Bloom'],
+  pu_revive_d: ['每级每局复活 +1 次：半血归来并清开身边敌人', '+1 revive per run: return at half HP, scattering nearby foes'],
+  pu_reroll: ['命运花签', 'Fortune Petals'],
+  pu_reroll_d: ['每级每局升级重抽 +1 次', '+1 level-up reroll per run per level'],
+  pu_banish: ['驱散铃', 'Banish Bell'],
+  pu_banish_d: ['每级每局放逐 +1 次：将一张卡移出本局卡池', '+1 banish per run: remove a card from this run\'s pool'],
+  pu_skip: ['小怀表', 'Pocket Watch'],
+  pu_skip_d: ['每级每局跳过 +1 次', '+1 level-up skip per run per level'],
   pu_power: ['晨光之力', 'Morning Might'],
   pu_power_d: ['每级伤害 +4%', '+4% damage per level'],
   pu_vitality: ['蒲公英活力', 'Dandelion Vigor'],

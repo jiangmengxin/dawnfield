@@ -316,16 +316,55 @@ export class GameScene extends Phaser.Scene {
 
   damagePlayer(d: number): void {
     if (this.run.iframeT > 0 || !this.run.running) return;
-    if (getSettings().invincible) return; // 调试：无敌
+    if (getSettings().invincible) return; // 调试：无敌（优先于复活，不消耗次数）
     this.run.iframeT = PLAYER.iframe;
     this.run.hp -= Math.max(1, d - this.run.stats.armor); // 永久强化：护甲平减，至少 1 点
     SFX.hurt();
     this.fx.flash(this.player, 0xf08080);
     if (getSettings().shake) this.cameras.main.shake(120, 0.004);
     if (this.run.hp <= 0) {
+      if (this.run.revivesLeft > 0) {
+        this.revive();
+        return;
+      }
       this.run.hp = 0;
       this.defeat();
     }
+  }
+
+  /** 复活演出（M10）：半血归来 + 2 秒无敌 + 清屏脉冲（杂兵即死计入击杀 / Boss 击退 / 弹幕清除） */
+  private revive(): void {
+    const run = this.run;
+    run.revivesLeft--;
+    run.revivesUsed++;
+    run.hp = Math.ceil(run.stats.maxHp * 0.5);
+    run.iframeT = 2.0;
+    const px = this.player.x;
+    const py = this.player.y;
+    // 清屏脉冲：分裂球死亡会原地补刷迷你球，多过几轮直到半径内无杂兵
+    for (let pass = 0; pass < 4; pass++) {
+      let killed = false;
+      for (const e of [...this.enemies.actives]) {
+        if (!e.active || e.dying || e.isBoss) continue;
+        if (Math.hypot(e.x - px, e.y - py) < 360) {
+          this.enemies.kill(e);
+          killed = true;
+        }
+      }
+      if (!killed) break;
+    }
+    const boss = this.enemies.boss;
+    if (boss && boss.active) {
+      const d = Math.hypot(boss.x - px, boss.y - py) || 1;
+      boss.kvx += ((boss.x - px) / d) * 520;
+      boss.kvy += ((boss.y - py) / d) * 520;
+    }
+    this.projectilesRef.clearAll();
+    this.clock.hitStop(0.25);
+    this.fx.ring(px, py, 0xe2b452, 12, 0.8);
+    this.fx.ring(px, py, 0xfff2c0, 9, 0.55);
+    SFX.revive();
+    emitEvent(this.game, 'hud:revive', run.revivesLeft);
   }
 
   // ---------- 胜负 ----------
@@ -359,6 +398,7 @@ export class GameScene extends Phaser.Scene {
       coins: Math.round(this.run.coins),
       charId: this.charId,
       mapId: this.mapId,
+      revivesUsed: this.run.revivesUsed,
       build: this.weapons.list.map((w) => ({ id: w.id, level: w.level, evolved: w.evolved })),
     };
     this.scene.stop('hud');

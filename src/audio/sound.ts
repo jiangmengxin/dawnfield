@@ -211,6 +211,13 @@ class SoundEngine {
     this.noise({ dur: 1.6, vol: 0.09, type: 'bandpass', filter: 500, slide: 1600, q: 0.7 });
     this.noise({ dur: 1.2, vol: 0.05, filter: 900, slide: 250, delay: 0.5 });
   }
+  /** 复活短和弦（M10）：victoryJingle 的明亮短变体 */
+  revive(): void {
+    [523, 659, 784, 1319].forEach((f, i) =>
+      this.tone({ freq: f, dur: 0.4, vol: 0.09, delay: i * 0.09, type: 'triangle', sendEcho: true }));
+    this.noise({ dur: 0.4, vol: 0.04, type: 'highpass', filter: 2800, delay: 0.2 });
+  }
+
   victoryJingle(): void {
     [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) =>
       this.tone({ freq: f, dur: 0.45, vol: 0.09, delay: i * 0.14, type: 'triangle', sendEcho: true }));

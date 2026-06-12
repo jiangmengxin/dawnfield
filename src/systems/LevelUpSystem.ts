@@ -13,6 +13,20 @@ import { getSettings } from '../core/settings';
 import type { ChestReward, CombatContext, Offer, RunModifier, RunSystem } from './context';
 import type { WeaponManager } from './weapons';
 
+type Cand = { offer: Offer; w: number };
+
+/** 权重随机取下标 */
+function weightedIndex(cands: Cand[]): number {
+  let sum = 0;
+  for (const c of cands) sum += c.w;
+  let r = Math.random() * sum;
+  for (let i = 0; i < cands.length; i++) {
+    r -= cands[i].w;
+    if (r <= 0) return i;
+  }
+  return 0;
+}
+
 export class LevelUpSystem implements RunSystem {
   constructor(
     private ctx: CombatContext,
@@ -60,19 +74,27 @@ export class LevelUpSystem implements RunSystem {
     ctx.run.pendingLevels--;
     SFX.levelup();
     ctx.fx.ring(ctx.player.x, ctx.player.y, PAL.xp, 7, 0.6);
+    this.curOffers = this.rollOffers();
+    ctx.scene.scene.pause();
+    emitEvent(ctx.scene.game, 'hud:levelup', this.curOffers);
+  }
+
+  /** 当前面板上的三选一（reroll/banish 原位改写后重发事件） */
+  private curOffers: Offer[] = [];
+
+  private rollOffers(): Offer[] {
     let offers = this.buildOffers();
     for (const m of this.modifiers) {
       if (m.modifyOffers) offers = m.modifyOffers(offers);
     }
-    ctx.scene.scene.pause();
-    emitEvent(ctx.scene.game, 'hud:levelup', offers);
+    return offers;
   }
 
-  private buildOffers(): Offer[] {
-    type Cand = { offer: Offer; w: number };
+  private buildCands(): Cand[] {
     const run = this.ctx.run;
     const cands: Cand[] = [];
     for (const meta of WEAPON_META) {
+      if (run.banished.has('w_' + meta.id)) continue;
       const w = this.weapons.get(meta.id);
       if (w) {
         if (w.level < WEAPON_MAX_LEVEL && !w.evolved) {
@@ -83,6 +105,7 @@ export class LevelUpSystem implements RunSystem {
       }
     }
     for (const meta of PASSIVE_META) {
+      if (run.banished.has('p_' + meta.id)) continue;
       const lv = run.passives.get(meta.id) ?? 0;
       if (lv > 0) {
         if (lv < PASSIVE_MAX_LEVEL) {
@@ -92,6 +115,11 @@ export class LevelUpSystem implements RunSystem {
         cands.push({ offer: { kind: 'passive', id: meta.id, isNew: true, toLevel: 1 }, w: 2 });
       }
     }
+    return cands;
+  }
+
+  private buildOffers(): Offer[] {
+    const cands = this.buildCands();
     if (cands.length === 0) {
       return [
         { kind: 'heal', isNew: false, toLevel: 0 },
@@ -100,18 +128,54 @@ export class LevelUpSystem implements RunSystem {
     }
     const out: Offer[] = [];
     for (let pick = 0; pick < 3 && cands.length > 0; pick++) {
-      let sum = 0;
-      for (const c of cands) sum += c.w;
-      let r = Math.random() * sum;
-      let idx = 0;
-      for (let i = 0; i < cands.length; i++) {
-        r -= cands[i].w;
-        if (r <= 0) { idx = i; break; }
-      }
-      out.push(cands[idx].offer);
-      cands.splice(idx, 1);
+      out.push(cands.splice(weightedIndex(cands), 1)[0].offer);
     }
     return out;
+  }
+
+  // ---------- 构筑操控（M10）：重抽 / 放逐 / 跳过 ----------
+
+  /** 重抽：整组重跑候选与 modifiers 链，重发事件（HUD 先关旧面板再调用） */
+  reroll(): void {
+    const run = this.ctx.run;
+    if (run.rerolls <= 0) return;
+    run.rerolls--;
+    this.curOffers = this.rollOffers();
+    emitEvent(this.ctx.scene.game, 'hud:levelup', this.curOffers);
+  }
+
+  /** 放逐：仅 weapon/passive 卡；该卡原位重抽一张（其余不动），整局（含宝箱升级层）不再出现 */
+  banish(offer: Offer): void {
+    const run = this.ctx.run;
+    if (run.banishes <= 0 || !offer.id) return;
+    if (offer.kind !== 'weapon' && offer.kind !== 'passive') return;
+    run.banishes--;
+    run.banished.add((offer.kind === 'weapon' ? 'w_' : 'p_') + offer.id);
+    const others = this.curOffers.filter((o) => o !== offer);
+    let cands = this.buildCands().filter(
+      (c) => !others.some((o) => o.kind === c.offer.kind && o.id === c.offer.id),
+    );
+    // onepath 等规则卡的 modifyOffers 对补抽卡同样生效（过滤空则保持原候选，兜底口径一致）
+    for (const m of this.modifiers) {
+      if (!m.modifyOffers) continue;
+      const kept = m.modifyOffers(cands.map((c) => c.offer));
+      const next = cands.filter((c) => kept.includes(c.offer));
+      if (next.length > 0) cands = next;
+    }
+    const repl: Offer = cands.length > 0
+      ? cands[weightedIndex(cands)].offer
+      : { kind: 'heal', isNew: false, toLevel: 0 };
+    const idx = this.curOffers.indexOf(offer);
+    if (idx >= 0) this.curOffers[idx] = repl;
+    emitEvent(this.ctx.scene.game, 'hud:levelup', this.curOffers);
+  }
+
+  /** 跳过：直接回到战斗，无补偿（跳过的价值 = 留着卡池位）；HUD 负责 resume */
+  skip(): void {
+    const run = this.ctx.run;
+    if (run.skips <= 0) return;
+    run.skips--;
+    run.choosing = false;
   }
 
   /** HUD 选卡后回调 */
@@ -167,15 +231,15 @@ export class LevelUpSystem implements RunSystem {
         return { kind: 'arcana', card: pool[Math.floor(Math.random() * pool.length)] };
       }
     }
-    // 第三层：已持有项升级 ×N
+    // 第三层：已持有项升级 ×N（放逐对宝箱升级层同样生效，保持一致性）
     const cands: Offer[] = [];
     for (const w of this.weapons.list) {
-      if (!w.evolved && w.level < WEAPON_MAX_LEVEL) {
+      if (!w.evolved && w.level < WEAPON_MAX_LEVEL && !run.banished.has('w_' + w.id)) {
         cands.push({ kind: 'weapon', id: w.id, isNew: false, toLevel: w.level + 1 });
       }
     }
     for (const [pid, lv] of run.passives) {
-      if (lv < PASSIVE_MAX_LEVEL) {
+      if (lv < PASSIVE_MAX_LEVEL && !run.banished.has('p_' + pid)) {
         cands.push({ kind: 'passive', id: pid, isNew: false, toLevel: lv + 1 });
       }
     }

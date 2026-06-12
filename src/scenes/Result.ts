@@ -109,6 +109,8 @@ export class ResultScene extends Phaser.Scene {
       [t('statTime'), mm + ':' + ss],
       [t('statKills'), String(r.kills)],
       [t('statLevel'), String(r.level)],
+      // M10 复活注记：用过才显示（金币行保持末位金色）
+      ...(r.revivesUsed > 0 ? [[t('statRevives'), '♥×' + r.revivesUsed] as [string, string]] : []),
       [t('statCoins'), '+' + r.coins],
     ];
     const rowGap = 30;

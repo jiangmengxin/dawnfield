@@ -23,6 +23,15 @@ export class ProjectileSystem implements RunSystem {
     return this.bullets.reduce((n, b) => n + (b.active ? 1 : 0), 0);
   }
 
+  /** 清除全部在场敌方弹体（M10 复活清屏脉冲） */
+  clearAll(): void {
+    for (const b of this.bullets) {
+      if (!b.active) continue;
+      b.active = false;
+      b.img.setVisible(false);
+    }
+  }
+
   spawn(spec: EnemyBulletSpec): void {
     let b = this.bullets.find((i) => !i.active);
     if (!b) {

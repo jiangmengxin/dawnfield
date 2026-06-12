@@ -9,6 +9,7 @@ export interface GameEventMap {
   'hud:arcana': [choices: ArcanaId[]];
   'hud:boss': [visible: boolean];
   'hud:warn': [i18nKey: string];
+  'hud:revive': [revivesLeft: number];
   'hud:achievement': [achId: string];
   'hud:refresh': [];
   'hud:togglepause': [];
