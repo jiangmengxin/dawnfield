@@ -21,9 +21,8 @@ export const ARCANA_META: ArcanaMeta[] = [
   { id: 'onepath',    color: 0xb898d0, icon: 'icon_arc_onepath' },
 ];
 
-/** 获取规则：开局三选一（设置可关）；精英宝箱有概率再得，单局至多 maxPerRun 张 */
+/** 获取规则：开局从全部未持有卡中任选 1（设置可关）；精英宝箱有概率再得，单局至多 maxPerRun 张 */
 export const ARCANA = {
-  pickCount: 3, // 开局候选张数
   maxPerRun: 3, // 单局持有上限（调试面板直给不受限）
   chestChance: 0.3, // 宝箱「再得一张」层概率（进化层之后）
 };

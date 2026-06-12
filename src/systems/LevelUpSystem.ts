@@ -1,4 +1,4 @@
-// 升级/宝箱/规则卡系统：三选一候选生成、选卡应用、宝箱内容分层、规则卡开局三选一（M9）
+// 升级/宝箱/规则卡系统：三选一候选生成、选卡应用、宝箱内容分层、规则卡开局选卡（M9）
 // 宝箱分层：可进化 → 进化；否则概率再得规则卡；否则 → 已持有项升级×N；无可升级 → 金币
 import { ARCANA, ARCANA_META } from '../content/arcana';
 import { CHEST, WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
@@ -21,7 +21,7 @@ export class LevelUpSystem implements RunSystem {
     private grantArcana: (id: ArcanaId) => void,
   ) {}
 
-  /** 每帧末尾检查待结算升级；规则卡开局三选一优先于升级 */
+  /** 每帧末尾检查待结算升级；规则卡开局选卡优先于升级 */
   update(_dt: number): void {
     const run = this.ctx.run;
     if (run.pendingArcana && !run.choosing) {
@@ -31,7 +31,7 @@ export class LevelUpSystem implements RunSystem {
     if (run.pendingLevels > 0 && !run.choosing) this.openLevelUp();
   }
 
-  // ---------- 规则卡三选一（M9：开局选 1） ----------
+  // ---------- 规则卡选卡（M9：开局从全部未持有卡中任选 1） ----------
 
   private openArcanaPick(): void {
     const ctx = this.ctx;
@@ -40,14 +40,10 @@ export class LevelUpSystem implements RunSystem {
     const pool = ARCANA_META.map((m) => m.id).filter((id) => !run.arcana.includes(id));
     if (pool.length === 0) return;
     run.choosing = true;
-    const choices: ArcanaId[] = [];
-    for (let i = 0; i < ARCANA.pickCount && pool.length > 0; i++) {
-      choices.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-    }
     SFX.levelup();
     ctx.fx.ring(ctx.player.x, ctx.player.y, 0xe2b452, 7, 0.6);
     ctx.scene.scene.pause();
-    emitEvent(ctx.scene.game, 'hud:arcana', choices);
+    emitEvent(ctx.scene.game, 'hud:arcana', pool);
   }
 
   /** HUD 规则卡选卡回调 */

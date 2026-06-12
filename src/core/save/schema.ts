@@ -23,7 +23,7 @@ export interface SaveSettings {
   /** 解锁全部内容（角色/地图视为全解锁，不写入 unlocked 列表，关闭即恢复）
    *  纯增量带默认值字段：sanitize 双向兼容（旧档缺省 false / 旧构建读新档丢弃），无需迁移 */
   unlockAll: boolean;
-  /** 规则卡 Arcana（M9）：开局三选一 + 宝箱再得；关闭后局内行为与 M8 等价。
+  /** 规则卡 Arcana（M9）：开局全卡池任选 1 + 宝箱再得；关闭后局内行为与 M8 等价。
    *  纯增量带默认值字段（默认开），无需迁移 */
   arcana: boolean;
 }

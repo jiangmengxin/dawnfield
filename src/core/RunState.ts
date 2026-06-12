@@ -39,7 +39,7 @@ export class RunState {
   iframeT = 0; // 受击无敌帧剩余秒数
   pendingLevels = 0;
   choosing = false;
-  /** 规则卡（M9）：开局三选一待开（设置开关开启时置位），LevelUpSystem 消费 */
+  /** 规则卡（M9）：开局选卡待开（设置开关开启时置位），LevelUpSystem 消费 */
   pendingArcana = false;
   /** 本局已持有的规则卡（modifier 实体在 GameScene.modifiers） */
   arcana: ArcanaId[] = [];
