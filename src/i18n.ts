@@ -150,6 +150,7 @@ const D: Dict = {
   // 规则卡 Arcana（M9）
   arcanaTitle: ['晨曦的祝福！选择一张规则卡', 'A dawn blessing! Pick an arcana'],
   arcTag: ['规则卡', 'ARCANA'],
+  arcGet: ['获得规则卡：{n}', 'Arcana gained: {n}'],
   arc_petaltide: ['花开满野', 'Blooming Tide'],
   arc_petaltide_d: ['攻击范围 +25%，弹速 +10%', 'Area +25%, projectile speed +10%'],
   arc_tailwind: ['顺风童谣', 'Tailwind Rhyme'],

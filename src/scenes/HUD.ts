@@ -402,27 +402,30 @@ export class HUDScene extends Phaser.Scene {
     });
   }
 
-  // ---------- 成就达成 toast（金色横幅，多个时排队） ----------
+  // ---------- 金色横幅 toast（成就达成 / 自动选卡获得规则卡），多个时排队 ----------
 
-  private achQueue: string[] = [];
-  private achBusy = false;
+  private toastQueue: string[] = [];
+  private toastBusy = false;
 
   private queueAchToast(id: string): void {
-    this.achQueue.push(id);
-    this.pumpAchToast();
+    this.queueToast(t('achUnlocked') + ' ' + t('ach_' + id));
   }
 
-  private pumpAchToast(): void {
-    if (this.achBusy) return;
-    const id = this.achQueue.shift();
-    if (!id) return;
-    this.achBusy = true;
+  private queueToast(text: string): void {
+    this.toastQueue.push(text);
+    this.pumpToast();
+  }
+
+  private pumpToast(): void {
+    if (this.toastBusy) return;
+    const text = this.toastQueue.shift();
+    if (text === undefined) return;
+    this.toastBusy = true;
     const safe = this.vp.safe;
-    const toast = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.22,
-      t('achUnlocked') + ' ' + t('ach_' + id), {
-        fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#C8902A',
-        stroke: '#FFFFFF', strokeThickness: 6,
-      }).setOrigin(0.5).setDepth(21).setAlpha(0).setScale(0.8);
+    const toast = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.22, text, {
+      fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#C8902A',
+      stroke: '#FFFFFF', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(21).setAlpha(0).setScale(0.8);
     SFX.levelup();
     this.tweens.add({
       targets: toast, alpha: 1, scale: 1, duration: 260, ease: 'Back.easeOut',
@@ -431,8 +434,8 @@ export class HUDScene extends Phaser.Scene {
           targets: toast, alpha: 0, delay: 1700, duration: 350,
           onComplete: () => {
             toast.destroy();
-            this.achBusy = false;
-            this.pumpAchToast();
+            this.toastBusy = false;
+            this.pumpToast();
           },
         });
       },
@@ -489,9 +492,10 @@ export class HUDScene extends Phaser.Scene {
   /** 规则卡三选一（M9：开局选 1）——「晨曦祝福」主题，与升级三选一明显区分：
    *  暖金幕布 + 顶部晨光 + 飘浮星光 + 金色标题星饰 + 鎏金双线塔罗卡（绽放式入场） */
   private showArcanaPick(choices: ArcanaId[]): void {
-    // 调试：自动选第一张卡，跳过选卡界面
+    // 调试「自动选卡」：自动选第一张并以金色横幅告知（避免静默跳过开局选卡造成困惑）
     if (getSettings().autoPick && choices.length > 0) {
       this.gs.levelUp.applyArcana(choices[0]);
+      this.queueToast(t('arcGet').replace('{n}', t('arc_' + choices[0])));
       this.scene.resume('game');
       return;
     }
