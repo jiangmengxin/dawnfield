@@ -61,6 +61,9 @@ const D: Dict = {
   // 宝箱
   chestTitle: ['晨光宝箱', 'Dawn Chest'],
   chestOpen: ['点击开启', 'Tap to open'],
+  chestArcanaPick: ['规则卡降临！选择一张', 'Arcana revealed! Choose one'],
+  chestRich: ['金光涌动！开出 {n} 件', 'Overflowing! {n} treasures'],
+  chestArcanaRow: ['规则卡（稍后任选）', 'Arcana card (pick next)'],
   chestGold: ['金光闪闪！金币 +{c}，生命 +{h}', 'Shiny! +{c} coins, +{h} HP'],
   chestUpgrade: ['装备升级！', 'Gear upgraded!'],
 

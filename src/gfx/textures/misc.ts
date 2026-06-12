@@ -75,8 +75,9 @@ export function createMiscTextures(scene: Phaser.Scene): void {
     ctx.fill();
   });
 
+  // 晨光宝箱：拱顶木盖 + 木纹箱体 + 金属箍/锁扣面板（明亮童话向，PAL.chest 金色系）
   makeTex(scene, 'chest', 44, 38, (ctx) => {
-    softGlow(ctx, 22, 19, 19, 'rgba(232,200,120,0.45)'); // r=19：上下沿恰好到画布边，不被切
+    softGlow(ctx, 22, 20, 18, 'rgba(232,200,120,0.5)');
     const rr = (x: number, y: number, w2: number, h2: number, r: number) => {
       ctx.beginPath();
       ctx.moveTo(x + r, y);
@@ -86,23 +87,94 @@ export function createMiscTextures(scene: Phaser.Scene): void {
       ctx.arcTo(x, y, x + w2, y, r);
       ctx.closePath();
     };
-    rr(8, 10, 28, 22, 5);
-    ctx.fillStyle = cssOf(PAL.chest);
+    // 箱体（木纹渐变 + 板缝）
+    const body = ctx.createLinearGradient(0, 17, 0, 34);
+    body.addColorStop(0, '#EFC270');
+    body.addColorStop(1, '#C8924A');
+    rr(7, 17, 30, 17, 4);
+    ctx.fillStyle = body;
     ctx.fill();
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = '#A87838';
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(168,120,56,0.35)';
+    for (const yy of [23.5, 28.5]) {
+      ctx.beginPath();
+      ctx.moveTo(9, yy);
+      ctx.lineTo(35, yy);
+      ctx.stroke();
+    }
+    // 箱体金属箍 ×2 + 铆钉
+    for (const x of [10.5, 29.5]) {
+      rr(x, 19.5, 4, 13, 1.5);
+      ctx.fillStyle = '#F6E6B8';
+      ctx.fill();
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = '#C09848';
+      ctx.stroke();
+      ctx.fillStyle = '#C09848';
+      for (const yy of [22.5, 30]) {
+        ctx.beginPath();
+        ctx.arc(x + 2, yy, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // 拱顶箱盖（受光更亮）
+    const lid = ctx.createLinearGradient(0, 5, 0, 18);
+    lid.addColorStop(0, '#F8D88C');
+    lid.addColorStop(1, '#D8A850');
+    ctx.beginPath();
+    ctx.moveTo(7, 18);
+    ctx.lineTo(7, 13);
+    ctx.quadraticCurveTo(7.5, 5, 22, 5);
+    ctx.quadraticCurveTo(36.5, 5, 37, 13);
+    ctx.lineTo(37, 18);
+    ctx.closePath();
+    ctx.fillStyle = lid;
+    ctx.fill();
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = '#A87838';
+    ctx.stroke();
+    // 盖面高光
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(14.5, 9.5, 4.6, 2, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    // 盖沿金属带（横贯）+ 端头铆钉
+    rr(5.5, 15.5, 33, 4.5, 2);
+    ctx.fillStyle = '#F6E6B8';
+    ctx.fill();
+    ctx.lineWidth = 1.6;
     ctx.strokeStyle = '#C09848';
     ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(8, 19);
-    ctx.lineTo(36, 19);
-    ctx.stroke();
-    // 锁扣
-    ctx.fillStyle = '#FFF2CC';
-    ctx.beginPath();
-    ctx.arc(22, 19, 3.6, 0, Math.PI * 2);
+    ctx.fillStyle = '#C09848';
+    for (const x of [8.5, 35.5]) {
+      ctx.beginPath();
+      ctx.arc(x, 17.8, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 锁扣面板 + 锁孔
+    rr(18.5, 14, 7, 9.5, 2.5);
+    ctx.fillStyle = '#FFF4CF';
     ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = '#C09848';
     ctx.stroke();
-    star(ctx, 34, 8, 4, 4.5, 1.8, '#FFFFFF');
+    ctx.fillStyle = '#A87838';
+    ctx.beginPath();
+    ctx.arc(22, 17.6, 1.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(21.2, 18.6);
+    ctx.lineTo(22.8, 18.6);
+    ctx.lineTo(22.5, 21.2);
+    ctx.lineTo(21.5, 21.2);
+    ctx.closePath();
+    ctx.fill();
+    // 星光点缀
+    star(ctx, 35, 7, 4, 4.2, 1.7, '#FFFFFF');
+    star(ctx, 9.5, 11, 4, 2.6, 1.1, 'rgba(255,255,255,0.85)');
   });
 
   // === 粒子 ===

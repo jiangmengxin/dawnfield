@@ -108,7 +108,9 @@ export function createArcanaModifier(id: ArcanaId, ctx: CombatContext): RunModif
           dropped = true;
           c.spawnPickup('chest', c.player.x + 70, c.player.y - 10);
         },
-        onChest: (r) => (r.kind === 'gold' ? { ...r, coins: r.coins * ARC_FX.compassGoldMul } : r),
+        onChest: (r) => ({
+          items: r.items.map((it) => (it.kind === 'gold' ? { ...it, coins: it.coins * ARC_FX.compassGoldMul } : it)),
+        }),
       };
     }
 

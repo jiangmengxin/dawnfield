@@ -10,7 +10,7 @@ import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
 import { Meta } from '../core/MetaState';
 import { getSettings } from '../core/settings';
-import type { ChestReward, CombatContext, Offer, RunModifier, RunSystem } from './context';
+import type { ChestItem, ChestReward, CombatContext, Offer, RunModifier, RunSystem } from './context';
 import type { WeaponManager } from './weapons';
 
 type Cand = { offer: Offer; w: number };
@@ -219,19 +219,22 @@ export class LevelUpSystem implements RunSystem {
 
   private buildChestReward(): ChestReward {
     const run = this.ctx.run;
-    // 第一层：进化
+    // 件数：1 常见，3 / 5 稀有惊喜（先判 5 再判 3）
+    const r = Math.random();
+    const n = r < CHEST.pentaChance ? 5 : r < CHEST.pentaChance + CHEST.tripleChance ? 3 : 1;
+    const items: ChestItem[] = [];
+    // 1) 进化优先（每箱至多一件）
     const evolvable = this.weapons.evolvable();
     if (evolvable.length > 0) {
-      return { kind: 'evolve', weapon: evolvable[Math.floor(Math.random() * evolvable.length)] };
+      items.push({ kind: 'evolve', weapon: evolvable[Math.floor(Math.random() * evolvable.length)] });
     }
-    // 第二层（M9 规则卡）：开关开启且未到单局上限时，有概率再得一张
-    if (getSettings().arcana && run.arcana.length < ARCANA.maxPerRun && Math.random() < ARCANA.chestChance) {
+    // 2) 规则卡（M9 概率口径不变；候选 = 全部未持有卡，与开局选卡一致，每箱至多一件）
+    if (items.length < n && getSettings().arcana && run.arcana.length < ARCANA.maxPerRun
+      && Math.random() < ARCANA.chestChance) {
       const pool = ARCANA_META.map((m) => m.id).filter((id) => !run.arcana.includes(id));
-      if (pool.length > 0) {
-        return { kind: 'arcana', card: pool[Math.floor(Math.random() * pool.length)] };
-      }
+      if (pool.length > 0) items.push({ kind: 'arcana', cards: pool });
     }
-    // 第三层：已持有项升级 ×N（放逐对宝箱升级层同样生效，保持一致性）
+    // 3) 已持有项升级（不放回抽取；放逐对宝箱升级件同样生效，保持一致性）
     const cands: Offer[] = [];
     for (const w of this.weapons.list) {
       if (!w.evolved && w.level < WEAPON_MAX_LEVEL && !run.banished.has('w_' + w.id)) {
@@ -243,32 +246,33 @@ export class LevelUpSystem implements RunSystem {
         cands.push({ kind: 'passive', id: pid, isNew: false, toLevel: lv + 1 });
       }
     }
-    if (cands.length > 0) {
-      const items: Offer[] = [];
-      for (let i = 0; i < CHEST.upgradeCount && cands.length > 0; i++) {
-        items.push(cands.splice(Math.floor(Math.random() * cands.length), 1)[0]);
-      }
-      return { kind: 'upgrade', items };
+    while (items.length < n && cands.length > 0) {
+      items.push({ kind: 'upgrade', offer: cands.splice(Math.floor(Math.random() * cands.length), 1)[0] });
     }
-    // 末层：金币（数额随结果携带，规则卡 onChest 可改写）
-    return { kind: 'gold', coins: CHEST.goldCoins, heal: CHEST.goldHeal };
+    // 4) 金币兜底：候选耗尽的剩余件按件给金币（数额随件携带，规则卡 onChest 可改写）
+    while (items.length < n) {
+      items.push({ kind: 'gold', coins: CHEST.goldCoins, heal: CHEST.goldHeal });
+    }
+    return { items };
   }
 
-  /** HUD 宝箱动画结束后回调 */
-  applyChest(reward: ChestReward): void {
+  /** HUD 宝箱动画结束后回调；pick = 规则卡件玩家选中的卡（缺省取首张，autoPick 调试路径用） */
+  applyChest(reward: ChestReward, pick?: ArcanaId): void {
     const ctx = this.ctx;
-    if (reward.kind === 'evolve') {
-      this.weapons.evolve(reward.weapon);
-      SFX.evolve();
-    } else if (reward.kind === 'arcana') {
-      this.grantArcana(reward.card);
-      SFX.levelup();
-    } else if (reward.kind === 'upgrade') {
-      for (const offer of reward.items) this.applyOne(offer);
-    } else {
-      ctx.run.addCoins(reward.coins);
-      ctx.run.heal(reward.heal);
-      SFX.coin();
+    for (const it of reward.items) {
+      if (it.kind === 'evolve') {
+        this.weapons.evolve(it.weapon);
+        SFX.evolve();
+      } else if (it.kind === 'arcana') {
+        this.grantArcana(pick ?? it.cards[0]);
+        SFX.levelup();
+      } else if (it.kind === 'upgrade') {
+        this.applyOne(it.offer);
+      } else {
+        ctx.run.addCoins(it.coins);
+        ctx.run.heal(it.heal);
+        SFX.coin();
+      }
     }
     emitEvent(ctx.scene.game, 'hud:refresh');
   }

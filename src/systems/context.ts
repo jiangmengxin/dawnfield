@@ -50,12 +50,17 @@ export interface Offer {
   toLevel: number;
 }
 
-/** 宝箱分层结果：可进化 → 进化；否则概率再得规则卡（M9）；否则 → 已持有项升级×N；无可升级 → 金币 */
-export type ChestReward =
+/** 宝箱单件物品：按 进化 > 规则卡 > 升级 > 金币 的优先级装箱 */
+export type ChestItem =
   | { kind: 'evolve'; weapon: WeaponId }
-  | { kind: 'arcana'; card: ArcanaId }
-  | { kind: 'upgrade'; items: Offer[] }
+  | { kind: 'arcana'; cards: ArcanaId[] } // 候选 = 全部未持有卡（与开局选卡一致，任选 1）
+  | { kind: 'upgrade'; offer: Offer }
   | { kind: 'gold'; coins: number; heal: number };
+
+/** 宝箱开箱结果：1 件常见，3/5 件稀有惊喜（CHEST.tripleChance/pentaChance） */
+export interface ChestReward {
+  items: ChestItem[];
+}
 
 /** 运行模式（公共契约：M11 实装无尽） */
 export type RunMode = 'normal' | 'endless';

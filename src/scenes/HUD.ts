@@ -16,7 +16,7 @@ import { onEvent } from '../core/events';
 import { Meta } from '../core/MetaState';
 import { getSettings, updateSettings } from '../core/settings';
 import { go } from '../core/router';
-import type { ChestReward, Offer } from '../systems/context';
+import type { ChestItem, ChestReward, Offer } from '../systems/context';
 import type { GameScene } from './Game';
 
 /** 选卡卡片渲染信息（升级三选一与规则卡三选一共用） */
@@ -554,12 +554,15 @@ export class HUDScene extends Phaser.Scene {
     }
     this.overlayMode = 'arcana';
     this.pendingArcana = choices;
-    const w = this.vp.w;
-    const h = this.vp.h;
     this.overlay.push(this.addVeil());
     this.addPickTitle(t('arcanaTitle'));
+    this.layoutArcanaGrid(choices, (id) => this.chooseArcana(id));
+  }
 
-    // 全卡池网格：横屏 5 列 / 竖屏 2 列；末行不满时居中
+  /** 全卡池网格（开局选卡与宝箱规则卡件共用）：横屏 5 列 / 竖屏 2 列；末行不满时居中 */
+  private layoutArcanaGrid(choices: ArcanaId[], onPick: (id: ArcanaId) => void): void {
+    const w = this.vp.w;
+    const h = this.vp.h;
     const portrait = h > w;
     const cols = portrait ? 2 : 5;
     const rows = Math.ceil(choices.length / cols);
@@ -578,7 +581,7 @@ export class HUDScene extends Phaser.Scene {
       const rowW = inRow * cw + (inRow - 1) * gapX;
       const cx = w / 2 - rowW / 2 + col * (cw + gapX) + cw / 2;
       const cy = y0 + row * (ch + gapY) + ch / 2;
-      this.makeArcanaCard(id, i, cx, cy, cw, ch, () => this.chooseArcana(id));
+      this.makeArcanaCard(id, i, cx, cy, cw, ch, () => onPick(id));
     });
   }
 
@@ -776,87 +779,225 @@ export class HUDScene extends Phaser.Scene {
 
   // ---------- 宝箱 ----------
 
+  private chestTitle: Phaser.GameObjects.Text | null = null;
+
   private showChest(reward: ChestReward): void {
     this.overlayMode = 'chest';
     const w = this.vp.w;
     const h = this.vp.h;
+    const cx = w / 2;
+    const cy = h * 0.45;
     const veil = this.addVeil();
-    const title = this.add.text(w / 2, h * 0.2, t('chestTitle'), {
+    this.chestTitle = this.add.text(cx, h * 0.2, t('chestTitle'), {
       fontFamily: FONT, fontSize: '28px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 6,
     }).setOrigin(0.5).setDepth(101);
-    const chest = this.add.image(w / 2, h * 0.45, 'chest').setScale(3).setDepth(101);
-    const hint = this.add.text(w / 2, h * 0.6, t('chestOpen'), {
+    // 待开演出：地面光环呼吸 + 宝箱浮动
+    const halo = this.add.image(cx, cy + 4, 'p_dot').setTint(0xf2cf6e).setAlpha(0.5)
+      .setDisplaySize(170, 170).setDepth(100);
+    const chest = this.add.image(cx, cy, 'chest').setScale(3).setDepth(101);
+    const hint = this.add.text(cx, h * 0.62, t('chestOpen'), {
       fontFamily: FONT, fontSize: '17px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(101);
-    this.tweens.add({ targets: chest, scale: 3.2, duration: 500, yoyo: true, repeat: -1 });
-    this.overlay.push(veil, title, chest, hint);
+    this.tweens.add({
+      targets: halo, displayWidth: 210, displayHeight: 210, alpha: 0.28,
+      duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+    });
+    this.tweens.add({ targets: chest, y: cy - 7, duration: 850, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    this.overlay.push(veil, this.chestTitle, halo, chest, hint);
 
     const zone = this.add.zone(0, 0, w, h).setOrigin(0).setDepth(102).setInteractive();
     this.overlay.push(zone);
     zone.once('pointerup', () => {
       hint.destroy();
       this.tweens.killTweensOf(chest);
-      this.tweens.add({ targets: chest, scale: 0, angle: 20, duration: 250, ease: 'Back.easeIn' });
-      // 纸屑喷发
-      for (let i = 0; i < 26; i++) {
-        const p = this.add.image(w / 2, h * 0.45, 'p_confetti')
-          .setTint([PAL.petal, PAL.blade, PAL.boom, PAL.mine, PAL.rain][i % 5])
-          .setDepth(103).setScale(1.4);
-        this.overlay.push(p);
-        const a = Math.random() * Math.PI * 2;
-        const sp = 120 + Math.random() * 240;
-        this.tweens.add({
-          targets: p,
-          x: p.x + Math.cos(a) * sp,
-          y: p.y + Math.sin(a) * sp + 120,
-          rotation: Math.random() * 8,
-          alpha: 0,
-          duration: 900,
-          ease: 'Cubic.easeOut',
-        });
-      }
-      this.time.delayedCall(330, () => {
-        let label: string;
-        let iconKey: string | null = null;
-        if (reward.kind === 'evolve') {
-          iconKey = WEAPON_META.find((m) => m.id === reward.weapon)!.icon;
-          label = t('evolveTag') + '！ ' + t('w_' + reward.weapon + '_e') + '\n' + t('w_' + reward.weapon + '_e_d');
-        } else if (reward.kind === 'arcana') {
-          iconKey = ARCANA_META.find((m) => m.id === reward.card)!.icon;
-          label = t('arcTag') + '！ ' + t('arc_' + reward.card) + '\n' + t('arc_' + reward.card + '_d');
-        } else if (reward.kind === 'upgrade') {
-          const first = reward.items[0];
-          iconKey = first.kind === 'weapon'
-            ? WEAPON_META.find((m) => m.id === first.id)!.icon
-            : PASSIVE_META.find((m) => m.id === first.id)!.icon;
-          label = t('chestUpgrade') + '\n' + reward.items
-            .map((o) => (o.kind === 'weapon' ? t('w_' + o.id) : t('p_' + o.id)) + ' Lv ' + o.toLevel)
-            .join('\n');
-        } else {
-          label = t('chestGold')
-            .replace('{c}', String(reward.coins))
-            .replace('{h}', String(reward.heal));
-        }
-        if (iconKey) {
-          const icon = this.add.image(w / 2, h * 0.42, iconKey).setScale(0).setDepth(104);
-          this.overlay.push(icon);
-          this.tweens.add({ targets: icon, scale: 2.4, duration: 400, ease: 'Back.easeOut' });
-        }
-        const txt = this.add.text(w / 2, h * 0.58, label, {
-          fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: PAL.inkCss, align: 'center',
-          stroke: '#FFFFFF', strokeThickness: 5, wordWrap: { width: w - 60 },
-        }).setOrigin(0.5).setDepth(104);
-        this.overlay.push(txt);
-        const ok = makeButton(this, w / 2, h * 0.74, THEME.btnW, THEME.btnH, 'OK', () => {
-          this.closeOverlay();
-          this.gs.levelUp.applyChest(reward);
-          this.scene.resume('game');
-        }, { fontSize: THEME.btnFs });
-        ok.setDepth(104);
-        this.overlay.push(ok);
+      chest.setPosition(cx, cy);
+      // 蓄力摇晃 → 爆发
+      this.tweens.add({ targets: chest, scale: 3.35, duration: 400, ease: 'Cubic.easeIn' });
+      this.tweens.add({
+        targets: chest, angle: { from: -7, to: 7 }, duration: 56, yoyo: true, repeat: 6, ease: 'Sine.easeInOut',
+        onComplete: () => this.chestBurst(reward, chest, halo),
       });
     });
+  }
+
+  /** 开箱爆发（M11.5 演出强化）：白闪 + 旋转光芒 + 双金环冲击波 + 纸屑/星屑喷泉 */
+  private chestBurst(reward: ChestReward, chest: Phaser.GameObjects.Image, halo: Phaser.GameObjects.Image): void {
+    const w = this.vp.w;
+    const h = this.vp.h;
+    const cx = chest.x;
+    const cy = chest.y;
+    SFX.levelup();
+    this.tweens.killTweensOf(halo);
+    halo.destroy();
+    // 宝箱本体弹飞
+    this.tweens.add({ targets: chest, scale: 0, angle: 36, y: cy - 26, duration: 240, ease: 'Back.easeIn' });
+    // 白闪（柔光圆扩散）
+    const flash = this.add.image(cx, cy, 'p_dot').setDisplaySize(90, 90).setDepth(105);
+    this.overlay.push(flash);
+    this.tweens.add({
+      targets: flash, displayWidth: Math.max(w, h) * 1.5, displayHeight: Math.max(w, h) * 1.5,
+      alpha: 0, duration: 600, ease: 'Cubic.easeOut',
+    });
+    // 旋转金色光芒（揭示期常驻背景，随面板关闭销毁）
+    const rays = this.add.graphics().setPosition(cx, cy).setDepth(100).setAlpha(0);
+    for (let i = 0; i < 12; i++) {
+      const a0 = (i / 12) * Math.PI * 2;
+      rays.fillStyle(0xf2cf6e, 0.15);
+      rays.slice(0, 0, Math.max(w, h) * 0.6, a0, a0 + 0.15);
+      rays.fillPath();
+    }
+    this.overlay.push(rays);
+    this.tweens.add({ targets: rays, alpha: 1, duration: 500 });
+    this.tweens.add({ targets: rays, rotation: Math.PI * 2, duration: 36000, repeat: -1 });
+    // 双金环冲击波
+    [0xe2b452, 0xfff2c0].forEach((tint, i) => {
+      const ring = this.add.image(cx, cy, 'p_ring').setTint(tint).setScale(0.4).setAlpha(0.9).setDepth(104);
+      this.overlay.push(ring);
+      this.tweens.add({
+        targets: ring, scale: 3.2 + i * 1.2, alpha: 0, delay: i * 140, duration: 650, ease: 'Cubic.easeOut',
+      });
+    });
+    // 纸屑 + 星屑喷泉（先冲后落）
+    for (let i = 0; i < 54; i++) {
+      const isStar = i % 4 === 0;
+      const p = this.add.image(cx, cy, isStar ? 'p_star' : 'p_confetti')
+        .setTint(isStar ? 0xf2cf6e : [PAL.petal, PAL.blade, PAL.boom, PAL.mine, PAL.rain][i % 5])
+        .setDepth(103).setScale(isStar ? 1.1 : 1.4);
+      this.overlay.push(p);
+      const a = Math.random() * Math.PI * 2;
+      const sp = 140 + Math.random() * 320;
+      this.tweens.add({
+        targets: p,
+        x: cx + Math.cos(a) * sp,
+        y: cy + Math.sin(a) * sp * 0.8 + 150,
+        rotation: Math.random() * 9,
+        alpha: 0,
+        scale: isStar ? 0.4 : 0.8,
+        duration: 850 + Math.random() * 450,
+        ease: 'Cubic.easeOut',
+      });
+    }
+    this.time.delayedCall(380, () => this.revealChestReward(reward));
+  }
+
+  /** 揭示阶段：单件 → 大图标；多件（3/5）→ 清单；含规则卡件 → 全卡池任选其一（与开局一致） */
+  private revealChestReward(reward: ChestReward): void {
+    const w = this.vp.w;
+    const h = this.vp.h;
+    const auto = getSettings().autoPick; // 调试口径：规则卡件直取首张，不进选卡
+    const items = reward.items;
+    const arc = items.find((it): it is Extract<ChestItem, { kind: 'arcana' }> => it.kind === 'arcana');
+    const finish = (pick?: ArcanaId): void => {
+      this.closeOverlay();
+      this.gs.levelUp.applyChest(reward, pick);
+      this.scene.resume('game');
+    };
+    // 单件规则卡：直接进全卡池选卡（与开局选卡同一版式）
+    if (items.length === 1 && arc && !auto) {
+      this.chestTitle?.setText(t('chestArcanaPick'));
+      this.layoutArcanaGrid(arc.cards, (id) => {
+        if (this.overlayMode !== 'chest') return;
+        SFX.uiClick();
+        finish(id);
+      });
+      return;
+    }
+    // 本阶段对象单独登记：含规则卡件时点 OK 转入选卡，需要先清掉清单
+    const revealObjs: Phaser.GameObjects.GameObject[] = [];
+    const track = <T extends Phaser.GameObjects.GameObject>(o: T): T => {
+      this.overlay.push(o);
+      revealObjs.push(o);
+      return o;
+    };
+    const itemInfo = (it: ChestItem): { icon: string; tint?: number; label: string } => {
+      if (it.kind === 'evolve') {
+        return { icon: WEAPON_META.find((m) => m.id === it.weapon)!.icon, label: t('evolveTag') + '！ ' + t('w_' + it.weapon + '_e') };
+      }
+      if (it.kind === 'arcana') {
+        return auto
+          ? { icon: ARCANA_META.find((m) => m.id === it.cards[0])!.icon, label: t('arcTag') + '！ ' + t('arc_' + it.cards[0]) }
+          : { icon: 'p_star', tint: 0xe2b452, label: t('chestArcanaRow') };
+      }
+      if (it.kind === 'upgrade') {
+        const o = it.offer;
+        const name = o.kind === 'weapon' ? t('w_' + o.id) : t('p_' + o.id);
+        const icon = o.kind === 'weapon'
+          ? WEAPON_META.find((m) => m.id === o.id)!.icon
+          : PASSIVE_META.find((m) => m.id === o.id)!.icon;
+        return { icon, label: name + ' Lv ' + o.toLevel };
+      }
+      return { icon: 'coin', label: t('chestGold').replace('{c}', String(it.coins)).replace('{h}', String(it.heal)) };
+    };
+
+    if (items.length === 1) {
+      // 单件：大图标 + 金色光晕脉冲 + 环绕星光 + 说明（进化/规则卡补描述行）
+      const it = items[0];
+      const info = itemInfo(it);
+      let label = info.label;
+      if (it.kind === 'evolve') label += '\n' + t('w_' + it.weapon + '_e_d');
+      if (it.kind === 'arcana') label += '\n' + t('arc_' + it.cards[0] + '_d');
+      if (it.kind === 'upgrade') label = t('chestUpgrade') + '\n' + info.label;
+      const glow = track(this.add.image(w / 2, h * 0.42, 'p_dot').setTint(0xf2cf6e).setAlpha(0.6)
+        .setDisplaySize(120, 120).setDepth(103));
+      this.tweens.add({
+        targets: glow, displayWidth: 150, displayHeight: 150, alpha: 0.35,
+        duration: 650, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+      });
+      const icon = track(this.add.image(w / 2, h * 0.42, info.icon).setScale(0).setDepth(104));
+      if (info.tint !== undefined) icon.setTint(info.tint);
+      this.tweens.add({ targets: icon, scale: 2.4, duration: 400, ease: 'Back.easeOut' });
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + 0.5;
+        const s = track(this.add.image(w / 2 + Math.cos(a) * 64, h * 0.42 + Math.sin(a) * 52, 'p_star')
+          .setTint(0xf2cf6e).setScale(0.5 + (i % 3) * 0.25).setAlpha(0).setDepth(104));
+        this.tweens.add({
+          targets: s, alpha: { from: 0.9, to: 0.15 }, scale: '+=0.3',
+          delay: 90 * i, duration: 480, yoyo: true, repeat: 5,
+        });
+      }
+      track(this.add.text(w / 2, h * 0.58, label, {
+        fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: PAL.inkCss, align: 'center',
+        stroke: '#FFFFFF', strokeThickness: 5, wordWrap: { width: w - 60 },
+      }).setOrigin(0.5).setDepth(104));
+    } else {
+      // 多件（3/5）：标题切换 + 逐行清单（图标 + 名称，依次滑入）
+      this.chestTitle?.setText(t('chestRich').replace('{n}', String(items.length)));
+      const rowH = items.length >= 5 ? 46 : 54;
+      const rowW = Math.min(380, w - 70);
+      const y0 = h * 0.43 - ((items.length - 1) * rowH) / 2;
+      items.forEach((it, i) => {
+        const info = itemInfo(it);
+        const y = y0 + i * rowH;
+        const icon = track(this.add.image(w / 2 - rowW / 2 + 20, y, info.icon).setDepth(104).setAlpha(0));
+        icon.setDisplaySize(34, 34);
+        if (info.tint !== undefined) icon.setTint(info.tint);
+        const txt = track(this.add.text(w / 2 - rowW / 2 + 46, y, info.label, {
+          fontFamily: FONT, fontSize: '17px', fontStyle: 'bold', color: PAL.inkCss,
+          stroke: '#FFFFFF', strokeThickness: 4,
+        }).setOrigin(0, 0.5).setDepth(104).setAlpha(0));
+        this.tweens.add({
+          targets: [icon, txt], alpha: 1, x: '+=10', delay: 110 * i, duration: 280, ease: 'Cubic.easeOut',
+        });
+      });
+    }
+    const ok = track(makeButton(this, w / 2, h * 0.78, THEME.btnW, THEME.btnH, 'OK', () => {
+      if (this.overlayMode !== 'chest') return;
+      if (arc && !auto) {
+        // 清单 → 全卡池选卡（其余件待选卡后一并入手）
+        SFX.uiClick();
+        revealObjs.forEach((o) => o.destroy());
+        this.chestTitle?.setText(t('chestArcanaPick'));
+        this.layoutArcanaGrid(arc.cards, (id) => {
+          if (this.overlayMode !== 'chest') return;
+          SFX.uiClick();
+          finish(id);
+        });
+        return;
+      }
+      finish();
+    }, { fontSize: THEME.btnFs }));
+    ok.setDepth(104);
   }
 
   // ---------- 暂停 ----------

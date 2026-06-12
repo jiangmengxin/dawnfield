@@ -24,7 +24,7 @@ export const ARCANA_META: ArcanaMeta[] = [
 /** 获取规则：开局从全部未持有卡中任选 1（设置可关）；精英宝箱有概率再得，单局至多 maxPerRun 张 */
 export const ARCANA = {
   maxPerRun: 3, // 单局持有上限（调试面板直给不受限）
-  chestChance: 0.3, // 宝箱「再得一张」层概率（进化层之后）
+  chestChance: 0.3, // 宝箱「再得一张」件概率（进化件之后；候选 = 全部未持有卡，与开局一致）
 };
 
 // 规则卡数值（卡牌平衡只改此处）
