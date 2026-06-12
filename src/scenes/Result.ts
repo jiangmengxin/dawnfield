@@ -34,6 +34,7 @@ export class ResultScene extends Phaser.Scene {
         passives: 0, // 结算数据不含被动，被动类成就由局内 Tracker 评估
         evolves: data.build.filter((b) => b.evolved).length,
         maxWeapon: data.build.some((b) => b.evolved || b.level >= WEAPON_MAX_LEVEL),
+        maxPassive: false, // 同上，局内已评估
         eliteKills: 0, // 同上，局内已评估
         win: data.win,
         mapId: data.mapId,

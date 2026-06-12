@@ -34,7 +34,11 @@ export interface DecorLayer {
 
 export type MechanicSpec =
   | { kind: 'puddles'; first: number; interval: number; count: number; r: number; dur: number; playerSlow: number }
-  | { kind: 'storm'; first: number; interval: number; warnT: number; dur: number; pushPlayer: number; pushEnemy: number };
+  | { kind: 'storm'; first: number; interval: number; warnT: number; dur: number; pushPlayer: number; pushEnemy: number }
+  // M6：治愈泉（周期在四周涌出治愈泉眼，站进去回血——为了回血要冒险走位）
+  | { kind: 'springs'; first: number; interval: number; count: number; r: number; dur: number; hps: number }
+  // M6：花浪阵风（周期铺开顺风带，敌我踩上同加速——借风跑路或被风追身）
+  | { kind: 'gusts'; first: number; interval: number; count: number; r: number; dur: number; mul: number };
 
 // ---------- BGM 主题（WebAudio 生成式，audio/sound.ts 消费） ----------
 
@@ -111,6 +115,34 @@ const HILLS_BGM: BgmSpec = {
   densityK: 0.34,
   perc: 'shaker',
   echo: 0.18,
+};
+
+// D 小调五声低回：暮色虫鸣，正弦拨弦 + 重回声
+const GROVE_BGM: BgmSpec = {
+  bpm: 84,
+  scale: [293.7, 349.2, 392.0, 440.0, 523.3, 587.3],
+  bass: [73.4, 87.3, 98.0, 65.4],
+  chords: [[293.7, 349.2, 440.0], [233.1, 293.7, 349.2], [261.6, 329.6, 392.0], [220.0, 293.7, 349.2]],
+  pluckType: 'sine',
+  pluckVol: 0.052,
+  density: 0.26,
+  densityK: 0.26,
+  perc: 'tick',
+  echo: 0.5,
+};
+
+// E 大调五声明快：花田香风，三角波拨弦 + 沙锤摇曳
+const LAVENDER_BGM: BgmSpec = {
+  bpm: 108,
+  scale: [329.6, 370.0, 415.3, 493.9, 554.4, 659.3],
+  bass: [82.4, 92.5, 110.0, 103.8],
+  chords: [[164.8, 207.7, 246.9], [138.6, 174.6, 207.7], [185.0, 233.1, 277.2], [164.8, 220.0, 246.9]],
+  pluckType: 'triangle',
+  pluckVol: 0.048,
+  density: 0.4,
+  densityK: 0.3,
+  perc: 'shaker',
+  echo: 0.25,
 };
 
 export const MAPS: MapSpec[] = [
@@ -255,6 +287,114 @@ export const MAPS: MapSpec[] = [
     mechanic: { kind: 'storm', first: 75, interval: 95, warnT: 3, dur: 7, pushPlayer: 95, pushEnemy: 130 },
     bgm: HILLS_BGM,
     unlockAch: 'pondClear',
+  },
+
+  // ---------- 4. 萤暮林地：中速韧性 + 治愈泉，21 分钟 ----------
+  // 敌人有黏性（害羞菇潜伏惊醒、孢孢菇炮台、滚滚甲冲滚），治愈泉逼迫主动走位换血
+  {
+    id: 'grove',
+    minutes: 21,
+    timeK: 12 / 21,
+    icon: 'gd_shroom0',
+    iconScale: 2.2,
+    color: 0x9cb887,
+    paperCss: '#E7EEDD',
+    bossId: 'sporeking',
+    eliteId: 'eldercap',
+    waves: [
+      { from: 0,    interval: 1.2,  burst: 1, maxAlive: 24,  types: [['shroom', 1]] },
+      { from: 50,   interval: 1.05, burst: 2, maxAlive: 40,  types: [['shroom', 3], ['glimmer', 2]] },
+      { from: 110,  interval: 0.95, burst: 2, maxAlive: 56,  types: [['shroom', 3], ['glimmer', 2], ['mottle', 1.2]] },
+      { from: 180,  interval: 0.9,  burst: 3, maxAlive: 75,  types: [['shroom', 2.5], ['glimmer', 2], ['mottle', 1.5], ['snapcap', 1]] },
+      { from: 260,  interval: 0.85, burst: 3, maxAlive: 95,  types: [['glimmer', 2], ['mottle', 1.6], ['snapcap', 1.3], ['roller', 1.2], ['shroom', 1.6]] },
+      { from: 350,  interval: 0.8,  burst: 3, maxAlive: 115, types: [['mottle', 1.6], ['snapcap', 1.5], ['roller', 1.4], ['puffcap', 1], ['glimmer', 1.6]] },
+      { from: 450,  interval: 0.72, burst: 4, maxAlive: 140, types: [['snapcap', 1.7], ['roller', 1.6], ['puffcap', 1.2], ['mottle', 1.8], ['shroom', 1.4]] },
+      { from: 570,  interval: 0.65, burst: 4, maxAlive: 165, types: [['roller', 1.8], ['puffcap', 1.4], ['snapcap', 1.9], ['mottle', 2], ['glimmer', 1.7]] },
+      { from: 700,  interval: 0.6,  burst: 4, maxAlive: 190, types: [['puffcap', 1.6], ['snapcap', 2.1], ['roller', 2], ['mottle', 2.2]] },
+      { from: 850,  interval: 0.55, burst: 5, maxAlive: 215, types: [['snapcap', 2.2], ['roller', 2.2], ['puffcap', 1.8], ['mottle', 2.4], ['glimmer', 2]] },
+      { from: 1020, interval: 0.5,  burst: 5, maxAlive: 240, types: [['roller', 2.4], ['puffcap', 2], ['snapcap', 2.4], ['mottle', 2.6], ['shroom', 2]] },
+      { from: 1260, interval: 1.0,  burst: 2, maxAlive: 70,  types: [['glimmer', 2], ['shroom', 1.5], ['mottle', 1]] }, // Boss 阶段轻刷
+    ],
+    events: [
+      { t: 140,  kind: 'ring', enemy: 'shroom', n: 16 },
+      { t: 230,  kind: 'elite' },
+      { t: 330,  kind: 'ring', enemy: 'glimmer', n: 24 },
+      { t: 420,  kind: 'elite' },
+      { t: 520,  kind: 'ring', enemy: 'mottle', n: 14 },
+      { t: 620,  kind: 'elite' },
+      { t: 720,  kind: 'ring', enemy: 'snapcap', n: 12 },
+      { t: 820,  kind: 'elite' },
+      { t: 930,  kind: 'ring', enemy: 'roller', n: 12 },
+      { t: 1040, kind: 'elite' },
+      { t: 1150, kind: 'ring', enemy: 'mottle', n: 24 },
+      { t: 1260, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['gd_fern0', 'gd_fern1'], nMin: 3, nMax: 6, chance: 1 },
+      { keys: ['gd_shroom0', 'gd_shroom1'], nMin: 1, nMax: 3, chance: 0.7 },
+      { keys: ['gd_glow'], nMin: 1, nMax: 2, chance: 0.5 },
+      { keys: ['gd_mossrock'], nMin: 1, nMax: 1, chance: 0.4 },
+      { keys: ['gd_twig'], nMin: 1, nMax: 1, chance: 0.35 },
+    ],
+    mechanic: { kind: 'springs', first: 25, interval: 24, count: 1, r: 66, dur: 9, hps: 8 },
+    bgm: GROVE_BGM,
+    unlockAch: 'hillsClear',
+  },
+
+  // ---------- 5. 紫露花田：轻快缠绕 + 花浪阵风，24 分钟 ----------
+  // 敌人轻而缠人（紫蝶螺旋盘入、嗡嗡蜂俯冲、绒球弹跳），顺风带敌我同加速
+  {
+    id: 'lavender',
+    minutes: 24,
+    timeK: 12 / 24,
+    icon: 'ld_lav0',
+    iconScale: 2.0,
+    color: 0xa888cc,
+    paperCss: '#F2ECF6',
+    bossId: 'flutterqueen',
+    eliteId: 'queenbee',
+    waves: [
+      { from: 0,    interval: 0.9,  burst: 2, maxAlive: 32,  types: [['budling', 1]] },
+      { from: 45,   interval: 0.8,  burst: 2, maxAlive: 52,  types: [['budling', 3], ['bumble', 1.5]] },
+      { from: 100,  interval: 0.75, burst: 3, maxAlive: 75,  types: [['budling', 3], ['bumble', 2], ['flutter', 1.2]] },
+      { from: 165,  interval: 0.7,  burst: 3, maxAlive: 98,  types: [['budling', 2.5], ['bumble', 2], ['flutter', 1.5], ['pompon', 1.2]] },
+      { from: 240,  interval: 0.65, burst: 3, maxAlive: 120, types: [['bumble', 2], ['flutter', 1.7], ['pompon', 1.5], ['snippy', 1.3], ['budling', 1.6]] },
+      { from: 320,  interval: 0.6,  burst: 4, maxAlive: 145, types: [['flutter', 1.8], ['pompon', 1.6], ['snippy', 1.5], ['briar', 1.1], ['budling', 1.5]] },
+      { from: 420,  interval: 0.55, burst: 4, maxAlive: 170, types: [['snippy', 1.7], ['briar', 1.3], ['flutter', 2], ['pompon', 1.8], ['bumble', 1.8]] },
+      { from: 540,  interval: 0.5,  burst: 4, maxAlive: 195, types: [['briar', 1.5], ['snippy', 1.9], ['pompon', 2], ['flutter', 2.2], ['budling', 1.4]] },
+      { from: 680,  interval: 0.48, burst: 5, maxAlive: 220, types: [['snippy', 2.1], ['briar', 1.7], ['flutter', 2.4], ['pompon', 2.2], ['bumble', 2]] },
+      { from: 840,  interval: 0.45, burst: 5, maxAlive: 245, types: [['briar', 1.9], ['snippy', 2.3], ['flutter', 2.6], ['pompon', 2.4]] },
+      { from: 1020, interval: 0.42, burst: 6, maxAlive: 265, types: [['snippy', 2.5], ['briar', 2.1], ['flutter', 2.8], ['bumble', 2.4], ['budling', 2]] },
+      { from: 1220, interval: 0.4,  burst: 6, maxAlive: 285, types: [['briar', 2.3], ['snippy', 2.7], ['flutter', 3], ['pompon', 2.6]] },
+      { from: 1440, interval: 0.9,  burst: 3, maxAlive: 85,  types: [['bumble', 2], ['budling', 1.5], ['flutter', 1]] }, // Boss 阶段轻刷
+    ],
+    events: [
+      { t: 120,  kind: 'ring', enemy: 'budling', n: 18 },
+      { t: 200,  kind: 'elite' },
+      { t: 290,  kind: 'ring', enemy: 'bumble', n: 20 },
+      { t: 380,  kind: 'ring', enemy: 'flutter', n: 22 },
+      { t: 470,  kind: 'elite' },
+      { t: 570,  kind: 'ring', enemy: 'pompon', n: 14 },
+      { t: 670,  kind: 'elite' },
+      { t: 770,  kind: 'ring', enemy: 'snippy', n: 14 },
+      { t: 870,  kind: 'elite' },
+      { t: 970,  kind: 'ring', enemy: 'briar', n: 12 },
+      { t: 1070, kind: 'elite' },
+      { t: 1170, kind: 'ring', enemy: 'flutter', n: 28 },
+      { t: 1280, kind: 'elite' },
+      { t: 1370, kind: 'ring', enemy: 'bumble', n: 26 },
+      { t: 1440, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['ld_lav0', 'ld_lav1', 'ld_lav2'], nMin: 3, nMax: 6, chance: 1 },
+      { keys: ['ld_grass0', 'ld_grass1'], nMin: 1, nMax: 3, chance: 0.7 },
+      { keys: ['ld_bloom'], nMin: 1, nMax: 2, chance: 0.5 },
+      { keys: ['ld_pebble'], nMin: 1, nMax: 1, chance: 0.4 },
+      { keys: ['ld_bfly'], nMin: 1, nMax: 1, chance: 0.3 },
+    ],
+    mechanic: { kind: 'gusts', first: 40, interval: 30, count: 3, r: 105, dur: 9, mul: 1.4 },
+    bgm: LAVENDER_BGM,
+    unlockAch: 'groveClear',
   },
 ];
 

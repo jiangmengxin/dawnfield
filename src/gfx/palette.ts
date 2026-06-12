@@ -107,6 +107,49 @@ export const HILLS = {
   feather: 0xaab0cc,
 } as const;
 
+// ---------- 萤暮林地（图 4）：暮色苔绿，蘑菇与萤光 ----------
+export const GROVE = {
+  paper: 0xe7eedd, paperCss: '#E7EEDD',
+  fern: 0x9cc294, fernEdge: 0x6f9a68,
+  mossrock: 0xc2cbb0, mossrockEdge: 0x939e80,
+  glowdot: 0xfff2b0,
+  twig: 0xb09878, twigEdge: 0x80684c,
+  decorShroom: 0xe0b0a0, decorShroomEdge: 0xb07c68, decorShroomDot: 0xfaf0e0,
+  spring: 0xa8dcd0, springDeep: 0x68b0a4, springGold: 0xf2dd9a,
+
+  // 敌人池
+  shroom: 0xe8c0b0, shroomEdge: 0xb88878, shroomCap: 0xd89888,
+  glimmer: 0xf4e4a0, glimmerEdge: 0xc4ac58,
+  mottle: 0xc4b4d8, mottleEdge: 0x9080ac, mottleSpot: 0xe8d8a8,
+  snapcap: 0xd8a8b8, snapcapEdge: 0xa87088, snapcapCap: 0xc08098,
+  puffcap: 0xc8c8a0, puffcapEdge: 0x989868, puffcapCap: 0xb8b884,
+  roller: 0xa89cc0, rollerEdge: 0x786c94,
+  eldercap: 0xc89888, eldercapEdge: 0x906050, eldercapCap: 0xb87c68,
+  sporeking: 0xb08878, sporekingEdge: 0x7c5848, sporekingCap: 0xcc9684,
+  spore: 0xd8d0a8, sporeDeep: 0xa89c70,
+} as const;
+
+// ---------- 紫露花田（图 5）：薰衣淡紫，香风与蝶影 ----------
+export const LAVENDER = {
+  paper: 0xf2ecf6, paperCss: '#F2ECF6',
+  lav: 0xb89cd8, lavEdge: 0x8868b0, lavLeaf: 0x9cba8c,
+  bloom: 0xd8b8e8, bloomDeep: 0xa888c8, bloomCore: 0xf7dd8a,
+  grass: 0xc0d0a8, grassEdge: 0x90a878,
+  pebble: 0xe4dce8,
+  breeze: 0xd8c8ee, breezeDeep: 0xb0a0d8,
+
+  // 敌人池
+  budling: 0xc0a8e0, budlingEdge: 0x9078b8,
+  bumble: 0xf0cc78, bumbleEdge: 0xc09c40, bumbleStripe: 0x6a5a48,
+  flutter: 0xd0a8e8, flutterEdge: 0xa078c0, flutterSpot: 0xf8e8b0,
+  snippy: 0xa8c890, snippyEdge: 0x789860,
+  pompon: 0xece4f4, pomponEdge: 0xb0a8c8,
+  briar: 0xc08898, briarEdge: 0x906070,
+  queenbee: 0xe8b860, queenbeeEdge: 0xb08830,
+  flutterqueen: 0xa888d8, flutterqueenEdge: 0x7858a8,
+  dust: 0xd8c0f0, thorn: 0xc090a8, thornDeep: 0x906070,
+} as const;
+
 // 敌人死亡纸屑颜色（与本体同色）
 import type { EnemyId } from '../content/ids';
 export const DEATH_COLOR: Record<EnemyId, number> = {
@@ -117,6 +160,10 @@ export const DEATH_COLOR: Record<EnemyId, number> = {
   leafy: HILLS.leafy, grain: HILLS.grain, crow: HILLS.crow, thistle: HILLS.thistle,
   wheatling: HILLS.wheatling, cone: HILLS.cone, gust: HILLS.gust,
   bigthistle: HILLS.bigthistle, galecrow: HILLS.galecrow,
+  shroom: GROVE.shroom, glimmer: GROVE.glimmer, mottle: GROVE.mottle, snapcap: GROVE.snapcap,
+  puffcap: GROVE.puffcap, roller: GROVE.roller, eldercap: GROVE.eldercap, sporeking: GROVE.sporeking,
+  budling: LAVENDER.budling, bumble: LAVENDER.bumble, flutter: LAVENDER.flutter, snippy: LAVENDER.snippy,
+  pompon: LAVENDER.pompon, briar: LAVENDER.briar, queenbee: LAVENDER.queenbee, flutterqueen: LAVENDER.flutterqueen,
 };
 
 // 角色配色（makeCharacter 配方用；body 主体 / edge 描边）
@@ -129,6 +176,10 @@ export const CHAR_PAL: Record<Exclude<CharacterId, 'spark'>, { body: number; edg
   volt:   { body: 0xffe070, edge: 0xe0a830 },
   pebble: { body: 0xd8c0a0, edge: 0xa88860 },
   fluff:  { body: 0xf0e4cc, edge: 0xa89468 }, // 奶油色：与纸底拉开对比，白绒毛圈才显形
+  ember:  { body: 0xf8c08a, edge: 0xd08848 },
+  luna:   { body: 0xc8ccf0, edge: 0x8a90c8 },
+  conker: { body: 0xd8a878, edge: 0xa07048 },
+  jingle: { body: 0xc8e8e0, edge: 0x80b8a8 },
 };
 
 export function cssOf(c: number): string {

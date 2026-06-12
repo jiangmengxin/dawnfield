@@ -78,6 +78,29 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   bigthistle:{ hp: 850,  speed: 44,  dmg: 18, xp: 30, radius: 40, tex: 'e_bigthistle',knockMul: 0.05, behavior: 'dash', elite: true,
                dash: { triggerDist: 340, telegraph: 0.9, dashSpeed: 300, dashTime: 0.7, recover: 1.6 } },
   galecrow:  { hp: 3800, speed: 70,  dmg: 24, xp: 0,  radius: 60, tex: 'e_galecrow',  knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 萤暮林地（中速韧性节奏：潜伏菇/孢子炮台/滚壳虫） ----------
+  shroom:    { hp: 18,   speed: 58,  dmg: 9,  xp: 1,  radius: 13, tex: 'e_shroom',    knockMul: 1,    behavior: 'chase' },
+  glimmer:   { hp: 7,    speed: 100, dmg: 5,  xp: 1,  radius: 9,  tex: 'e_glimmer',   knockMul: 1.3,  behavior: 'wobble' },
+  mottle:    { hp: 24,   speed: 66,  dmg: 10, xp: 2,  radius: 12, tex: 'e_mottle',    knockMul: 1,    behavior: 'drift' },
+  snapcap:   { hp: 42,   speed: 60,  dmg: 13, xp: 2,  radius: 14, tex: 'e_snapcap',   knockMul: 0.7,  behavior: 'ambush' },
+  puffcap:   { hp: 30,   speed: 44,  dmg: 8,  xp: 2,  radius: 14, tex: 'e_puffcap',   knockMul: 0.8,  behavior: 'turret',
+               shoot: { range: 260, cd: 2.8, speed: 160, dmg: 10, tex: 'gz_spore' } },
+  roller:    { hp: 55,   speed: 50,  dmg: 14, xp: 2,  radius: 14, tex: 'e_roller',    knockMul: 0.5,  behavior: 'pulse' },
+  eldercap:  { hp: 1100, speed: 40,  dmg: 19, xp: 30, radius: 42, tex: 'e_eldercap',  knockMul: 0.05, behavior: 'chase', elite: true },
+  sporeking: { hp: 4600, speed: 52,  dmg: 25, xp: 0,  radius: 64, tex: 'e_sporeking', knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 紫露花田（轻快缠绕节奏：螺旋蝶/俯冲蜂/弹跳绒球） ----------
+  budling:   { hp: 13,   speed: 74,  dmg: 7,  xp: 1,  radius: 11, tex: 'e_budling',   knockMul: 1.1,  behavior: 'chase' },
+  bumble:    { hp: 15,   speed: 95,  dmg: 9,  xp: 1,  radius: 10, tex: 'e_bumble',    knockMul: 0.9,  behavior: 'swoop' },
+  flutter:   { hp: 18,   speed: 80,  dmg: 9,  xp: 1,  radius: 12, tex: 'e_flutter',   knockMul: 1,    behavior: 'spiral' },
+  snippy:    { hp: 32,   speed: 64,  dmg: 13, xp: 2,  radius: 13, tex: 'e_snippy',    knockMul: 0.7,  behavior: 'dash',
+               dash: { triggerDist: 270, telegraph: 0.4, dashSpeed: 380, dashTime: 0.45, recover: 0.85 } },
+  pompon:    { hp: 26,   speed: 60,  dmg: 10, xp: 2,  radius: 13, tex: 'e_pompon',    knockMul: 1.1,  behavior: 'hop' },
+  briar:     { hp: 34,   speed: 48,  dmg: 9,  xp: 2,  radius: 13, tex: 'e_briar',     knockMul: 0.8,  behavior: 'strafeShoot',
+               shoot: { range: 270, cd: 3.2, speed: 170, dmg: 10, tex: 'lz_thorn' } },
+  queenbee:  { hp: 950,  speed: 46,  dmg: 18, xp: 30, radius: 40, tex: 'e_queenbee',  knockMul: 0.05, behavior: 'chase', elite: true },
+  flutterqueen: { hp: 5000, speed: 66, dmg: 25, xp: 0, radius: 62, tex: 'e_flutterqueen', knockMul: 0, behavior: 'chase', boss: true },
 });
 
 // 随时间成长（min 为「有效分钟」：elapsed/60 × MapSpec.timeK，长图成长更慢）
@@ -107,3 +130,7 @@ export const PULSE = { burst: 0.7, coast: 0.9, mulBurst: 2.4, mulCoast: 0.25 };
 export const TURRET = { shuffleMul: 0.12 };
 /** 蝌蚪宝：锯齿折线逼近 */
 export const ZIGZAG = { period: 0.55, angle: 0.65 };
+/** 紫蝶蝶：螺旋盘入（远=直奔，近=切向绕旋 + 振翅抖动） */
+export const SPIRAL = { far: 280, tan: 1.0, inMin: 0.3, flutter: 0.3 };
+/** 害羞菇：原地潜伏装蘑菇，玩家靠近即惊醒 → 爆发/喘息循环追击 */
+export const AMBUSH = { trigger: 200, burst: 1.3, tire: 0.7, mulBurst: 2.3, mulTire: 0.45, idleAlpha: 0.78 };

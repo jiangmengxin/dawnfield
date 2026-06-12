@@ -18,6 +18,11 @@ export const PASSIVE_META: PassiveMeta[] = [
   { id: 'wind',    color: 0xc0e8c8, icon: 'icon_wind' },
   { id: 'ladybug', color: 0xf09898, icon: 'icon_ladybug' },
   { id: 'honey',   color: 0xf0c878, icon: 'icon_honey' },
+  // M6
+  { id: 'acorn',    color: 0xc09858, icon: 'icon_acorn' },
+  { id: 'stardust', color: 0xa8b4e8, icon: 'icon_stardust' },
+  { id: 'sprout',   color: 0xa8d890, icon: 'icon_sprout' },
+  { id: 'pouch',    color: 0xd8b060, icon: 'icon_pouch' },
 ];
 
 // 被动数值（每级）
@@ -31,4 +36,8 @@ export const PASSIVE_FX = {
   windProj: 0.1,
   ladybugCrit: 0.04, // 暴击率 +4%/级
   honeyRegen: 0.5,   // 每秒回复 +0.5/级
+  acornArmor: 1,     // 受到伤害 -1/级
+  stardustProj: 0.1, // 弹速 +10%/级
+  sproutXp: 0.08,    // 经验获取 +8%/级
+  pouchCoin: 0.1,    // 金币获取 +10%/级
 };

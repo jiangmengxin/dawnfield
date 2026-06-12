@@ -75,4 +75,19 @@ export const BOSSES: Record<MapId, BossSpec> = {
     summon: { firstCd: 14, cd: 15, id: 'crow', n: 4, radius: 110, p2Only: true },
     dash: { firstCd: 4, cd: 5.5, cdP2: 4, speed: 520, minDist: 120 },
   },
+  // 蘑菇长老：区域召唤型 — 慢速孢子环铺场 + 全程召唤菇群 + 二阶段瞄准孢子柱，不冲撞
+  grove: {
+    phase2HpK: 0.5,
+    ring: { firstCd: 3, cd: 5.2, cdP2: 3.6, n: 12, nP2: 18, speed: 120, dmg: 11, tex: 'gz_spore' },
+    spread: { firstCd: 6, cd: 7, cdP2: 5, n: 4, arc: 0.5, speed: 200, dmg: 12, tex: 'gz_spore', p2Only: true },
+    summon: { firstCd: 8, cd: 9, id: 'shroom', n: 6, radius: 95 },
+  },
+  // 紫蝶女王：优雅游击型 — 鳞粉扇射 + 翩跹冲掠 + 二阶段鳞粉环/召唤蝶群
+  lavender: {
+    phase2HpK: 0.5,
+    spread: { firstCd: 2.5, cd: 3.8, cdP2: 2.6, n: 6, arc: 0.8, speed: 240, dmg: 10, tex: 'lz_dust' },
+    ring: { firstCd: 7, cd: 7.5, cdP2: 5.5, n: 14, nP2: 18, speed: 170, dmg: 10, tex: 'lz_dust' },
+    summon: { firstCd: 13, cd: 14, id: 'flutter', n: 4, radius: 105, p2Only: true },
+    dash: { firstCd: 5, cd: 6.5, cdP2: 4.5, speed: 460, minDist: 140 },
+  },
 };

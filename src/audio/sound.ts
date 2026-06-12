@@ -181,6 +181,12 @@ class SoundEngine {
     this.noise({ dur: 0.5, vol: 0.05, type: 'highpass', filter: 3000, delay: 0.3 });
   }
   uiClick(): void { this.tone({ freq: 800, end: 1000, dur: 0.06, vol: 0.05 }); }
+  /** 风铃环：清脆铃音（基音 + 高泛音 + 回声） */
+  chime(): void {
+    this.tone({ freq: 1318, dur: 0.5, type: 'sine', vol: 0.06, attack: 0.003, sendEcho: true });
+    this.tone({ freq: 1976, dur: 0.35, type: 'sine', vol: 0.03, attack: 0.003, delay: 0.02, sendEcho: true });
+    this.tone({ freq: 659, dur: 0.4, type: 'triangle', vol: 0.025, delay: 0.01 });
+  }
   warning(): void {
     this.tone({ freq: 220, dur: 0.18, type: 'square', vol: 0.07 });
     this.tone({ freq: 220, dur: 0.18, type: 'square', vol: 0.07, delay: 0.25 });

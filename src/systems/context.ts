@@ -16,7 +16,7 @@ export interface HitOpts {
   quiet?: boolean; // 不出闪白/飘字/音效（DoT 用）
 }
 
-/** 地面区域：水洼减速 / 星尘灼烧 / 治愈；haste 预留（M6 治愈泉接入 heal） */
+/** 地面区域：水洼减速 / 星尘灼烧 / 治愈泉 / 顺风加速（M6 机制：springs→heal，gusts→haste） */
 export interface ZoneSpec {
   x: number;
   y: number;
@@ -24,7 +24,8 @@ export interface ZoneSpec {
   dur: number; // 秒
   effect: 'slow' | 'heal' | 'burn' | 'haste';
   dps?: number; // burn 伤害 / heal 治疗（每秒）
-  tex?: string; // slow 区域自定义贴图（地图机制水皮用）
+  mul?: number; // haste 加速乘子（默认 1）
+  tex?: string; // 区域自定义贴图（地图机制水皮/泉眼/顺风带用）
   affectsPlayer?: boolean; // slow 是否也减速玩家（武器水洼不减速玩家，机制水皮减速）
 }
 
@@ -93,6 +94,8 @@ export interface CombatContext {
   slowAt(x: number, y: number): boolean;
   /** 该点是否有「减速玩家」的水皮（地图机制；武器水洼不算） */
   playerSlowAt(x: number, y: number): boolean;
+  /** 该点顺风加速乘子（花浪阵风机制，敌我同加速），无则 1 */
+  hasteMulAt(x: number, y: number): number;
   magnetizeGems(x: number, y: number, r: number): void;
   spawnEnemyBullet(spec: EnemyBulletSpec): void;
   spawnGem(x: number, y: number, value: number): void;

@@ -14,6 +14,10 @@ import { SparkWeapon } from './spark';
 import { BoomerangWeapon } from './boomerang';
 import { MineWeapon } from './mine';
 import { PuffWeapon } from './puff';
+import { LanternWeapon } from './lantern';
+import { StarWeapon } from './star';
+import { MalletWeapon } from './mallet';
+import { ChimeWeapon } from './chime';
 
 export { Weapon } from './base';
 
@@ -26,6 +30,10 @@ const FACTORY: Record<WeaponId, new (ctx: CombatContext, id: WeaponId) => Weapon
   boomerang: BoomerangWeapon,
   mine: MineWeapon,
   puff: PuffWeapon,
+  lantern: LanternWeapon,
+  star: StarWeapon,
+  mallet: MalletWeapon,
+  chime: ChimeWeapon,
 };
 
 export class WeaponManager implements RunSystem {

@@ -1,7 +1,7 @@
 // 敌人移动行为模板表（12 种）：content/enemies.ts 按 behavior 字段指派
 // 每帧产出移动向量；行为内可触发攻击（吐弹）等副作用；调参常量在 content/enemies.ts
 import {
-  BLINK, DASHER, DRIFT, ENEMIES, HOP, ORBIT, PULSE, SWOOP, TURRET, ZIGZAG,
+  AMBUSH, BLINK, DASHER, DRIFT, ENEMIES, HOP, ORBIT, PULSE, SPIRAL, SWOOP, TURRET, ZIGZAG,
 } from '../content/enemies';
 import type { BehaviorId } from '../content/ids';
 import { DEATH_COLOR } from '../gfx/palette';
@@ -242,6 +242,50 @@ const zigzag: BehaviorFn = (e, _ctx, dt, nx, ny, _dist, out) => {
   out.mvy = Math.sin(a) * e.spd;
 };
 
+/** 螺旋盘入（紫蝶蝶）：远处直奔，近处切向绕旋缓收 + 振翅抖动；wobble 初值奇偶决定旋向 */
+const spiral: BehaviorFn = (e, _ctx, dt, nx, ny, dist, out) => {
+  e.wobble += dt * 7;
+  const sign = Math.floor(e.wobble * 13) % 2 === 0 ? 1 : -1;
+  // 远 → 径向权重高；近 → 切向权重高（盘旋收紧）
+  const w = Math.max(SPIRAL.inMin, Math.min(1, dist / SPIRAL.far));
+  const tanK = SPIRAL.tan * (1 - w * 0.55);
+  const flut = Math.sin(e.wobble) * SPIRAL.flutter;
+  out.mvx = (nx * w + -ny * sign * tanK + -ny * flut) * e.spd;
+  out.mvy = (ny * w + nx * sign * tanK + nx * flut) * e.spd;
+};
+
+/** 原地潜伏装蘑菇（害羞菇）：玩家踏入触发圈即惊醒，此后爆发/喘息循环追击不回头 */
+const ambush: BehaviorFn = (e, ctx, dt, nx, ny, dist, out) => {
+  if (e.dashState === 'walk') {
+    // 潜伏：半透明、不移动
+    e.setAlpha(AMBUSH.idleAlpha);
+    if (dist < AMBUSH.trigger) {
+      e.dashState = 'dash';
+      e.stateT = AMBUSH.burst;
+      e.setAlpha(1);
+      ctx.fx.ring(e.x, e.y, DEATH_COLOR[e.id], 1.8, 0.4);
+      SFX.swish();
+    }
+    return;
+  }
+  e.stateT -= dt;
+  if (e.dashState === 'dash') {
+    out.mvx = nx * e.spd * AMBUSH.mulBurst;
+    out.mvy = ny * e.spd * AMBUSH.mulBurst;
+    if (e.stateT <= 0) {
+      e.dashState = 'recover';
+      e.stateT = AMBUSH.tire * (0.8 + Math.random() * 0.4);
+    }
+  } else {
+    out.mvx = nx * e.spd * AMBUSH.mulTire;
+    out.mvy = ny * e.spd * AMBUSH.mulTire;
+    if (e.stateT <= 0) {
+      e.dashState = 'dash';
+      e.stateT = AMBUSH.burst * (0.85 + Math.random() * 0.3);
+    }
+  }
+};
+
 export const BEHAVIORS: Record<BehaviorId, BehaviorFn> = {
   chase,
   wobble,
@@ -255,4 +299,6 @@ export const BEHAVIORS: Record<BehaviorId, BehaviorFn> = {
   pulse,
   turret,
   zigzag,
+  spiral,
+  ambush,
 };

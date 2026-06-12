@@ -20,6 +20,11 @@ export const WEAPON_META: WeaponMeta[] = [
   { id: 'boomerang', color: 0x88d8b0, icon: 'icon_boomerang', evolvesWith: 'wind' },
   { id: 'mine',      color: 0xc0a0e8, icon: 'icon_mine',      evolvesWith: null },
   { id: 'puff',      color: 0xd8c8a0, icon: 'icon_puff',      evolvesWith: 'ladybug' },
+  // M6 批次 B：zone / orbit / melee / burst
+  { id: 'lantern',   color: 0xf8b868, icon: 'icon_lantern',   evolvesWith: 'honey' },
+  { id: 'star',      color: 0xb0bce8, icon: 'icon_star',      evolvesWith: 'stardust' },
+  { id: 'mallet',    color: 0xc89058, icon: 'icon_mallet',    evolvesWith: 'acorn' },
+  { id: 'chime',     color: 0x90ccc0, icon: 'icon_chime',     evolvesWith: 'sprout' },
 ];
 
 // ---------- 平衡数值（每武器一表） ----------
@@ -105,6 +110,60 @@ export const W_PUFF = {
   evoN: 16, // 进化：全周环射
   evoDmgMul: 1.3,
   evoHoming: 130, // 进化种子缓追转向力
+};
+
+/** 暖灯笼 / 小太阳（zone：贴身暖光圈周期灼噬） */
+export const W_LANTERN = {
+  dmg: [6, 8, 10, 13, 17], // 每跳伤害
+  tick: 0.55, // 灼噬间隔（经 stats.cd 缩放）
+  radius: [78, 84, 90, 96, 104],
+  evoRadiusMul: 1.35,
+  evoDmgMul: 1.3,
+  evoKb: 130, // 进化每跳向外推力（未进化只有轻微推力）
+  kb: 26,
+};
+
+/** 星星环 / 小银河（orbit：周期召出绕身飞旋的星星，远轨快旋有歇） */
+export const W_STAR = {
+  dmg: [12, 15, 19, 24, 30],
+  count: [2, 3, 3, 4, 4],
+  radius: 108,
+  spin: 2.4, // 公转角速度（rad/s）
+  dur: 4, // 在场时长
+  gap: [2.4, 2.2, 2.0, 1.8, 1.6], // 休息间隔
+  hitCd: 0.45, // 同一敌人重复受击间隔
+  breathe: 0.1, // 轨道呼吸幅度
+  evoDmgMul: 1.35,
+  evoExtraStars: 2,
+  evoRadiusMul: 1.18,
+};
+
+/** 松果锤 / 山摇撼（melee：朝身前重砸，高伤大击退） */
+export const W_MALLET = {
+  dmg: [30, 38, 48, 62, 80],
+  cd: [2.7, 2.55, 2.4, 2.2, 2.0],
+  radius: 66, // 砸击判定半径
+  reach: 84, // 砸点离身距离
+  swingT: 0.16, // 抡锤前摇（秒）
+  kb: 330,
+  evoCd: 1.95,
+  evoDmgMul: 1.25,
+  waveR: 175, // 进化震波半径
+  waveDmgK: 0.5, // 震波伤害系数
+};
+
+/** 风铃环 / 晨钟（burst：以自身为心荡开的铃音冲击环） */
+export const W_CHIME = {
+  dmg: [16, 20, 25, 32, 40],
+  cd: [3.2, 3.0, 2.8, 2.6, 2.3],
+  maxR: [130, 138, 146, 155, 165],
+  speed: 380, // 波前扩张速度
+  kb: 150,
+  evoCd: 2.1,
+  evoDmgMul: 1.2,
+  evoMaxR: 205,
+  evoKb: 300,
+  evoSecondDelay: 0.35, // 进化第二记钟声延迟（秒）
 };
 
 // ---------- 宝箱分层 ----------

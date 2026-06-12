@@ -78,6 +78,27 @@ export const CHARACTERS: CharacterSpec[] = [
     hp: 95, speed: 180, radius: 13,
     trail: { tex: 'p_dot', color: 0xffffff, every: 0.11 },
     mods: { coinGain: 1.35, xpGain: 1.15, crit: 0.03 }, unlockAch: 'coins500' },
+  // ---------- M6 批次 B ----------
+  // 暖暖：提灯暖灵 — 厚实自愈，光圈更大
+  { id: 'ember', weapon: 'lantern', tex: 'char_ember', texScale: 1.4, color: 0xd08848,
+    hp: 125, speed: 158, radius: 15,
+    trail: { tex: 'p_dot', color: 0xffd9a0, every: 0.12 },
+    mods: { area: 1.15, regen: 0.5 }, unlockAch: 'survive15' },
+  // 月月：眠月小灵 — 星星转得快，磁吸略大
+  { id: 'luna', weapon: 'star', tex: 'char_luna', texScale: 1.5, color: 0x8a90c8,
+    hp: 90, speed: 178, radius: 13,
+    trail: { tex: 'p_star', color: 0xc8ccf0, every: 0.11 },
+    mods: { projSpeed: 1.12, cd: 0.92, magnet: 1.1 }, unlockAch: 'level30' },
+  // 栗栗：硬壳小栗 — 力大皮实，走得稳
+  { id: 'conker', weapon: 'mallet', tex: 'char_conker', texScale: 1.3, color: 0xa07048,
+    hp: 135, speed: 156, radius: 16,
+    trail: { tex: 'p_dot', color: 0xd8a878, every: 0.16 },
+    mods: { dmg: 1.15, armor: 1 }, unlockAch: 'kills300' },
+  // 铃铃：爱唱歌的小铃铛 — 轻快灵巧，铃声更远
+  { id: 'jingle', weapon: 'chime', tex: 'char_jingle', texScale: 1.5, color: 0x80b8a8,
+    hp: 80, speed: 192, radius: 12,
+    trail: { tex: 'p_dot', color: 0xd8f0e8, every: 0.09 },
+    mods: { area: 1.12, cd: 0.94 }, unlockAch: 'evolve3' },
 ];
 
 /** 按 id 取角色；未知 id 兜底为小萤（防坏档/旧链接） */

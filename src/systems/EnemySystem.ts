@@ -155,10 +155,11 @@ export class EnemySystem implements RunSystem {
       e.kvx *= Math.pow(0.0001, dt);
       e.kvy *= Math.pow(0.0001, dt);
 
-      // 水洼减速
+      // 水洼减速 / 顺风加速（花浪阵风：敌我同加速）
       const slow = ctx.slowAt(e.x, e.y) ? 0.55 : 1;
-      e.x += (mvx * slow + e.kvx) * dt;
-      e.y += (mvy * slow + e.kvy) * dt;
+      const haste = ctx.hasteMulAt(e.x, e.y);
+      e.x += (mvx * slow * haste + e.kvx) * dt;
+      e.y += (mvy * slow * haste + e.kvy) * dt;
 
       // 朝向 + 呼吸（flipInvert 沿用冲冲既有朝向规则）
       if (Math.abs(mvx) > 1) e.setFlipX((mvx < 0) !== (ENEMIES[e.id].flipInvert === true));

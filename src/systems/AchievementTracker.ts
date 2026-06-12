@@ -2,6 +2,7 @@
 // 成就条件全在 content/achievements.ts，本模块只负责评估与解锁落档
 import { ACHIEVEMENTS, AchView } from '../content/achievements';
 import type { AchievementId } from '../content/ids';
+import { PASSIVE_MAX_LEVEL } from '../content/passives';
 import { WEAPON_MAX_LEVEL } from '../content/weapons';
 import { emitEvent } from '../core/events';
 import { Meta } from '../core/MetaState';
@@ -41,6 +42,7 @@ export class AchievementTracker implements RunSystem {
         passives: run.passives.size,
         evolves: this.weapons.list.filter((w) => w.evolved).length,
         maxWeapon: this.weapons.list.some((w) => w.level >= WEAPON_MAX_LEVEL),
+        maxPassive: [...run.passives.values()].some((lv) => lv >= PASSIVE_MAX_LEVEL),
         eliteKills: run.eliteKills,
         win: false,
         mapId: this.ctx.map.id,

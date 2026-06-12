@@ -11,6 +11,7 @@ export interface AchRunView {
   passives: number; // 持有被动数
   evolves: number; // 已进化武器数
   maxWeapon: boolean; // 任一武器满级
+  maxPassive: boolean; // 任一被动满级
   eliteKills: number;
   win: boolean;
   mapId: string; // 本局地图（通关类成就按图判定）
@@ -53,6 +54,28 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
   { id: 'firstBuy',    icon: 'icon_greed',  check: (v) => v.stats.purchases >= 1 },
   { id: 'pondClear',   icon: 'e_bubbleking', unlockMap: 'hills',
     check: (v) => v.run?.win === true && v.run.mapId === 'pond' },
-  { id: 'hillsClear',  icon: 'e_galecrow', // 奖励地图 4（M6 实装时挂 unlockMap）
+  { id: 'hillsClear',  icon: 'e_galecrow',  unlockMap: 'grove',
     check: (v) => v.run?.win === true && v.run.mapId === 'hills' },
+  // ---------- M6 ----------
+  { id: 'groveClear',    icon: 'e_sporeking', unlockMap: 'lavender',
+    check: (v) => v.run?.win === true && v.run.mapId === 'grove' },
+  { id: 'lavenderClear', icon: 'e_flutterqueen', // 奖励地图 6（M7 实装时挂 unlockMap）
+    check: (v) => v.run?.win === true && v.run.mapId === 'lavender' },
+  { id: 'survive15',   icon: 'icon_lantern', unlockChar: 'ember',
+    check: (v) => (v.run?.time ?? 0) >= 900 },
+  { id: 'level30',     icon: 'gem',          unlockChar: 'luna',
+    check: (v) => (v.run?.level ?? 0) >= 30 },
+  { id: 'kills300',    icon: 'e_midge',      unlockChar: 'conker',
+    check: (v) => (v.run?.kills ?? 0) >= 300 },
+  { id: 'evolve3',     icon: 'icon_chime',   unlockChar: 'jingle',
+    check: (v) => (v.run?.evolves ?? 0) >= 3 },
+  { id: 'eliteHunter', icon: 'e_bigbubble',  check: (v) => (v.run?.eliteKills ?? 0) >= 5 },
+  { id: 'kills5000',   icon: 'e_dasher',     check: (v) => v.stats.kills >= 5000 },
+  { id: 'coins2000',   icon: 'coin',         check: (v) => v.stats.coinsEarned >= 2000 },
+  { id: 'wins5',       icon: 'chest',        check: (v) => v.stats.wins >= 5 },
+  { id: 'runs20',      icon: 'd_flower0',    check: (v) => v.stats.runs >= 20 },
+  { id: 'buy10',       icon: 'icon_luck',    check: (v) => v.stats.purchases >= 10 },
+  { id: 'fullHouse',   icon: 'icon_gold',
+    check: (v) => (v.run?.weapons ?? 0) >= 6 && (v.run?.passives ?? 0) >= 6 },
+  { id: 'maxPassive',  icon: 'icon_honey',   check: (v) => v.run?.maxPassive === true },
 ];

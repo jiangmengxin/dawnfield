@@ -170,6 +170,7 @@ export class GameScene extends Phaser.Scene {
       addZone: (z) => g.zonesRef.add(z),
       slowAt: (x, y) => g.zonesRef.slowAt(x, y),
       playerSlowAt: (x, y) => g.zonesRef.playerSlowAt(x, y),
+      hasteMulAt: (x, y) => g.zonesRef.hasteMulAt(x, y),
       magnetizeGems: (x, y, r) => g.pickupsRef.magnetizeGems(x, y, r),
       spawnEnemyBullet: (spec) => g.projectilesRef.spawn(spec),
       spawnGem: (x, y, v) => g.pickupsRef.spawnGem(x, y, v),

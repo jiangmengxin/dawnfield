@@ -1,9 +1,9 @@
 // 地图资产管线（M5）：每图专属敌人换皮 + 装饰 + 弹体/地皮纹理，进图懒生成（ensureMapAssets 幂等）
 // 敌人换皮 = makeEnemy(形体 × 调色 × 表情)：保持「扁平粉彩圆团 + 小点眼、静态单帧」与角色拉开表现力
 // Boss 为每图门面，单独手绘（与草甸 e_boss 同待遇）
-import { HILLS, POND, PAL, cssOf } from '../palette';
+import { GROVE, HILLS, LAVENDER, POND, PAL, cssOf } from '../palette';
 import type { MapId } from '../../content/ids';
-import { blobBody, Ctx, EyeStyle, eyes, makeTex, petalShape, softGlow } from './core';
+import { blobBody, Ctx, EyeStyle, eyes, makeTex, petalShape, softGlow, star } from './core';
 
 function rgba(c: number, a: number): string {
   return `rgba(${(c >> 16) & 0xff},${(c >> 8) & 0xff},${c & 0xff},${a})`;
@@ -13,7 +13,8 @@ function rgba(c: number, a: number): string {
 
 type EnemyShape =
   | 'round' | 'bubble' | 'tailed' | 'shelled' | 'spiky'
-  | 'leaf' | 'winged' | 'wisp' | 'sprig' | 'cone' | 'jelly' | 'frog';
+  | 'leaf' | 'winged' | 'wisp' | 'sprig' | 'cone' | 'jelly' | 'frog'
+  | 'cap' | 'moth' | 'bee'; // M6：蘑菇盖 / 蝶蛾翅 / 条纹蜂
 
 export interface EnemyRecipe {
   w: number;
@@ -346,6 +347,104 @@ export function makeEnemy(scene: Phaser.Scene, key: string, rc: EnemyRecipe): vo
           ctx.arc(cx + s * r * 0.52, cy - r * 0.85, 1.9, 0, Math.PI * 2);
           ctx.fill();
         }
+        break;
+      }
+
+      case 'cap': {
+        // 蘑菇：矮胖菌柄（脸在柄上）+ 宽圆菌盖 + 盖上斑点
+        blobBody(ctx, cx, cy + r * 0.35, r * 0.72, rc.body, rc.edge, 1.15, 0.95);
+        ctx.beginPath();
+        ctx.moveTo(cx - r * 1.15, cy - r * 0.18);
+        ctx.quadraticCurveTo(cx - r * 1.05, cy - r * 1.25, cx, cy - r * 1.3);
+        ctx.quadraticCurveTo(cx + r * 1.05, cy - r * 1.25, cx + r * 1.15, cy - r * 0.18);
+        ctx.quadraticCurveTo(cx, cy + r * 0.12, cx - r * 1.15, cy - r * 0.18);
+        ctx.closePath();
+        ctx.fillStyle = ac;
+        ctx.fill();
+        ctx.lineWidth = 2.4;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = ec;
+        ctx.stroke();
+        // 盖上斑点
+        ctx.fillStyle = 'rgba(255,250,238,0.85)';
+        for (const [dx, dy, br] of [[-r * 0.55, -r * 0.62, r * 0.16], [r * 0.2, -r * 0.95, r * 0.2], [r * 0.7, -r * 0.5, r * 0.13]] as const) {
+          ctx.beginPath();
+          ctx.arc(cx + dx, cy + dy, br, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        break;
+      }
+
+      case 'moth': {
+        // 蝶蛾：两对圆瓣翅（上大下小）+ 绒身 + 触角
+        ctx.fillStyle = rgba(rc.body, 0.88);
+        ctx.strokeStyle = ec;
+        ctx.lineWidth = 1.8;
+        for (const s of [-1, 1]) {
+          // 上翅
+          ctx.beginPath();
+          ctx.ellipse(cx + s * r * 0.95, cy - r * 0.45, r * 0.85, r * 0.62, s * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          // 下翅（小）
+          ctx.beginPath();
+          ctx.ellipse(cx + s * r * 0.75, cy + r * 0.5, r * 0.55, r * 0.42, s * -0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          // 翅斑
+          ctx.fillStyle = cssOf(rc.accent ?? 0xf8e8b0);
+          ctx.beginPath();
+          ctx.arc(cx + s * r * 1.0, cy - r * 0.45, r * 0.22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = rgba(rc.body, 0.88);
+        }
+        // 绒身（窄椭圆）
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r * 0.42, r * 0.85, 0, 0, Math.PI * 2);
+        ctx.fillStyle = bc;
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = ec;
+        ctx.stroke();
+        // 触角
+        ctx.lineWidth = 1.4;
+        ctx.lineCap = 'round';
+        for (const s of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(cx + s * 2, cy - r * 0.75);
+          ctx.quadraticCurveTo(cx + s * r * 0.45, cy - r * 1.25, cx + s * r * 0.7, cy - r * 1.15);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'bee': {
+        // 小蜂：头顶半透双翅 + 条纹圆身 + 小尾针
+        ctx.fillStyle = 'rgba(255,255,255,0.65)';
+        ctx.strokeStyle = rgba(rc.edge, 0.7);
+        ctx.lineWidth = 1.4;
+        for (const s of [-1, 1]) {
+          ctx.beginPath();
+          ctx.ellipse(cx + s * r * 0.55, cy - r * 1.05, r * 0.62, r * 0.34, s * 0.7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        blobBody(ctx, cx, cy, r, rc.body, rc.edge, 1.1, 0.95);
+        // 条纹（深色横带 ×2）
+        ctx.fillStyle = cssOf(rc.accent ?? PAL.ink);
+        for (const dy of [-r * 0.1, r * 0.42]) {
+          ctx.beginPath();
+          ctx.ellipse(cx, cy + dy + r * 0.12, r * 0.98, r * 0.18, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // 小尾针
+        ctx.beginPath();
+        ctx.moveTo(cx - 2.5, cy + r * 0.95);
+        ctx.lineTo(cx, cy + r * 1.35);
+        ctx.lineTo(cx + 2.5, cy + r * 0.95);
+        ctx.closePath();
+        ctx.fillStyle = cssOf(rc.accent ?? PAL.ink);
+        ctx.fill();
         break;
       }
     }
@@ -813,13 +912,569 @@ function createHillsAssets(scene: Phaser.Scene): void {
   });
 }
 
+// ---------- 萤暮林地 ----------
+
+function createGroveAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_shroom',  { w: 38, h: 40, shape: 'cap', r: 12,    body: GROVE.shroom, edge: GROVE.shroomEdge, accent: GROVE.shroomCap, eye: { gap: 4, r: 1.7, dy: 5 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_glimmer', { w: 24, h: 24, shape: 'round', r: 8.5, body: GROVE.glimmer, edge: GROVE.glimmerEdge, eye: { gap: 3.2, r: 1.5, style: 'happy' } });
+  makeEnemy(scene, 'e_mottle',  { w: 46, h: 36, shape: 'moth', r: 11,   body: GROVE.mottle, edge: GROVE.mottleEdge, accent: GROVE.mottleSpot, eye: { gap: 3.5, r: 1.6, dy: -3 } });
+  makeEnemy(scene, 'e_snapcap', { w: 42, h: 44, shape: 'cap', r: 14,    body: GROVE.snapcap, edge: GROVE.snapcapEdge, accent: GROVE.snapcapCap, eye: { gap: 4.5, r: 1.8, dy: 6, style: 'angry' }, mouth: 'pout' });
+  makeEnemy(scene, 'e_puffcap', { w: 40, h: 40, shape: 'cap', r: 13,    body: GROVE.puffcap, edge: GROVE.puffcapEdge, accent: GROVE.puffcapCap, eye: { gap: 4.5, r: 1.7, dy: 5, style: 'surprised' }, mouth: 'open' });
+  makeEnemy(scene, 'e_roller',  { w: 38, h: 42, shape: 'cone', r: 13,   body: GROVE.roller, edge: GROVE.rollerEdge, eye: { gap: 4.5, r: 1.8, dy: -4 } });
+
+  // 精英：大菇王（宽盖三斑 + 苔藓披肩）
+  makeTex(scene, 'e_eldercap', 108, 104, (ctx) => {
+    softGlow(ctx, 54, 58, 46, rgba(GROVE.eldercap, 0.28));
+    // 菌柄（脸）
+    blobBody(ctx, 54, 70, 24, GROVE.eldercap, GROVE.eldercapEdge, 1.25, 0.95);
+    // 苔藓披肩
+    ctx.fillStyle = cssOf(GROVE.fern);
+    ctx.strokeStyle = cssOf(GROVE.fernEdge);
+    ctx.lineWidth = 1.6;
+    for (const [dx, k] of [[-22, 1], [24, 0.8]] as const) {
+      ctx.beginPath();
+      ctx.ellipse(54 + dx, 56, 9 * k, 5 * k, dx > 0 ? 0.5 : -0.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    // 宽盖
+    ctx.beginPath();
+    ctx.moveTo(8, 52);
+    ctx.quadraticCurveTo(14, 14, 54, 12);
+    ctx.quadraticCurveTo(94, 14, 100, 52);
+    ctx.quadraticCurveTo(54, 64, 8, 52);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(GROVE.eldercapCap);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(GROVE.eldercapEdge);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,250,238,0.85)';
+    for (const [bx, by, br] of [[34, 32, 5.5], [60, 24, 7], [82, 36, 4.5]] as const) {
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    eyes(ctx, 54, 70, 11, 4, 'angry');
+    ctx.strokeStyle = cssOf(PAL.ink);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(54, 84, 6, 1.15 * Math.PI, 1.85 * Math.PI);
+    ctx.stroke();
+  });
+
+  // Boss：蘑菇长老（巨盖 + 白胡子 + 盖上小菇群）
+  makeTex(scene, 'e_sporeking', 168, 156, (ctx) => {
+    softGlow(ctx, 84, 86, 70, rgba(GROVE.sporeking, 0.3));
+    // 菌柄（脸 + 长须）
+    blobBody(ctx, 84, 106, 38, GROVE.sporeking, GROVE.sporekingEdge, 1.2, 0.92);
+    // 巨盖
+    ctx.beginPath();
+    ctx.moveTo(12, 78);
+    ctx.quadraticCurveTo(20, 18, 84, 14);
+    ctx.quadraticCurveTo(148, 18, 156, 78);
+    ctx.quadraticCurveTo(84, 96, 12, 78);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(GROVE.sporekingCap);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(GROVE.sporekingEdge);
+    ctx.stroke();
+    // 盖上斑点 + 小菇群（长老的"王冠"）
+    ctx.fillStyle = 'rgba(255,250,238,0.85)';
+    for (const [bx, by, br] of [[48, 50, 8], [90, 36, 10], [124, 54, 6.5]] as const) {
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    for (const [mx2, my2, mr] of [[52, 16, 7], [110, 12, 8]] as const) {
+      ctx.fillStyle = cssOf(GROVE.shroom);
+      ctx.beginPath();
+      ctx.arc(mx2, my2 + 6, mr * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(mx2 - mr, my2 + 4);
+      ctx.quadraticCurveTo(mx2, my2 - mr, mx2 + mr, my2 + 4);
+      ctx.quadraticCurveTo(mx2, my2 + 8, mx2 - mr, my2 + 4);
+      ctx.closePath();
+      ctx.fillStyle = cssOf(GROVE.shroomCap);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = cssOf(GROVE.shroomEdge);
+      ctx.stroke();
+    }
+    // 白眉白须
+    ctx.strokeStyle = 'rgba(250,246,238,0.95)';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 4;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(84 + s * 8, 96);
+      ctx.quadraticCurveTo(84 + s * 16, 92, 84 + s * 24, 96);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(250,246,238,0.95)';
+    ctx.beginPath();
+    ctx.moveTo(70, 122);
+    ctx.quadraticCurveTo(84, 152, 98, 122);
+    ctx.quadraticCurveTo(84, 132, 70, 122);
+    ctx.closePath();
+    ctx.fill();
+    eyes(ctx, 84, 104, 16, 5.5, 'angry');
+  });
+
+  // 孢子弹（孢孢菇/蘑菇长老弹幕）
+  makeTex(scene, 'gz_spore', 18, 18, (ctx) => {
+    softGlow(ctx, 9, 9, 8, rgba(GROVE.spore, 0.6));
+    ctx.beginPath();
+    ctx.arc(9, 9, 5.5, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(GROVE.spore);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(GROVE.sporeDeep);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.arc(7.2, 7.2, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 治愈泉（地图机制；ZoneSystem 椭圆地皮）
+  makeTex(scene, 'gz_spring', 120, 66, (ctx, w, h) => {
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 8, 0, 0, w / 2 - 2);
+    g.addColorStop(0, rgba(GROVE.springGold, 0.5));
+    g.addColorStop(0.45, rgba(GROVE.spring, 0.42));
+    g.addColorStop(1, rgba(GROVE.springDeep, 0.55));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, w / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // 泉心亮斑 + 双圈涟漪
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h / 2, 10, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h / 2, 28, 10, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h / 2, 44, 16, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  // 装饰：蕨叶 / 蘑菇丛 / 萤光点 / 苔石 / 落枝
+  for (let v = 0; v < 2; v++) {
+    makeTex(scene, 'gd_fern' + v, 30, 40, (ctx) => {
+      const bend = v === 0 ? 5 : -4;
+      ctx.strokeStyle = cssOf(GROVE.fernEdge);
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(15, 38);
+      ctx.quadraticCurveTo(15 + bend, 20, 15 + bend * 1.6, 6);
+      ctx.stroke();
+      // 对生小羽叶
+      for (let i = 0; i < 4; i++) {
+        const t = 0.25 + i * 0.18;
+        const x = 15 + bend * t * 1.4;
+        const y = 38 - t * 30;
+        const len = 9 - i * 1.6;
+        for (const s of [-1, 1]) {
+          petalShape(ctx, x + s * len * 0.4, y - 1, len, 2.6, s * 1.25 + bend * 0.02, cssOf(GROVE.fern), cssOf(GROVE.fernEdge));
+        }
+      }
+    });
+  }
+  for (let v = 0; v < 2; v++) {
+    makeTex(scene, 'gd_shroom' + v, 28, 26, (ctx) => {
+      // 一大一小双菇
+      const draw = (x: number, y: number, k: number): void => {
+        ctx.fillStyle = cssOf(0xf2e8da);
+        ctx.strokeStyle = cssOf(GROVE.decorShroomEdge);
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(x - 2.4 * k, y);
+        ctx.quadraticCurveTo(x, y + 1 * k, x + 2.4 * k, y);
+        ctx.lineTo(x + 1.8 * k, y + 6 * k);
+        ctx.quadraticCurveTo(x, y + 7 * k, x - 1.8 * k, y + 6 * k);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x - 6.5 * k, y + 0.5 * k);
+        ctx.quadraticCurveTo(x - 5 * k, y - 6.5 * k, x, y - 7 * k);
+        ctx.quadraticCurveTo(x + 5 * k, y - 6.5 * k, x + 6.5 * k, y + 0.5 * k);
+        ctx.quadraticCurveTo(x, y + 2.5 * k, x - 6.5 * k, y + 0.5 * k);
+        ctx.closePath();
+        ctx.fillStyle = cssOf(GROVE.decorShroom);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = cssOf(GROVE.decorShroomDot);
+        ctx.beginPath();
+        ctx.arc(x - 2 * k, y - 3.5 * k, 1.3 * k, 0, Math.PI * 2);
+        ctx.arc(x + 3 * k, y - 2.5 * k, 1 * k, 0, Math.PI * 2);
+        ctx.fill();
+      };
+      if (v === 0) {
+        draw(11, 12, 1.3);
+        draw(22, 16, 0.8);
+      } else {
+        draw(17, 11, 1.1);
+        draw(7, 17, 0.7);
+      }
+    });
+  }
+  makeTex(scene, 'gd_glow', 22, 22, (ctx) => {
+    for (const [x, y, r2, a] of [[7, 9, 3.2, 0.8], [15, 6, 2.2, 0.6], [14, 15, 2.6, 0.7]] as const) {
+      softGlow(ctx, x, y, r2 * 2.2, rgba(GROVE.glowdot, a * 0.6));
+      ctx.fillStyle = rgba(GROVE.glowdot, a);
+      ctx.beginPath();
+      ctx.arc(x, y, r2 * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  makeTex(scene, 'gd_mossrock', 24, 18, (ctx) => {
+    ctx.beginPath();
+    ctx.ellipse(12, 11, 9, 5.5, 0.15, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(GROVE.mossrock);
+    ctx.fill();
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = rgba(GROVE.mossrockEdge, 0.6);
+    ctx.stroke();
+    // 顶部苔斑
+    ctx.fillStyle = rgba(GROVE.fern, 0.8);
+    ctx.beginPath();
+    ctx.ellipse(9, 7.5, 4.5, 2.2, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  makeTex(scene, 'gd_twig', 30, 14, (ctx) => {
+    ctx.strokeStyle = cssOf(GROVE.twig);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(3, 10);
+    ctx.quadraticCurveTo(15, 7, 27, 9);
+    ctx.stroke();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(GROVE.twigEdge);
+    ctx.beginPath();
+    ctx.moveTo(12, 8.5);
+    ctx.lineTo(16, 3);
+    ctx.stroke();
+  });
+}
+
+// ---------- 紫露花田 ----------
+
+function createLavenderAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_budling', { w: 30, h: 40, shape: 'sprig', r: 10,  body: LAVENDER.budling, edge: LAVENDER.budlingEdge, eye: { gap: 3.4, r: 1.6, dy: 8 } });
+  makeEnemy(scene, 'e_bumble',  { w: 30, h: 38, shape: 'bee', r: 10,    body: LAVENDER.bumble, edge: LAVENDER.bumbleEdge, accent: LAVENDER.bumbleStripe, eye: { gap: 3.8, r: 1.7, dy: -4 } });
+  makeEnemy(scene, 'e_flutter', { w: 46, h: 36, shape: 'moth', r: 11,   body: LAVENDER.flutter, edge: LAVENDER.flutterEdge, accent: LAVENDER.flutterSpot, eye: { gap: 3.5, r: 1.6, dy: -3 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_snippy',  { w: 38, h: 38, shape: 'leaf', r: 12,   body: LAVENDER.snippy, edge: LAVENDER.snippyEdge, eye: { gap: 4, r: 1.7, dy: -1, style: 'angry' } });
+  makeEnemy(scene, 'e_pompon',  { w: 36, h: 36, shape: 'spiky', r: 11,  body: LAVENDER.pompon, edge: LAVENDER.pomponEdge, eye: { gap: 4, r: 1.7 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_briar',   { w: 36, h: 36, shape: 'round', r: 12.5, body: LAVENDER.briar, edge: LAVENDER.briarEdge, eye: { gap: 4.5, r: 1.8, style: 'angry' }, mouth: 'pout' });
+
+  // 精英：蜂后大人（大蜂 + 小金冠 + 四翅）
+  makeTex(scene, 'e_queenbee', 104, 108, (ctx) => {
+    softGlow(ctx, 52, 60, 46, rgba(LAVENDER.queenbee, 0.28));
+    // 四翅
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.strokeStyle = rgba(LAVENDER.queenbeeEdge, 0.6);
+    ctx.lineWidth = 2;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(52 + s * 22, 26, 20, 9.5, s * 0.65, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(52 + s * 30, 38, 13, 6.5, s * 0.3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    blobBody(ctx, 52, 60, 34, LAVENDER.queenbee, LAVENDER.queenbeeEdge, 1.05, 1);
+    // 条纹
+    ctx.fillStyle = cssOf(LAVENDER.bumbleStripe);
+    for (const dy of [2, 18]) {
+      ctx.beginPath();
+      ctx.ellipse(52, 60 + dy, 33, 6.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 小金冠
+    ctx.beginPath();
+    ctx.moveTo(40, 28);
+    ctx.lineTo(42, 16);
+    ctx.lineTo(48, 24);
+    ctx.lineTo(52, 13);
+    ctx.lineTo(56, 24);
+    ctx.lineTo(62, 16);
+    ctx.lineTo(64, 28);
+    ctx.closePath();
+    ctx.fillStyle = '#FFD878';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#C09030';
+    ctx.stroke();
+    // 尾针
+    ctx.beginPath();
+    ctx.moveTo(46, 92);
+    ctx.lineTo(52, 102);
+    ctx.lineTo(58, 92);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(LAVENDER.bumbleStripe);
+    ctx.fill();
+    eyes(ctx, 52, 52, 12, 4.2, 'angry');
+    ctx.strokeStyle = cssOf(PAL.ink);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(52, 70, 7, 1.15 * Math.PI, 1.85 * Math.PI);
+    ctx.stroke();
+  });
+
+  // Boss：紫蝶女王（双层大翅 + 触角 + 小金冠）
+  makeTex(scene, 'e_flutterqueen', 180, 150, (ctx) => {
+    softGlow(ctx, 90, 78, 72, rgba(LAVENDER.flutterqueen, 0.3));
+    ctx.strokeStyle = cssOf(LAVENDER.flutterqueenEdge);
+    for (const s of [-1, 1]) {
+      // 上翅（大）
+      ctx.beginPath();
+      ctx.moveTo(90 + s * 14, 72);
+      ctx.quadraticCurveTo(90 + s * 56, 14, 90 + s * 84, 36);
+      ctx.quadraticCurveTo(90 + s * 88, 64, 90 + s * 46, 80);
+      ctx.closePath();
+      ctx.fillStyle = rgba(LAVENDER.flutter, 0.92);
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      // 下翅（小）
+      ctx.beginPath();
+      ctx.moveTo(90 + s * 14, 88);
+      ctx.quadraticCurveTo(90 + s * 62, 92, 90 + s * 58, 122);
+      ctx.quadraticCurveTo(90 + s * 30, 124, 90 + s * 12, 100);
+      ctx.closePath();
+      ctx.fillStyle = rgba(LAVENDER.bloom, 0.92);
+      ctx.fill();
+      ctx.stroke();
+      // 翅斑
+      ctx.fillStyle = cssOf(LAVENDER.flutterSpot);
+      ctx.beginPath();
+      ctx.arc(90 + s * 56, 44, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.beginPath();
+      ctx.arc(90 + s * 38, 104, 5.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 绒身
+    ctx.beginPath();
+    ctx.ellipse(90, 84, 17, 36, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(LAVENDER.flutterqueen);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    // 触角
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(90 + s * 5, 52);
+      ctx.quadraticCurveTo(90 + s * 18, 30, 90 + s * 30, 26);
+      ctx.stroke();
+      ctx.fillStyle = cssOf(LAVENDER.flutterqueenEdge);
+      ctx.beginPath();
+      ctx.arc(90 + s * 30, 26, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 小金冠
+    ctx.beginPath();
+    ctx.moveTo(81, 50);
+    ctx.lineTo(83, 40);
+    ctx.lineTo(87, 47);
+    ctx.lineTo(90, 38);
+    ctx.lineTo(93, 47);
+    ctx.lineTo(97, 40);
+    ctx.lineTo(99, 50);
+    ctx.closePath();
+    ctx.fillStyle = '#FFD878';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#C09030';
+    ctx.stroke();
+    eyes(ctx, 90, 62, 8, 4, 'angry');
+  });
+
+  // 鳞粉弹（紫蝶女王弹幕）
+  makeTex(scene, 'lz_dust', 18, 18, (ctx) => {
+    softGlow(ctx, 9, 9, 8, rgba(LAVENDER.dust, 0.7));
+    star(ctx, 9, 9, 4, 6, 2.6, cssOf(LAVENDER.dust), cssOf(LAVENDER.bloomDeep));
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(9, 9, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 刺果弹（刺莓莓）
+  makeTex(scene, 'lz_thorn', 16, 22, (ctx) => {
+    petalShape(ctx, 8, 11, 15, 4.5, 0, cssOf(LAVENDER.thorn), cssOf(LAVENDER.thornDeep));
+    ctx.strokeStyle = cssOf(LAVENDER.thornDeep);
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(8, 4.5);
+    ctx.lineTo(8, 17.5);
+    ctx.stroke();
+  });
+
+  // 顺风带（地图机制；ZoneSystem 椭圆地皮 — 风纹流线）
+  makeTex(scene, 'lz_breeze', 150, 70, (ctx, w, h) => {
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 10, 0, 0, w / 2 - 2);
+    g.addColorStop(0, rgba(LAVENDER.breeze, 0.34));
+    g.addColorStop(0.8, rgba(LAVENDER.breeze, 0.22));
+    g.addColorStop(1, rgba(LAVENDER.breezeDeep, 0.36));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, w / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // 风纹流线（三道带回钩的弧线）
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const y = h / 2 - 10 + i * 9;
+      const x0 = w / 2 - 44 + i * 8;
+      ctx.beginPath();
+      ctx.moveTo(x0, y);
+      ctx.quadraticCurveTo(x0 + 36, y - 5, x0 + 62, y);
+      ctx.arc(x0 + 64, y - 2.4, 2.6, Math.PI * 0.5, Math.PI * 1.9);
+      ctx.stroke();
+    }
+  });
+
+  // 装饰：薰衣草株 / 草丛 / 紫花 / 淡石 / 歇脚蝶
+  for (let v = 0; v < 3; v++) {
+    makeTex(scene, 'ld_lav' + v, 26, 44, (ctx) => {
+      const x = 12 + v * 1.5;
+      const bend = (v - 1) * 5;
+      ctx.strokeStyle = cssOf(LAVENDER.lavLeaf);
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(x, 42);
+      ctx.quadraticCurveTo(x + bend * 0.5, 26, x + bend, 14);
+      ctx.stroke();
+      // 底部小叶
+      petalShape(ctx, x - 4, 34, 9, 2.6, -1.1, cssOf(LAVENDER.lavLeaf));
+      petalShape(ctx, x + 4, 36, 9, 2.6, 1.15, cssOf(LAVENDER.lavLeaf));
+      // 穗状花序（交错小粒向上收窄）
+      ctx.fillStyle = cssOf(LAVENDER.lav);
+      ctx.strokeStyle = cssOf(LAVENDER.lavEdge);
+      ctx.lineWidth = 1;
+      for (let row = 0; row < 4; row++) {
+        const py = 14 - row * 3.6 + bend * 0;
+        const px = x + bend + (bend !== 0 ? row * bend * 0.06 : 0);
+        const rw = 3 - row * 0.45;
+        for (const s of [-1, 1]) {
+          ctx.beginPath();
+          ctx.ellipse(px + s * rw * 0.7, py - 1, rw, 2, s * 0.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+      }
+      ctx.beginPath();
+      ctx.ellipse(x + bend, 2.5, 1.8, 2.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    });
+  }
+  for (let v = 0; v < 2; v++) {
+    makeTex(scene, 'ld_grass' + v, 30, 20, (ctx) => {
+      ctx.lineCap = 'round';
+      const blades = 4 + v;
+      for (let i = 0; i < blades; i++) {
+        const x = 5 + (i * 20) / blades;
+        const bend = (i % 3 - 1) * 6;
+        const tipX = Math.min(27, Math.max(3, x + bend * 1.4));
+        ctx.strokeStyle = i % 2 === 0 ? cssOf(LAVENDER.grass) : cssOf(LAVENDER.grassEdge);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, 18);
+        ctx.quadraticCurveTo(Math.max(2, Math.min(28, x + bend)), 10, tipX, 3 + (i % 2) * 3);
+        ctx.stroke();
+      }
+    });
+  }
+  makeTex(scene, 'ld_bloom', 22, 22, (ctx) => {
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.ellipse(11 + Math.cos(a) * 5.4, 11 + Math.sin(a) * 5.4, 3.8, 2.5, a, 0, Math.PI * 2);
+      ctx.fillStyle = cssOf(LAVENDER.bloom);
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = rgba(LAVENDER.bloomDeep, 0.7);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(11, 11, 3, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(LAVENDER.bloomCore);
+    ctx.fill();
+  });
+  makeTex(scene, 'ld_pebble', 18, 13, (ctx) => {
+    ctx.beginPath();
+    ctx.ellipse(9, 7.5, 6.5, 4, 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(LAVENDER.pebble);
+    ctx.fill();
+    ctx.lineWidth = 1.3;
+    ctx.strokeStyle = 'rgba(120,100,140,0.2)';
+    ctx.stroke();
+  });
+  makeTex(scene, 'ld_bfly', 20, 16, (ctx) => {
+    // 歇脚的小蝶（侧视双翅合拢）
+    ctx.fillStyle = rgba(LAVENDER.flutter, 0.92);
+    ctx.strokeStyle = cssOf(LAVENDER.flutterEdge);
+    ctx.lineWidth = 1.2;
+    for (const [ox, rot] of [[-2.5, -0.35], [2.5, 0.35]] as const) {
+      ctx.save();
+      ctx.translate(10 + ox, 8);
+      ctx.rotate(rot);
+      ctx.beginPath();
+      ctx.ellipse(0, -2.5, 3.6, 5.2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle = cssOf(LAVENDER.flutterEdge);
+    ctx.beginPath();
+    ctx.ellipse(10, 9.5, 1.4, 3.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
 // ---------- 入口：进图/进 UI 页懒生成（幂等） ----------
 
-const MARKERS: Record<MapId, string> = { meadow: 'e_blob', pond: 'e_tad', hills: 'e_leafy' };
+const MARKERS: Record<MapId, string> = {
+  meadow: 'e_blob', pond: 'e_tad', hills: 'e_leafy', grove: 'e_shroom', lavender: 'e_budling',
+};
 
 /** 确保某图的敌人/装饰/弹体纹理已生成（草甸在 Boot 全量生成，此处天然命中跳过） */
 export function ensureMapAssets(scene: Phaser.Scene, mapId: MapId): void {
   if (scene.textures.exists(MARKERS[mapId])) return;
   if (mapId === 'pond') createPondAssets(scene);
   else if (mapId === 'hills') createHillsAssets(scene);
+  else if (mapId === 'grove') createGroveAssets(scene);
+  else if (mapId === 'lavender') createLavenderAssets(scene);
 }

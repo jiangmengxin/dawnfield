@@ -38,14 +38,15 @@ export class PlayerSystem implements RunSystem {
     let vx = mv.x;
     let vy = mv.y;
     const len = Math.hypot(vx, vy);
-    // 地图机制水皮：玩家也减速（武器水洼不影响玩家）
+    // 地图机制水皮：玩家也减速（武器水洼不影响玩家）；顺风带：玩家也加速
     const mech = ctx.map.mechanic;
     const slowK = mech?.kind === 'puddles' && ctx.playerSlowAt(player.x, player.y) ? mech.playerSlow : 1;
+    const hasteK = mech?.kind === 'gusts' ? ctx.hasteMulAt(player.x, player.y) : 1;
     if (len > 0.01) {
       vx /= Math.max(1, len);
       vy /= Math.max(1, len);
-      player.x += vx * ctx.stats.moveSpeed * slowK * dt;
-      player.y += vy * ctx.stats.moveSpeed * slowK * dt;
+      player.x += vx * ctx.stats.moveSpeed * slowK * hasteK * dt;
+      player.y += vy * ctx.stats.moveSpeed * slowK * hasteK * dt;
       if (slowK < 1) {
         this.rippleT -= dt;
         if (this.rippleT <= 0) {

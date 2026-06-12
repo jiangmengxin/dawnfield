@@ -1,5 +1,5 @@
-// 地面区域系统：水洼减速(slow) / 星尘灼烧(burn) / 治愈(heal)
-// haste 为地图机制预留（M5 接入移速修正）；区域同时是地图机制地皮的载体
+// 地面区域系统：水洼减速(slow) / 星尘灼烧(burn) / 治愈(heal) / 顺风加速(haste)
+// 区域同时是地图机制地皮的载体：减速水皮(pond) / 治愈泉(grove) / 花浪顺风带(lavender)
 import Phaser from 'phaser';
 import { PAL } from '../gfx/palette';
 import type { CombatContext, RunSystem, ZoneSpec } from './context';
@@ -15,8 +15,10 @@ interface Zone {
   t: number;
   effect: ZoneSpec['effect'];
   dps: number;
+  mul: number;
   tick: number;
   affectsPlayer: boolean;
+  hasTex: boolean;
 }
 
 export class ZoneSystem implements RunSystem {
@@ -31,12 +33,13 @@ export class ZoneSystem implements RunSystem {
 
   add(spec: ZoneSpec): void {
     const scene = this.ctx.scene;
+    const hasTex = spec.tex !== undefined || spec.effect === 'slow';
     let img: Phaser.GameObjects.Image;
-    if (spec.effect === 'slow') {
-      // 水洼/水皮：淡入的椭圆水面（地图机制可换贴图）
+    if (hasTex) {
+      // 水洼/水皮/泉眼/顺风带：淡入的椭圆地皮（地图机制可换贴图）
       img = scene.add.image(spec.x, spec.y, spec.tex ?? 'w_puddle').setDepth(6).setAlpha(0);
       img.setDisplaySize(spec.r * 2, spec.r * 2 * (img.height / img.width));
-      scene.tweens.add({ targets: img, alpha: 1, duration: 200 });
+      scene.tweens.add({ targets: img, alpha: spec.effect === 'haste' ? 0.85 : 1, duration: 200 });
     } else {
       // 星尘/治愈：柔光圆斑
       img = scene.add.image(spec.x, spec.y, 'p_dot').setDepth(7)
@@ -46,7 +49,8 @@ export class ZoneSystem implements RunSystem {
     }
     this.zones.push({
       img, x: spec.x, y: spec.y, r: spec.r, t: spec.dur, effect: spec.effect,
-      dps: spec.dps ?? 0, tick: 0, affectsPlayer: spec.affectsPlayer === true,
+      dps: spec.dps ?? 0, mul: spec.mul ?? 1, tick: 0,
+      affectsPlayer: spec.affectsPlayer === true, hasTex,
     });
   }
 
@@ -72,6 +76,18 @@ export class ZoneSystem implements RunSystem {
     return false;
   }
 
+  /** 该点的顺风加速乘子（花浪阵风机制；敌我同加速），无则 1 */
+  hasteMulAt(x: number, y: number): number {
+    let mul = 1;
+    for (const z of this.zones) {
+      if (z.effect !== 'haste') continue;
+      const dx = x - z.x;
+      const dy = y - z.y;
+      if (dx * dx + dy * dy * 4 < z.r * z.r) mul = Math.max(mul, z.mul);
+    }
+    return mul;
+  }
+
   update(dt: number): void {
     const ctx = this.ctx;
     for (let i = this.zones.length - 1; i >= 0; i--) {
@@ -80,7 +96,10 @@ export class ZoneSystem implements RunSystem {
 
       if (z.effect === 'burn' || z.effect === 'heal') {
         z.tick -= dt;
-        z.img.setAlpha(0.2 + Math.sin(ctx.run.elapsed * 8) * 0.08);
+        // 贴图地皮（治愈泉）保持高亮微闪；柔光圆斑走原低透明呼吸
+        z.img.setAlpha(z.hasTex
+          ? 0.85 + Math.sin(ctx.run.elapsed * 5) * 0.1
+          : 0.2 + Math.sin(ctx.run.elapsed * 8) * 0.08);
         if (z.tick <= 0) {
           z.tick = 0.25;
           if (z.effect === 'burn') {
@@ -93,14 +112,22 @@ export class ZoneSystem implements RunSystem {
           } else {
             const dx = ctx.player.x - z.x;
             const dy = ctx.player.y - z.y;
-            if (dx * dx + dy * dy < z.r * z.r) ctx.run.heal(z.dps * 0.25);
+            if (dx * dx + dy * dy < z.r * z.r) {
+              ctx.run.heal(z.dps * 0.25);
+              // 治愈泉里冒小光点（仅实际站入时）
+              if (z.hasTex && Math.random() < 0.7) {
+                ctx.fx.burst(ctx.player.x + (Math.random() - 0.5) * 20, ctx.player.y, {
+                  tex: 'p_dot', color: PAL.heart, count: 1, speed: 30, life: 0.5, scale: 0.6, alpha: 0.8,
+                });
+              }
+            }
           }
         }
       }
 
       if (z.t <= 0) {
         const img = z.img;
-        const dur = z.effect === 'slow' ? 300 : 250;
+        const dur = z.hasTex ? 300 : 250;
         ctx.scene.tweens.add({ targets: img, alpha: 0, duration: dur, onComplete: () => img.destroy() });
         this.zones.splice(i, 1);
       }

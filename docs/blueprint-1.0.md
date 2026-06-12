@@ -51,9 +51,9 @@ src/
     registry.ts                # ✅ defineTable<Id,Spec> 通用注册表
   content/                     # ✅ 纯数据层，无 Phaser 依赖（含武器平衡表）
     ids.ts weapons.ts passives.ts enemies.ts player.ts
-    shop.ts achievements.ts    # ✅ M3：11 项永久强化；成就 M5 起 14 个（含地图解锁链）
-    characters.ts              # ✅ M4：8 角色 Spec
-    maps.ts bosses.ts          # ✅ M5：MapSpec 全链路 ×3 + BossSpec 配装表
+    shop.ts achievements.ts    # ✅ M3：11 项永久强化；成就 M6 起 28 个（含地图解锁链）
+    characters.ts              # ✅ M4/M6：12 角色 Spec
+    maps.ts bosses.ts          # ✅ M5/M6：MapSpec 全链路 ×5 + BossSpec 配装表
     arcana.ts                  # M9
   scenes/                      # ✅ 全部 11 个场景已建
     Boot Title Game HUD Result
@@ -64,14 +64,14 @@ src/
     weapons/ PlayerSystem PickupSystem ProjectileSystem ZoneSystem  # ✅
     LevelUpSystem DecorSystem  # ✅
     AchievementTracker         # ✅ M3 成就引擎
-    MapMechanicSystem          # ✅ M5：减速水皮 / 定时大风
+    MapMechanicSystem          # ✅ M5/M6：减速水皮 / 定时大风 / 治愈泉 / 花浪顺风带
     grid.ts effects.ts joystick.ts   # 保留
   ui/                          # ✅ M1 完成
     Viewport.ts                # 安全区/断点(compact|medium|wide)/缩放/防抖重建
     UIScene.ts layout.ts theme.ts
     widgets/                   # Button/Card/CardGrid/ScrollPanel/Modal/Tabs/Toggle/Slider
   gfx/
-    palette.ts                 # ✅ M5：每图主题色组（POND/HILLS）+ DEATH_COLOR 全敌覆盖
+    palette.ts                 # ✅ M5/M6：每图主题色组（POND/HILLS/GROVE/LAVENDER）+ DEATH_COLOR 全敌覆盖
     textures/                  # ✅ M4 按域拆分；M5 增 mapassets.ts（makeEnemy 换皮管线 + ensureMapAssets 懒生成）
   audio/sound.ts               # ✅ M5：BgmSpec 每图主题（调式/速度/音色/打击乐/回声）
   i18n/                        # M6+ 视体量按域拆 dict/
@@ -146,8 +146,9 @@ interface CombatContext {
 - MapSpec 全链路（content/maps.ts：时长/纸底配色/装饰层/专属敌池波次事件/机制/BGM 主题/Boss/解锁成就，DecorSystem·WaveDirector·GameScene 全数据驱动）；行为模板 4→12（新增 drift 飘近/hop 跃扑/orbit 绕轨/swoop 俯冲/blink 闪现/pulse 脉冲滚动/turret 炮台/zigzag 锯齿，调参常量全在 content）；换皮管线 `makeEnemy(shape×palette×face)` 12 形体配方 + `ensureMapAssets` 进图/进 UI 页幂等懒生成（Codex/Achievements/MapSelect 均接入）；地图 2「露珠池塘」15 分钟（厚血慢节奏：蜗蜗坦克/水枪鱼炮台/软水母绕轨/蛙蹦蹦，水绿纸底+睡莲芦苇涟漪，76BPM A 小调五声+水滴打击乐）与地图 3「晚霞山岗」18 分钟（轻血海量快节奏：蓟滚滚冲刺/小乌鸫俯冲/风精灵闪现/松果球脉冲，暖桃纸底+麦秆落叶雏菊，116BPM G 混合利底亚+沙锤）；MapMechanicSystem（图2 减速水皮：周期生成、敌我同减速、玩家涟漪反馈；图3 定时大风：预警横幅→7s 全场推挤按 knockMul+顺风飘叶+阵风音效）；BossSpec 配装表参数化 BossController（弹幕环/瞄准扇射/召唤/冲撞四模块自由配装供 8 Boss 复用）+Boss 2「泡泡大王」（弹幕区域型，无冲撞）/Boss 3「风暴鸦」（高频扇射+凶猛冲刺）；长图成长缩放 timeK=12/分钟（hp/dmg/弹幕/BGM 强度曲线统一）；倍速穿隧细化（敌弹/疾风镖/蒲公英种子 effDt>1/30 半步推进判定）；地图解锁链（meadowClear→pond→pondClear→hills，unlockMap 经 Meta 落档+Boot 旧档回填）+成就 12→14；每图 Boss 条名称/配色、预警横幅、胜利副标题（map_<id>_warn/_win）；check-i18n 脚本（ids 联合类型↔字典机械 diff+字面量扫描，缺键即 build 失败，已挂 build 链）
 - **验收记录**：`npm run build` 通过（check-i18n 237 键/必需 220 全覆盖 + tsc 零错误）；地图选择页 3 真卡（图标/主题色/12·15·18 分钟标签各异）+5 锁定占位；写入 meadowClear+pondClear 旧档 → Boot 回填 pond/hills 解锁；池塘实测（水皮减速可见、泡泡/蝌蚪/蛙群/水母/大泡泡精英全运行、Boss 900s 准时 HP18312=hpScale(eff) 精确、泡泡弹幕、胜利副标题「池水又清澈如镜了」、pondClear 落档）；山岗实测（风暴预警→推挤实测 2s 位移 130px、风暴鸦 1080s 苏醒羽毛扇射、终局 185 敌在场 FPS143/桌面 56/竖屏、hillsClear 落档）；2x 专项（blade 二段斩双弧、rain 错峰落雨、boomerang 折返采样 2→0→2 周期归零无残留，半步判定在 2x 数学必然激活）；图鉴敌人页 26 项懒生成纹理全渲染、未遇 ???；402×874 竖屏选图/HUD/Boss 条无遮挡溢出；模拟环境峰值 FPS≥56（真机 4x throttle 基准归 M8）
 
-### ⬜ M6 — 内容批次 B（角色/武器 9-12、地图 4-5）
-- 武器 9-12+超武（补 zone/orbit/melee/burst 空缺）；角色 9-12；被动→12；地图 4-5+Boss+机制（治愈泉/麦浪阵风）；行为模板→14；成就→28
+### ✅ M6 — 内容批次 B（角色/武器 9-12、地图 4-5）（已完成并验收）
+- 武器 9-12 补 zone/orbit/melee/burst 机制空缺：暖灯笼/小太阳（贴身暖光圈周期灼噬，进化加推力）、星星环/小银河（远轨呼吸公转 + 在场/休息占空循环，进化常驻 +2 星）、松果锤/山摇撼（瞄向砸点抡锤前摇→重击 + hitstop，进化二段震波）、风铃环/晨钟（自心扩张波前每敌一击，进化连响两记强击退）；被动 8→12（橡果壳护甲/星砂瓶弹速/新芽铃经验/小钱袋金币，RunState 汇入）；角色 9-12 一一配对（暖暖厚血自愈大光圈/月月弹速冷却磁吸/栗栗高伤护甲/铃铃轻快大范围）+ 4 新饰件（提灯果/绕头星月/松果鳞帽/铃铛领结）；地图 4「萤暮林地」21 分钟（中速韧性：害羞菇潜伏惊醒/孢孢菇炮台/滚滚甲冲滚，苔绿纸底+蕨叶蘑菇萤光，84BPM D 小调五声重回声）与地图 5「紫露花田」24 分钟（轻快缠绕：紫蝶螺旋盘入/嗡嗡蜂俯冲/绒球弹跳/刺莓莓射刺，淡紫纸底+薰衣草株蝶影，108BPM E 大调五声沙锤）；机制 springs 治愈泉（周期泉眼站入回血，ZoneSystem heal 接贴图地皮）与 gusts 花浪顺风带（haste 效果落地：hasteMulAt 敌我同加速 ×1.4）；行为模板 12→14（spiral 螺旋盘入 / ambush 原地潜伏-惊醒爆发循环）；Boss 4「蘑菇长老」（区域召唤型：慢速孢子环+全程召唤+二阶段瞄准孢子柱，不冲撞）/Boss 5「紫蝶女王」（优雅游击型：鳞粉扇射+翩跹冲掠+二阶段鳞粉环/蝶群）；makeEnemy 形体 12→15（cap 蘑菇盖/moth 蝶蛾翅/bee 条纹蜂）；成就 14→28（4 新角色解锁挂 survive15/level30/kills300/evolve3，地图解锁链 hillsClear→grove、groveClear→lavender；AchRunView 增 maxPassive 字段）
+- **验收记录**：`npm run build` 通过（check-i18n 321 键/必需 304 全覆盖 + tsc 零错误）；选人页 12 真卡 +4 锁定、选图页 5 真卡（12·15·18·21·24 分钟标签）+3 锁定；暖暖×萤暮林地实测（HP125/光圈持续灼噬 60+ 杀、治愈泉 97s 涌出站入 60→92 回血、害羞菇潜伏 α0.78 不动→近身惊醒冲刺、蘑菇长老 hpScale 精确 5615 孢子环 12 弹 gz_spore + 召唤菇群、击杀→groveClear 落档并解锁紫露花田）；月月×紫露花田实测（星星环 2 星公转击杀、顺风带 lz_breeze mul1.4 玩家实测加速、紫蝶螺旋盘入、刺莓莓射 lz_thorn）；栗栗松果锤 / 铃铃风铃环均正常击杀且 4 帧动效轮换；图鉴敌人页 42 项新怪点亮带「新!」；成就页 28 项；402×874 竖屏选图/HUD 无遮挡溢出，桌面 1280×800 全页正常；运行全程 __errs 零错误
 
 ### ⬜ M7 — 内容批次 C（13-16、地图 6-8）补完
 - 武器/角色 13-16；被动→16；地图 6-8+Boss 6-8（图 8 为 30 分钟终局图）；成就→40；图鉴五类全覆盖

@@ -136,6 +136,121 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
     }
   });
 
+  // 暖灯笼光圈（径向暖光 + 边缘亮环；ZoneSystem 式 setDisplaySize 调用）
+  makeTex(scene, 'w_lantern_aura', 180, 180, (ctx) => {
+    const g = ctx.createRadialGradient(90, 90, 10, 90, 90, 88);
+    g.addColorStop(0, 'rgba(255,232,176,0.32)');
+    g.addColorStop(0.72, 'rgba(255,216,136,0.22)');
+    g.addColorStop(0.95, 'rgba(248,184,104,0.4)');
+    g.addColorStop(1, 'rgba(248,184,104,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(90, 90, 88, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(90, 90, 84, 0, Math.PI * 2);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255,244,210,0.7)';
+    ctx.stroke();
+  });
+
+  // 小灯笼本体（飘在角色头侧）
+  makeTex(scene, 'w_lantern', 22, 28, (ctx) => {
+    softGlow(ctx, 11, 15, 10, 'rgba(255,216,140,0.9)');
+    // 提环
+    ctx.strokeStyle = '#A07048';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(11, 6, 3, Math.PI * 0.9, Math.PI * 2.1);
+    ctx.stroke();
+    // 灯身
+    ctx.beginPath();
+    ctx.ellipse(11, 15, 6, 7.2, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFD888';
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = '#C08838';
+    ctx.stroke();
+    // 骨线
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(192,136,56,0.6)';
+    for (const dx of [-2.6, 2.6]) {
+      ctx.beginPath();
+      ctx.moveTo(11 + dx, 8.6);
+      ctx.quadraticCurveTo(11 + dx * 1.7, 15, 11 + dx, 21.4);
+      ctx.stroke();
+    }
+    // 顶盖/底座
+    ctx.fillStyle = '#A07048';
+    ctx.fillRect(8, 7, 6, 2.4);
+    ctx.fillRect(8.6, 21, 4.8, 2);
+    // 灯芯亮点
+    ctx.fillStyle = 'rgba(255,250,220,0.95)';
+    ctx.beginPath();
+    ctx.arc(11, 15, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 绕身小星（星星环弹体）
+  makeTex(scene, 'w_orbstar', 26, 26, (ctx) => {
+    softGlow(ctx, 13, 13, 12, 'rgba(200,212,255,0.6)');
+    star(ctx, 13, 13, 5, 10, 4.4, '#FFF6CE', '#C0A858');
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(13, 12, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 松果锤（鳞纹锤头 + 木柄；origin 设在柄端做抡砸动画）
+  makeTex(scene, 'w_mallet', 34, 44, (ctx) => {
+    // 木柄
+    ctx.strokeStyle = '#8A6840';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(17, 40);
+    ctx.lineTo(17, 18);
+    ctx.stroke();
+    // 锤头（松果蛋形 + 鳞片网纹）
+    ctx.save();
+    ctx.translate(17, 11);
+    ctx.scale(1, 1.12);
+    ctx.beginPath();
+    ctx.arc(0, 0, 9.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#B88A58';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#86603C';
+    ctx.stroke();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(134,96,60,0.6)';
+    for (let row = -1; row <= 1; row++) {
+      ctx.beginPath();
+      ctx.arc(0, row * 4 - 3.6, 6.6, 0.25 * Math.PI, 0.75 * Math.PI);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(13.5, 7, 2.4, 1.5, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 铃音冲击环（双层细环；ChimeWave setDisplaySize 扩张）
+  makeTex(scene, 'w_chimering', 128, 128, (ctx) => {
+    ctx.beginPath();
+    ctx.arc(64, 64, 58, 0, Math.PI * 2);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = 'rgba(144,204,192,0.85)';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(64, 64, 52, 0, Math.PI * 2);
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.stroke();
+  });
+
   // 蒲公英种子（绒伞朝上 + 细茎 + 小籽）
   makeTex(scene, 'w_seed', 18, 24, (ctx) => {
     const cx = 9;

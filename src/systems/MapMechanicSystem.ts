@@ -1,9 +1,11 @@
 // 地图轻量机制系统（每图一条，不引入碰撞）：
 // puddles（露珠池塘）— 周期在玩家四周生成减速水皮，敌我同减速，逼迫规划走位
 // storm（晚霞山岗）— 定时大风：预警横幅后全场持续推挤（玩家+敌人按受击退系数），打乱站位
+// springs（萤暮林地）— 治愈泉：周期在四周涌出泉眼，站进去回血——为了回血要冒险走位
+// gusts（紫露花田）— 花浪阵风：周期铺开顺风带，敌我踩上同加速——借风跑路或被风追身
 import Phaser from 'phaser';
 import type { MechanicSpec } from '../content/maps';
-import { HILLS } from '../gfx/palette';
+import { GROVE, HILLS } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
 import { getSettings } from '../core/settings';
@@ -22,8 +24,11 @@ export class MapMechanicSystem implements RunSystem {
   }
 
   update(dt: number): void {
-    if (this.spec.kind === 'puddles') this.updatePuddles(dt);
-    else this.updateStorm(dt, this.spec);
+    const s = this.spec;
+    if (s.kind === 'puddles') this.updatePuddles(dt);
+    else if (s.kind === 'storm') this.updateStorm(dt, s);
+    else if (s.kind === 'springs') this.updateSprings(dt, s);
+    else this.updateGusts(dt, s);
   }
 
   // ---------- 减速水皮 ----------
@@ -47,6 +52,47 @@ export class MapMechanicSystem implements RunSystem {
         affectsPlayer: true,
       });
     }
+  }
+
+  // ---------- 治愈泉 ----------
+
+  private updateSprings(dt: number, spec: Extract<MechanicSpec, { kind: 'springs' }>): void {
+    this.t -= dt;
+    if (this.t > 0) return;
+    this.t = spec.interval;
+    const ctx = this.ctx;
+    for (let i = 0; i < spec.count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = 130 + Math.random() * 200;
+      const x = ctx.player.x + Math.cos(a) * d;
+      const y = ctx.player.y + Math.sin(a) * d;
+      ctx.addZone({ x, y, r: spec.r, dur: spec.dur, effect: 'heal', dps: spec.hps, tex: 'gz_spring' });
+      ctx.fx.ring(x, y, GROVE.springDeep, 2.2, 0.6);
+    }
+    SFX.heal();
+  }
+
+  // ---------- 花浪阵风（顺风带） ----------
+
+  private updateGusts(dt: number, spec: Extract<MechanicSpec, { kind: 'gusts' }>): void {
+    this.t -= dt;
+    if (this.t > 0) return;
+    this.t = spec.interval;
+    const ctx = this.ctx;
+    for (let i = 0; i < spec.count; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const d = 90 + Math.random() * 260;
+      ctx.addZone({
+        x: ctx.player.x + Math.cos(a) * d,
+        y: ctx.player.y + Math.sin(a) * d,
+        r: spec.r * (0.85 + Math.random() * 0.3),
+        dur: spec.dur,
+        effect: 'haste',
+        mul: spec.mul,
+        tex: 'lz_breeze',
+      });
+    }
+    SFX.windGust();
   }
 
   // ---------- 定时大风 ----------
