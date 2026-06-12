@@ -1,7 +1,7 @@
 // 成就表（纯数据层，禁止依赖 Phaser）
 // check 在统一视图上判定：run 为当前单局快照（局外评估时缺省），stats 为局外累计
-// unlockChar：达成时解锁对应角色（M4 起游玩成就式解锁）
-import type { AchievementId, CharacterId } from './ids';
+// unlockChar / unlockMap：达成时解锁对应角色/地图（游玩成就式解锁；地图解锁链 = 通关上一图）
+import type { AchievementId, CharacterId, MapId } from './ids';
 
 export interface AchRunView {
   kills: number;
@@ -13,6 +13,7 @@ export interface AchRunView {
   maxWeapon: boolean; // 任一武器满级
   eliteKills: number;
   win: boolean;
+  mapId: string; // 本局地图（通关类成就按图判定）
 }
 
 export interface AchStatsView {
@@ -32,6 +33,7 @@ export interface AchievementSpec {
   id: AchievementId;
   icon: string; // 纹理 key
   unlockChar?: CharacterId; // 达成时解锁角色
+  unlockMap?: MapId; // 达成时解锁地图
   check(v: AchView): boolean;
 }
 
@@ -44,8 +46,13 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
   { id: 'maxWeapon',   icon: 'icon_spark',  check: (v) => v.run?.maxWeapon === true },
   { id: 'fullArsenal', icon: 'icon_mine',   check: (v) => (v.run?.weapons ?? 0) >= 6 },
   { id: 'fullCharms',  icon: 'icon_bloom',  check: (v) => (v.run?.passives ?? 0) >= 6 },
-  { id: 'meadowClear', icon: 'e_boss',      unlockChar: 'pebble', check: (v) => v.run?.win === true },
+  { id: 'meadowClear', icon: 'e_boss',       unlockChar: 'pebble', unlockMap: 'pond',
+    check: (v) => v.run?.win === true && v.run.mapId === 'meadow' },
   { id: 'kills1000',   icon: 'e_splitter',  check: (v) => v.stats.kills >= 1000 },
   { id: 'coins500',    icon: 'coin',        unlockChar: 'fluff',  check: (v) => v.stats.coinsEarned >= 500 },
   { id: 'firstBuy',    icon: 'icon_greed',  check: (v) => v.stats.purchases >= 1 },
+  { id: 'pondClear',   icon: 'e_bubbleking', unlockMap: 'hills',
+    check: (v) => v.run?.win === true && v.run.mapId === 'pond' },
+  { id: 'hillsClear',  icon: 'e_galecrow', // 奖励地图 4（M6 实装时挂 unlockMap）
+    check: (v) => v.run?.win === true && v.run.mapId === 'hills' },
 ];

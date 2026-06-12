@@ -1,5 +1,5 @@
-// 波次导演：按时间表持续刷怪 + 定点事件（包围环 / 精英 / Boss）
-import { EVENTS, WAVES } from '../content/enemies';
+// 波次导演：按地图时间表持续刷怪 + 定点事件（包围环 / 精英 / Boss）
+// 波次/事件/精英/Boss 全部来自 MapSpec（content/maps.ts），每图节奏独立调参
 import type { EnemyId } from '../content/ids';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
@@ -14,9 +14,10 @@ export class WaveDirector implements RunSystem {
   constructor(private ctx: CombatContext, private enemies: EnemySystem) {}
 
   private currentWave() {
+    const waves = this.ctx.map.waves;
     const t = this.ctx.run.elapsed;
-    let w = WAVES[0];
-    for (const p of WAVES) {
+    let w = waves[0];
+    for (const p of waves) {
       if (t >= p.from) w = p;
     }
     return w;
@@ -35,6 +36,7 @@ export class WaveDirector implements RunSystem {
 
   update(dt: number): void {
     const ctx = this.ctx;
+    const map = ctx.map;
     const w = this.currentWave();
     this.spawnT -= dt;
     if (this.spawnT <= 0) {
@@ -48,8 +50,9 @@ export class WaveDirector implements RunSystem {
       }
     }
     // 定点事件
-    while (this.eventIdx < EVENTS.length && ctx.run.elapsed >= EVENTS[this.eventIdx].t) {
-      const ev = EVENTS[this.eventIdx++];
+    const events = map.events;
+    while (this.eventIdx < events.length && ctx.run.elapsed >= events[this.eventIdx].t) {
+      const ev = events[this.eventIdx++];
       if (ev.kind === 'ring' && ev.enemy && ev.n) {
         const cam = ctx.scene.cameras.main;
         const r = Math.hypot(cam.width, cam.height) / 2 / cam.zoom + 50;
@@ -59,14 +62,14 @@ export class WaveDirector implements RunSystem {
         }
       } else if (ev.kind === 'elite') {
         const [x, y] = this.enemies.edgePos();
-        this.enemies.spawn('elite', x, y);
+        this.enemies.spawn(ev.enemy ?? map.eliteId, x, y);
         emitEvent(ctx.scene.game, 'hud:warn', 'eliteWarn');
         SFX.warning();
       } else if (ev.kind === 'boss') {
         const [x, y] = this.enemies.edgePos();
-        this.enemies.spawn('boss', x, y);
+        this.enemies.spawn(map.bossId, x, y);
         emitEvent(ctx.scene.game, 'hud:boss', true);
-        emitEvent(ctx.scene.game, 'hud:warn', 'bossWarn');
+        emitEvent(ctx.scene.game, 'hud:warn', 'map_' + map.id + '_warn');
         SFX.bossRoar();
         if (getSettings().shake) ctx.scene.cameras.main.shake(500, 0.004);
       }

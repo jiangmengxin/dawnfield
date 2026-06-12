@@ -1,8 +1,9 @@
-// 晨光草甸配色 — 全游戏唯一色彩来源
+// 全游戏唯一色彩来源
 // 浅色主调：暖纸白背景，粉彩实体 + 同系深一阶描边保证可读性
+// M5 起按地图分主题色组：MAP_PAL（纸底/装饰）+ 每图敌人池配色
 
 export const PAL = {
-  // 环境
+  // 环境（晨光草甸基准）
   paper: 0xfaf5ea,
   paperCss: '#FAF5EA',
   grass: 0xcbe3b3,
@@ -62,11 +63,60 @@ export const PAL = {
 // 彩虹渐变（棱镜光束用）
 export const RAINBOW = [0xf8a0a8, 0xf8c890, 0xf8eea0, 0xb0e8b0, 0xa0d8f0, 0xc0b0e8];
 
-// 敌人死亡纸屑颜色（与本体同色；mini 沿用分裂球色）
+// ---------- 露珠池塘（图 2）：清晨水汽，青绿水蓝 ----------
+export const POND = {
+  paper: 0xe9f3ec, paperCss: '#E9F3EC',
+  lily: 0x9fcfa6, lilyEdge: 0x6fa878, lilyVein: 0x86bd8e,
+  reed: 0xa8bf86, reedEdge: 0x82995e, cattail: 0xb08858,
+  ripple: 0x9cc8d4,
+  lotus: 0xf2b8cc, lotusDeep: 0xd88aa8, lotusCore: 0xf7dd8a,
+  shell: 0xe0d2bc, shellEdge: 0xb09c7c,
+  pool: 0x9ed0dc, poolDeep: 0x68a8bc,
+
+  // 敌人池
+  tad: 0x8fb8d8, tadEdge: 0x6088b0,
+  bubble: 0xc2e2ee, bubbleEdge: 0x86bcd0,
+  snail: 0xd8b890, snailEdge: 0xa8845c, snailShell: 0xead8b4,
+  frog: 0xa6d488, frogEdge: 0x72a858,
+  squirt: 0x86c2d6, squirtEdge: 0x5694b0,
+  jelly: 0xd8b8e0, jellyEdge: 0xa888c0,
+  bigbubble: 0xa6d2e8, bigbubbleEdge: 0x6aa4c8,
+  bubbleking: 0x7caac8, bubblekingEdge: 0x4c7aa0,
+} as const;
+
+// ---------- 晚霞山岗（图 3）：金色麦浪，霞光暖橙 ----------
+export const HILLS = {
+  paper: 0xfaefdf, paperCss: '#FAEFDF',
+  wheat: 0xe8c878, wheatEdge: 0xc09c48, wheatDark: 0xd4ae5c,
+  tuft: 0xd8bc74, tuftEdge: 0xb09452,
+  daisy: 0xf2a868, daisyDeep: 0xd07e3e, daisyCore: 0x8a5c30,
+  leafFall: 0xe09858, leafFallEdge: 0xb87038,
+  stone: 0xe2d4bc,
+  windStreak: 0xf2e2c2,
+
+  // 敌人池
+  leafy: 0xb6cc7a, leafyEdge: 0x88a44e,
+  grain: 0xf0d490, grainEdge: 0xc8a050,
+  crow: 0x9890b4, crowEdge: 0x686088, crowBeak: 0xf0b860,
+  thistle: 0xcfae84, thistleEdge: 0x9c7a4e,
+  wheatling: 0xf0cc88, wheatlingEdge: 0xc89c50,
+  cone: 0xb89068, coneEdge: 0x886240,
+  gust: 0xc6d6e6, gustEdge: 0x8ca8c4,
+  bigthistle: 0xc8a070, bigthistleEdge: 0x927042,
+  galecrow: 0x8088a8, galecrowEdge: 0x525a80,
+  feather: 0xaab0cc,
+} as const;
+
+// 敌人死亡纸屑颜色（与本体同色）
 import type { EnemyId } from '../content/ids';
 export const DEATH_COLOR: Record<EnemyId, number> = {
   blob: PAL.blob, midge: PAL.midge, shelly: PAL.shelly, spitter: PAL.spitter,
   dasher: PAL.dasher, splitter: PAL.splitter, mini: PAL.splitter, elite: PAL.elite, boss: PAL.boss,
+  tad: POND.tad, bubble: POND.bubble, snail: POND.snail, frog: POND.frog,
+  squirt: POND.squirt, jelly: POND.jelly, bigbubble: POND.bigbubble, bubbleking: POND.bubbleking,
+  leafy: HILLS.leafy, grain: HILLS.grain, crow: HILLS.crow, thistle: HILLS.thistle,
+  wheatling: HILLS.wheatling, cone: HILLS.cone, gust: HILLS.gust,
+  bigthistle: HILLS.bigthistle, galecrow: HILLS.galecrow,
 };
 
 // 角色配色（makeCharacter 配方用；body 主体 / edge 描边）

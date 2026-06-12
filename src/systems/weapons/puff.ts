@@ -32,7 +32,16 @@ class Seed {
     this.wave = Math.random() * Math.PI * 2;
   }
 
+  /** 倍速穿隧细化：effDt > 1/30 时分两半步推进+判定（2x 下种子不穿小怪） */
   update(dt: number): boolean {
+    const sub = dt > 1 / 30 ? 2 : 1;
+    for (let s = 0; s < sub; s++) {
+      if (!this.step(dt / sub)) return false;
+    }
+    return true;
+  }
+
+  private step(dt: number): boolean {
     const ctx = this.ctx;
     this.life -= dt;
     if (this.life <= 0) {

@@ -1,6 +1,27 @@
-// 敌人规格 / 行为模板指派 / 波次时间表 / Boss 数值（纯数据层，禁止依赖 Phaser）
+// 敌人规格 / 行为模板指派 / 行为调参 / Boss 数值（纯数据层，禁止依赖 Phaser）
+// M5 起每图专属敌人池：行为模板（12 种）× 换皮调色（纹理配方在 gfx/textures/mapassets.ts）
+// 波次时间表随地图走（content/maps.ts）
 import { defineTable } from '../core/registry';
 import type { BehaviorId, EnemyId } from './ids';
+
+/** 射击参数（strafeShoot / turret 行为 + Boss 弹幕共用弹体系统） */
+export interface ShootSpec {
+  range: number; // 进入射程才开火
+  cd: number; // 开火间隔（秒）
+  speed: number;
+  dmg: number;
+  n?: number; // 一次齐射弹数（轻微扇形），默认 1
+  tex?: string; // 弹体纹理，默认 'inkball'
+}
+
+/** 冲刺参数（dash 行为；不配则用 DASHER 默认） */
+export interface DashSpec {
+  triggerDist: number;
+  telegraph: number;
+  dashSpeed: number;
+  dashTime: number;
+  recover: number;
+}
 
 export interface EnemySpec {
   hp: number;
@@ -13,21 +34,53 @@ export interface EnemySpec {
   behavior: BehaviorId;
   /** 死亡时分裂 */
   split?: { id: EnemyId; n: number };
+  shoot?: ShootSpec;
+  dash?: DashSpec;
+  elite?: boolean;
+  boss?: boolean;
+  /** 翻面取反（沿用冲冲既有朝向规则） */
+  flipInvert?: boolean;
 }
 
 export const ENEMIES = defineTable<EnemyId, EnemySpec>({
+  // ---------- 晨光草甸 ----------
   blob:     { hp: 14,   speed: 56,  dmg: 8,  xp: 1,  radius: 14, tex: 'e_blob',     knockMul: 1,    behavior: 'chase' },
   midge:    { hp: 6,    speed: 98,  dmg: 5,  xp: 1,  radius: 9,  tex: 'e_midge',    knockMul: 1.3,  behavior: 'wobble' },
   shelly:   { hp: 70,   speed: 36,  dmg: 13, xp: 3,  radius: 17, tex: 'e_shelly',   knockMul: 0.15, behavior: 'chase' },
-  spitter:  { hp: 24,   speed: 50,  dmg: 7,  xp: 2,  radius: 14, tex: 'e_spitter',  knockMul: 0.9,  behavior: 'strafeShoot' },
-  dasher:   { hp: 28,   speed: 62,  dmg: 14, xp: 2,  radius: 13, tex: 'e_dasher',   knockMul: 0.8,  behavior: 'dash' },
+  spitter:  { hp: 24,   speed: 50,  dmg: 7,  xp: 2,  radius: 14, tex: 'e_spitter',  knockMul: 0.9,  behavior: 'strafeShoot',
+              shoot: { range: 270, cd: 3.0, speed: 150, dmg: 10 } },
+  dasher:   { hp: 28,   speed: 62,  dmg: 14, xp: 2,  radius: 13, tex: 'e_dasher',   knockMul: 0.8,  behavior: 'dash', flipInvert: true },
   splitter: { hp: 34,   speed: 64,  dmg: 9,  xp: 2,  radius: 15, tex: 'e_splitter', knockMul: 0.9,  behavior: 'chase', split: { id: 'mini', n: 2 } },
   mini:     { hp: 8,    speed: 88,  dmg: 5,  xp: 1,  radius: 9,  tex: 'e_mini',     knockMul: 1.2,  behavior: 'wobble' },
-  elite:    { hp: 900,  speed: 42,  dmg: 18, xp: 30, radius: 40, tex: 'e_elite',    knockMul: 0.05, behavior: 'chase' },
-  boss:     { hp: 3600, speed: 64,  dmg: 24, xp: 0,  radius: 62, tex: 'e_boss',     knockMul: 0,    behavior: 'chase' },
+  elite:    { hp: 900,  speed: 42,  dmg: 18, xp: 30, radius: 40, tex: 'e_elite',    knockMul: 0.05, behavior: 'chase', elite: true },
+  boss:     { hp: 3600, speed: 64,  dmg: 24, xp: 0,  radius: 62, tex: 'e_boss',     knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 露珠池塘（厚重慢节奏：坦克/炮台/跳袭） ----------
+  tad:       { hp: 10,   speed: 104, dmg: 6,  xp: 1,  radius: 9,  tex: 'e_tad',       knockMul: 1.3,  behavior: 'zigzag' },
+  bubble:    { hp: 18,   speed: 46,  dmg: 8,  xp: 1,  radius: 13, tex: 'e_bubble',    knockMul: 1.25, behavior: 'drift' },
+  snail:     { hp: 95,   speed: 30,  dmg: 14, xp: 3,  radius: 16, tex: 'e_snail',     knockMul: 0.12, behavior: 'chase' },
+  frog:      { hp: 30,   speed: 55,  dmg: 11, xp: 2,  radius: 13, tex: 'e_frog',      knockMul: 0.7,  behavior: 'hop' },
+  squirt:    { hp: 26,   speed: 46,  dmg: 7,  xp: 2,  radius: 13, tex: 'e_squirt',    knockMul: 0.8,  behavior: 'turret',
+               shoot: { range: 250, cd: 2.6, speed: 170, dmg: 9, tex: 'pz_bub' } },
+  jelly:     { hp: 40,   speed: 58,  dmg: 12, xp: 2,  radius: 14, tex: 'e_jelly',     knockMul: 0.6,  behavior: 'orbit' },
+  bigbubble: { hp: 1000, speed: 38,  dmg: 18, xp: 30, radius: 42, tex: 'e_bigbubble', knockMul: 0.05, behavior: 'chase', elite: true },
+  bubbleking:{ hp: 4200, speed: 56,  dmg: 24, xp: 0,  radius: 64, tex: 'e_bubbleking',knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 晚霞山岗（轻血海量快节奏：冲刺/俯冲/闪现） ----------
+  leafy:     { hp: 12,   speed: 70,  dmg: 7,  xp: 1,  radius: 12, tex: 'e_leafy',     knockMul: 1.1,  behavior: 'chase' },
+  grain:     { hp: 7,    speed: 92,  dmg: 5,  xp: 1,  radius: 8,  tex: 'e_grain',     knockMul: 1.3,  behavior: 'wobble' },
+  crow:      { hp: 16,   speed: 96,  dmg: 9,  xp: 1,  radius: 11, tex: 'e_crow',      knockMul: 0.9,  behavior: 'swoop' },
+  thistle:   { hp: 30,   speed: 60,  dmg: 13, xp: 2,  radius: 13, tex: 'e_thistle',   knockMul: 0.7,  behavior: 'dash',
+               dash: { triggerDist: 260, telegraph: 0.45, dashSpeed: 360, dashTime: 0.5, recover: 0.9 } },
+  wheatling: { hp: 36,   speed: 62,  dmg: 9,  xp: 2,  radius: 14, tex: 'e_wheatling', knockMul: 0.9,  behavior: 'chase', split: { id: 'grain', n: 2 } },
+  cone:      { hp: 50,   speed: 52,  dmg: 13, xp: 2,  radius: 13, tex: 'e_cone',      knockMul: 0.5,  behavior: 'pulse' },
+  gust:      { hp: 24,   speed: 58,  dmg: 10, xp: 2,  radius: 12, tex: 'e_gust',      knockMul: 1,    behavior: 'blink' },
+  bigthistle:{ hp: 850,  speed: 44,  dmg: 18, xp: 30, radius: 40, tex: 'e_bigthistle',knockMul: 0.05, behavior: 'dash', elite: true,
+               dash: { triggerDist: 340, telegraph: 0.9, dashSpeed: 300, dashTime: 0.7, recover: 1.6 } },
+  galecrow:  { hp: 3800, speed: 70,  dmg: 24, xp: 0,  radius: 60, tex: 'e_galecrow',  knockMul: 0,    behavior: 'chase', boss: true },
 });
 
-// 随时间成长（min 为分钟数）
+// 随时间成长（min 为「有效分钟」：elapsed/60 × MapSpec.timeK，长图成长更慢）
 export function hpScale(min: number): number {
   return 1 + min * 0.22 + Math.max(0, min - 8) * 0.18;
 }
@@ -35,66 +88,22 @@ export function dmgScale(min: number): number {
   return 1 + min * 0.055;
 }
 
-export const SPITTER = { range: 270, fireCd: 3.0, bulletSpeed: 150, bulletDmg: 10 };
-export const DASHER = { triggerDist: 300, telegraph: 0.55, dashSpeed: 340, dashTime: 0.45, recover: 1.1 };
+// ---------- 行为模板调参（行为代码在 systems/behaviors.ts，调参只改此处） ----------
 
-/** 墨之王 Boss（二阶段阈值 50%） */
-export const BOSS = {
-  phase2HpK: 0.5,
-  firstAtkCd: 2.5,
-  atkCd: 4.5,
-  atkCdP2: 3.2,
-  ringN: 11,
-  ringNP2: 16,
-  bulletSpeed: 150, // 与喷喷同款墨弹
-  bulletDmg: 10,
-  firstSummonCd: 9,
-  summonCd: 10, // 仅二阶段
-  summonId: 'midge' as EnemyId,
-  summonN: 6,
-  summonRadius: 90,
-  firstDashCd: 6,
-  dashCd: 7.5,
-  dashCdP2: 5.5,
-  dashSpeed: 420,
-  dashMinDist: 150,
-};
-
-// ---------- 波次 ----------
-export interface WavePhase {
-  from: number; // 秒
-  interval: number; // 刷怪间隔（秒）
-  burst: number; // 每次刷几只
-  maxAlive: number;
-  types: Array<[EnemyId, number]>; // [类型, 权重]
-}
-
-export const WAVES: WavePhase[] = [
-  { from: 0,   interval: 1.15, burst: 1, maxAlive: 22,  types: [['blob', 1]] },
-  { from: 55,  interval: 1.0,  burst: 2, maxAlive: 42,  types: [['blob', 3], ['midge', 2]] },
-  { from: 115, interval: 0.9,  burst: 2, maxAlive: 58,  types: [['blob', 3], ['midge', 2], ['splitter', 1.5]] },
-  { from: 175, interval: 0.85, burst: 3, maxAlive: 78,  types: [['blob', 3], ['midge', 2], ['splitter', 1.5], ['shelly', 1]] },
-  { from: 235, interval: 0.8,  burst: 3, maxAlive: 100, types: [['blob', 2.5], ['midge', 2], ['splitter', 1.5], ['shelly', 1], ['dasher', 1.2]] },
-  { from: 300, interval: 0.75, burst: 3, maxAlive: 120, types: [['blob', 2], ['midge', 2], ['splitter', 1.5], ['shelly', 1.2], ['dasher', 1.2], ['spitter', 1]] },
-  { from: 360, interval: 0.6,  burst: 4, maxAlive: 150, types: [['blob', 2], ['midge', 2.5], ['splitter', 1.5], ['shelly', 1.4], ['dasher', 1.4], ['spitter', 1.2]] },
-  { from: 480, interval: 0.55, burst: 4, maxAlive: 185, types: [['blob', 1.5], ['midge', 2], ['splitter', 2], ['shelly', 2], ['dasher', 1.6], ['spitter', 1.4]] },
-  { from: 600, interval: 0.45, burst: 5, maxAlive: 230, types: [['midge', 2], ['splitter', 2], ['shelly', 2.4], ['dasher', 2], ['spitter', 1.6]] },
-  { from: 720, interval: 1.0,  burst: 2, maxAlive: 70,  types: [['midge', 2], ['dasher', 1.5], ['blob', 1]] }, // Boss 阶段轻刷
-];
-
-export interface WaveEvent {
-  t: number;
-  kind: 'ring' | 'elite' | 'boss';
-  enemy?: EnemyId;
-  n?: number;
-}
-
-export const EVENTS: WaveEvent[] = [
-  { t: 200, kind: 'ring', enemy: 'blob', n: 18 },
-  { t: 330, kind: 'elite' },
-  { t: 430, kind: 'ring', enemy: 'midge', n: 26 },
-  { t: 510, kind: 'elite' },
-  { t: 565, kind: 'ring', enemy: 'splitter', n: 14 },
-  { t: 660, kind: 'ring', enemy: 'shelly', n: 12 },
-  { t: 720, kind: 'boss' },
-];
+export const DASHER: DashSpec = { triggerDist: 300, telegraph: 0.55, dashSpeed: 340, dashTime: 0.45, recover: 1.1 };
+/** 蛙蹦蹦：蹲伏—跃扑 循环 */
+export const HOP = { rest: 0.75, leap: 0.4, leapMul: 4.2 };
+/** 泡泡：缓慢飘近 + 大幅横摆 */
+export const DRIFT = { wobK: 2.2, amp: 0.85, fwd: 0.62 };
+/** 水母：绕玩家公转缓慢收紧 */
+export const ORBIT = { dist: 132, inward: 16, mul: 1.15 };
+/** 小乌鸫：瞄准—直线俯冲穿场—再瞄准 */
+export const SWOOP = { aim: 0.55, fly: 1.9, mul: 2.0 };
+/** 风精灵：周期闪现到玩家身侧 + 落地僵直 */
+export const BLINK = { cd: 4.2, dist: 150, freeze: 0.55 };
+/** 松果球：加速滚动—滑行减速 循环 */
+export const PULSE = { burst: 0.7, coast: 0.9, mulBurst: 2.4, mulCoast: 0.25 };
+/** 水枪鱼：射程内驻停（轻微踱步） */
+export const TURRET = { shuffleMul: 0.12 };
+/** 蝌蚪宝：锯齿折线逼近 */
+export const ZIGZAG = { period: 0.55, angle: 0.65 };

@@ -1,14 +1,32 @@
 // WebAudio 程序化音频：SFX 即时合成 + 生成式五声音阶 BGM（零外部资源）
+// M5 起 BGM 按 BgmSpec 主题化（content/maps.ts）：每图各自的调式/速度/音色/打击乐/回声湿度
 // 静音/音量持久化进版本化存档（core/save），旧散键由 v0 迁移吸收
+import type { BgmSpec } from '../content/maps';
 import { getSave, persistSave } from '../core/save';
+
+/** 缺省主题（C 大调五声，title 等无图场合兜底） */
+const DEFAULT_BGM: BgmSpec = {
+  bpm: 96,
+  scale: [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3],
+  bass: [130.8, 98.0, 110.0, 146.8],
+  chords: [[261.6, 329.6, 392.0], [220.0, 261.6, 329.6], [196.0, 246.9, 293.7], [261.6, 349.2, 440.0]],
+  pluckType: 'triangle',
+  pluckVol: 0.045,
+  density: 0.32,
+  densityK: 0.3,
+  perc: 'tick',
+  echo: 0.35,
+};
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private delaySend: GainNode | null = null;
+  private wet: GainNode | null = null;
   private bgmTimer: number | null = null;
   private bgmStep = 0;
   private bgmIntensity = 0;
+  private bgmSpec: BgmSpec = DEFAULT_BGM;
   private noiseBuf: AudioBuffer | null = null;
   muted = false;
   volume = 1;
@@ -45,6 +63,7 @@ class SoundEngine {
     fb.connect(delay);
     delay.connect(wet);
     wet.connect(this.master);
+    this.wet = wet;
     this.delaySend = this.ctx.createGain();
     this.delaySend.connect(delay);
     // 噪声缓冲
@@ -170,6 +189,11 @@ class SoundEngine {
     this.tone({ freq: 90, end: 55, dur: 0.9, type: 'sawtooth', vol: 0.14 });
     this.noise({ dur: 0.8, vol: 0.1, filter: 400, slide: 100 });
   }
+  /** 大风掠过（晚霞山岗风暴机制） */
+  windGust(): void {
+    this.noise({ dur: 1.6, vol: 0.09, type: 'bandpass', filter: 500, slide: 1600, q: 0.7 });
+    this.noise({ dur: 1.2, vol: 0.05, filter: 900, slide: 250, delay: 0.5 });
+  }
   victoryJingle(): void {
     [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) =>
       this.tone({ freq: f, dur: 0.45, vol: 0.09, delay: i * 0.14, type: 'triangle', sendEcho: true }));
@@ -179,12 +203,15 @@ class SoundEngine {
   }
 
   // ---------- 生成式 BGM ----------
-  // 五声音阶随机拨弦 + 每 4 小节柔和 pad，强度随局内时间提升
+  // 按 BgmSpec 主题随机拨弦 + 低音 + 每 4 小节柔和 pad + 主题打击乐，强度随局内时间提升
 
-  startBgm(): void {
-    if (this.bgmTimer !== null || !this.ctx) return;
+  startBgm(spec: BgmSpec = DEFAULT_BGM): void {
+    this.stopBgm();
+    this.bgmSpec = spec;
     this.bgmStep = 0;
-    const stepDur = 60 / 96 / 2; // 96 BPM 八分音符
+    if (!this.ctx) return;
+    if (this.wet) this.wet.gain.setTargetAtTime(spec.echo, this.ctx.currentTime, 0.1);
+    const stepDur = 60 / spec.bpm / 2; // 八分音符
     this.bgmTimer = window.setInterval(() => this.bgmTick(stepDur), stepDur * 1000);
   }
 
@@ -200,27 +227,34 @@ class SoundEngine {
   private bgmTick(stepDur: number): void {
     if (!this.ctx || this.muted || document.hidden) { this.bgmStep++; return; }
     const s = this.bgmStep++;
-    const pent = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3]; // C 大调五声两个八度
-    const density = 0.32 + this.bgmIntensity * 0.3;
+    const t = this.bgmSpec;
+    const density = t.density + this.bgmIntensity * t.densityK;
     // 拨弦
     if (Math.random() < density) {
-      const n = pent[Math.floor(Math.random() * pent.length)];
-      this.tone({ freq: n, dur: 0.5, type: 'triangle', vol: 0.045, attack: 0.004, sendEcho: true });
+      const n = t.scale[Math.floor(Math.random() * t.scale.length)];
+      this.tone({ freq: n, dur: 0.5, type: t.pluckType, vol: t.pluckVol, attack: 0.004, sendEcho: true });
     }
     // 低音（每小节第一拍）
     if (s % 8 === 0) {
-      const roots = [130.8, 98.0, 110.0, 146.8];
-      this.tone({ freq: roots[(s / 8) % 4], dur: stepDur * 7, type: 'sine', vol: 0.05, attack: 0.02 });
+      this.tone({ freq: t.bass[(s / 8) % t.bass.length], dur: stepDur * 7, type: 'sine', vol: 0.05, attack: 0.02 });
     }
     // pad（每 4 小节）
     if (s % 32 === 0) {
-      const chords = [[261.6, 329.6, 392.0], [220.0, 261.6, 329.6], [196.0, 246.9, 293.7], [261.6, 349.2, 440.0]];
-      const ch = chords[(s / 32) % 4];
+      const ch = t.chords[(s / 32) % t.chords.length];
       ch.forEach((f) => this.tone({ freq: f * 2, dur: stepDur * 30, type: 'sine', vol: 0.018, attack: 1.2 }));
     }
-    // 轻打点
+    // 主题打击乐
     if (s % 4 === 2 && Math.random() < 0.3 + this.bgmIntensity * 0.5) {
-      this.noise({ dur: 0.04, vol: 0.02, type: 'highpass', filter: 6000 });
+      if (t.perc === 'tick') {
+        this.noise({ dur: 0.04, vol: 0.02, type: 'highpass', filter: 6000 });
+      } else if (t.perc === 'drip') {
+        // 水滴：短促上滑的小圆音
+        const f = 480 + Math.random() * 320;
+        this.tone({ freq: f, end: f * 2.1, dur: 0.09, type: 'sine', vol: 0.035, sendEcho: true });
+      } else {
+        // 沙锤：中频带通短噪声
+        this.noise({ dur: 0.06, vol: 0.028, type: 'bandpass', filter: 4200, q: 1.6 });
+      }
     }
   }
 }

@@ -43,17 +43,22 @@ export class ProjectileSystem implements RunSystem {
 
   update(dt: number): void {
     const ctx = this.ctx;
+    // 倍速穿隧细化：effDt 超过 1/30 时分两半步推进+判定（2x 下快弹不隔帧穿过玩家）
+    const sub = dt > 1 / 30 ? 2 : 1;
+    const h = dt / sub;
     for (const b of this.bullets) {
       if (!b.active) continue;
       b.life -= dt;
-      b.img.x += b.vx * dt;
-      b.img.y += b.vy * dt;
       b.img.rotation += dt * 4;
-      const dx = b.img.x - ctx.player.x;
-      const dy = b.img.y - ctx.player.y;
-      if (dx * dx + dy * dy < 18 * 18) {
-        ctx.damagePlayer(b.dmg * (b.timeScaled ? dmgScale(ctx.run.elapsed / 60) : 1));
-        b.life = 0;
+      for (let s = 0; s < sub && b.life > 0; s++) {
+        b.img.x += b.vx * h;
+        b.img.y += b.vy * h;
+        const dx = b.img.x - ctx.player.x;
+        const dy = b.img.y - ctx.player.y;
+        if (dx * dx + dy * dy < 18 * 18) {
+          ctx.damagePlayer(b.dmg * (b.timeScaled ? dmgScale((ctx.run.elapsed / 60) * ctx.map.timeK) : 1));
+          b.life = 0;
+        }
       }
       if (b.life <= 0) {
         b.active = false;

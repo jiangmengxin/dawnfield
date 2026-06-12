@@ -1,10 +1,16 @@
-// 地图选择：8 格（1 真实 + 7 锁定占位）；解锁状态读存档（M5 起地图解锁链接入）
+// 地图选择：8 格（3 真实 + 5 锁定占位）；解锁链 = 通关上一图的成就（unlockAch）
+// 未解锁地图显示 ???+解锁条件；卡片标注各图名义时长（12/15/18 分钟差异）
 import { t } from '../i18n';
+import { MAPS } from '../content/maps';
+import { ACHIEVEMENTS } from '../content/achievements';
+import { ensureMapAssets } from '../gfx/textures';
 import { Meta } from '../core/MetaState';
 import { resetStack } from '../core/router';
 import { UIScene } from '../ui/UIScene';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
+
+const TARGET_MAPS = 8; // 1.0 目标量级
 
 export interface RunLaunchData {
   charId: string;
@@ -25,37 +31,43 @@ export class MapSelectScene extends UIScene {
   protected buildLayout(): void {
     const content = this.buildHeader(t('scn_mapSelect'));
     const panel = new ScrollPanel(this, content);
+    const compact = this.vp.bp === 'compact';
+    const fontScale = compact ? 0.9 : 1;
 
-    const meadowUnlocked = Meta.isUnlocked('maps', 'meadow');
-    const items: CardGridItem[] = [
-      {
-        icon: 'd_flower1',
-        iconScale: 2.4,
-        title: t('map_meadow'),
-        desc: this.vp.bp === 'compact' ? undefined : t('map_meadow_d'),
-        tag: '12 ' + t('ui_minutes'),
-        color: 0xa8cd8c,
-        locked: !meadowUnlocked,
-        fontScale: this.vp.bp === 'compact' ? 0.9 : 1,
-        onTap: meadowUnlocked ? () => {
+    const items: CardGridItem[] = MAPS.map((m) => {
+      const unlocked = m.unlockAch === null || Meta.isUnlocked('maps', m.id);
+      if (!unlocked) {
+        const ach = ACHIEVEMENTS.find((a) => a.id === m.unlockAch);
+        return {
+          title: '???',
+          desc: ach ? t('ui_unlockBy').replace('{a}', t('ach_' + ach.id)) : t('ui_lockedHint'),
+          locked: true,
+          fontScale,
+        };
+      }
+      ensureMapAssets(this, m.id); // 图标纹理懒生成（幂等）
+      return {
+        icon: m.icon,
+        iconScale: m.iconScale,
+        title: t('map_' + m.id),
+        desc: compact ? undefined : t('map_' + m.id + '_d'),
+        tag: m.minutes + ' ' + t('ui_minutes'),
+        color: m.color,
+        fontScale,
+        onTap: () => {
           resetStack();
-          const data: RunLaunchData = { charId: this.charId, mapId: 'meadow' };
+          const data: RunLaunchData = { charId: this.charId, mapId: m.id };
           this.scene.start('game', data);
-        } : undefined,
-      },
-    ];
-    for (let i = 1; i < 8; i++) {
-      items.push({
-        title: '',
-        desc: t('ui_lockedHint'),
-        locked: true,
-        fontScale: this.vp.bp === 'compact' ? 0.9 : 1,
-      });
+        },
+      };
+    });
+    for (let i = MAPS.length; i < TARGET_MAPS; i++) {
+      items.push({ title: '', desc: t('ui_lockedHint'), locked: true, fontScale });
     }
 
     buildCardGrid(panel, {
       items,
-      minCellW: this.vp.bp === 'compact' ? 160 : 210,
+      minCellW: compact ? 160 : 210,
       aspect: 0.92,
     });
   }

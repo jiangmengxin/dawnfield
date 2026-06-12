@@ -10,6 +10,8 @@ import { createIcons } from './icons';
 export { makeTex } from './core';
 export { makeCharacter } from './characters';
 export type { CharRecipe } from './characters';
+export { ensureMapAssets, makeEnemy } from './mapassets';
+export type { EnemyRecipe } from './mapassets';
 
 export function createAllTextures(scene: Phaser.Scene): void {
   // dpr1→2x、dpr2→3x、dpr3→4x；纹理都很小，显存开销可忽略

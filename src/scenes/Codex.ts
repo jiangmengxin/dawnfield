@@ -3,7 +3,8 @@
 import { t } from '../i18n';
 import { FONT } from '../i18n';
 import { PAL } from '../gfx/palette';
-import { PASSIVE_META, WEAPON_META, ENEMIES, EnemyId, CHARACTERS } from '../content';
+import { PASSIVE_META, WEAPON_META, ENEMIES, EnemyId, CHARACTERS, MAPS } from '../content';
+import { ensureMapAssets } from '../gfx/textures';
 import { CodexCat } from '../core/save';
 import { Meta } from '../core/MetaState';
 import { UIScene } from '../ui/UIScene';
@@ -12,13 +13,8 @@ import { Tabs } from '../ui/widgets/Tabs';
 import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
 import { THEME } from '../ui/theme';
 
-// 1.0 目标量级（锁定占位补齐到这些数字）
-const TARGET = { weapons: 16, passives: 16, enemies: 14, chars: 16, maps: 8 } as const;
-
-// 已实装的地图（M5 起从 content/maps 读取）；角色已迁至 content/characters
-const MAPS: Array<{ id: string; icon: string; iconScale: number; color: number }> = [
-  { id: 'meadow', icon: 'd_flower1', iconScale: 2, color: 0xa8cd8c },
-];
+// 1.0 目标量级（锁定占位补齐到这些数字；敌人按实装量展示，未遇见即 ???）
+const TARGET = { weapons: 16, passives: 16, chars: 16, maps: 8 } as const;
 
 export class CodexScene extends UIScene {
   private tab: CodexCat = 'weapons';
@@ -85,11 +81,12 @@ export class CodexScene extends UIScene {
       }
       pushLocked(TARGET.passives - PASSIVE_META.length);
     } else if (tab === 'enemies') {
+      // 敌人图标可能属于未生成的地图资产：先确保各图纹理就绪
+      for (const m of MAPS) ensureMapAssets(this, m.id);
       const ids = Object.keys(ENEMIES) as EnemyId[];
       for (const id of ids) {
         items.push(this.entry(tab, id, { icon: ENEMIES[id].tex, title: t('en_' + id), fontScale }));
       }
-      pushLocked(TARGET.enemies - ids.length);
     } else if (tab === 'chars') {
       for (const c of CHARACTERS) {
         items.push(this.entry(tab, c.id, { icon: c.tex, iconScale: c.texScale * 0.85, title: t('char_' + c.id), color: c.color, fontScale }));
@@ -97,7 +94,8 @@ export class CodexScene extends UIScene {
       pushLocked(TARGET.chars - CHARACTERS.length);
     } else {
       for (const m of MAPS) {
-        items.push(this.entry(tab, m.id, { icon: m.icon, iconScale: m.iconScale, title: t('map_' + m.id), color: m.color, fontScale }));
+        ensureMapAssets(this, m.id);
+        items.push(this.entry(tab, m.id, { icon: m.icon, iconScale: m.iconScale * 0.85, title: t('map_' + m.id), color: m.color, fontScale }));
       }
       pushLocked(TARGET.maps - MAPS.length);
     }

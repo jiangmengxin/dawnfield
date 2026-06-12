@@ -8,7 +8,7 @@ type Dict = Record<string, [zh: string, en: string]>;
 const D: Dict = {
   // 菜单
   title: ['晨野', 'DAWNFIELD'],
-  subtitle: ['在晨光草甸中坚守 12 分钟', 'Survive 12 minutes in the morning meadow'],
+  subtitle: ['在晨野中坚守到光明降临', 'Hold the dawnfield until the light returns'],
   start: ['开 始', 'START'],
   langBtn: ['English', '中文'],
   soundOn: ['♪ 声音：开', '♪ Sound: On'],
@@ -21,9 +21,8 @@ const D: Dict = {
   resume: ['继续', 'Resume'],
   quit: ['返回主菜单', 'Main Menu'],
   level: ['等级', 'LV'],
-  bossName: ['墨之王', 'Ink Monarch'],
-  bossWarn: ['!! 墨之王 苏醒了 !!', '!! The Ink Monarch awakens !!'],
-  eliteWarn: ['! 精英墨团出现 !', '! Elite Inkblob appears !'],
+  eliteWarn: ['! 精英来袭 !', '! An elite approaches !'],
+  stormWarn: ['! 大风将至，站稳脚跟 !', '! A gale is coming, hold steady !'],
 
   // 升级
   levelUpTitle: ['升级！选择一项', 'Level Up! Pick one'],
@@ -37,11 +36,10 @@ const D: Dict = {
   chestGold: ['金光闪闪！金币 +{c}，生命 +{h}', 'Shiny! +{c} coins, +{h} HP'],
   chestUpgrade: ['装备升级！', 'Gear upgraded!'],
 
-  // 结算
+  // 结算（胜利副标题随地图：map_<id>_win）
   victory: ['胜 利 ！', 'VICTORY!'],
-  victorySub: ['晨光驱散了墨之王', 'The dawn has banished the Ink Monarch'],
   defeat: ['倒下了…', 'You fell...'],
-  defeatSub: ['草甸会记得你的光', 'The meadow remembers your light'],
+  defeatSub: ['晨野会记得你的光', 'The dawnfield remembers your light'],
   statTime: ['存活时间', 'Time Survived'],
   statKills: ['击败', 'Defeated'],
   statLevel: ['最终等级', 'Final Level'],
@@ -107,7 +105,7 @@ const D: Dict = {
   c_gold: ['晨光碎片', 'Dawn Shards'],
   c_gold_d: ['获得 40 经验', 'Gain 40 XP'],
 
-  // 敌人名称（图鉴）
+  // 敌人名称（图鉴）— 晨光草甸
   en_blob: ['墨团', 'Inkblob'],
   en_midge: ['小蠓', 'Midge'],
   en_shelly: ['壳壳', 'Shelly'],
@@ -117,6 +115,25 @@ const D: Dict = {
   en_mini: ['迷你球', 'Mini'],
   en_elite: ['精英墨团', 'Elite Inkblob'],
   en_boss: ['墨之王', 'Ink Monarch'],
+  // 敌人名称 — 露珠池塘
+  en_tad: ['蝌蚪宝', 'Tadlet'],
+  en_bubble: ['泡泡儿', 'Bubbly'],
+  en_snail: ['蜗蜗', 'Snaily'],
+  en_frog: ['蛙蹦蹦', 'Hopfrog'],
+  en_squirt: ['水枪鱼', 'Squirter'],
+  en_jelly: ['软水母', 'Jellybell'],
+  en_bigbubble: ['大泡泡', 'Grand Bubble'],
+  en_bubbleking: ['泡泡大王', 'Bubble Monarch'],
+  // 敌人名称 — 晚霞山岗
+  en_leafy: ['叶娃娃', 'Leafkin'],
+  en_grain: ['谷粒粒', 'Grainlet'],
+  en_crow: ['小乌鸫', 'Dusklark'],
+  en_thistle: ['蓟滚滚', 'Thistleball'],
+  en_wheatling: ['麦穗芽', 'Wheatling'],
+  en_cone: ['松果球', 'Coneball'],
+  en_gust: ['风精灵', 'Gustling'],
+  en_bigthistle: ['蓟王球', 'Thistle King'],
+  en_galecrow: ['风暴鸦', 'Galecrow'],
 
   // 通用 UI
   ui_back: ['返回', 'Back'],
@@ -161,9 +178,19 @@ const D: Dict = {
   char_fluff: ['蒲蒲', 'Fluff'],
   char_fluff_d: ['金币经验双丰收，自带小幸运', 'Bonus coins and XP, a pinch of luck'],
 
-  // 地图
+  // 地图（_d 描述点明时长/机制差异；_win 胜利副标题；_warn Boss 预警横幅）
   map_meadow: ['晨光草甸', 'Morning Meadow'],
   map_meadow_d: ['一切开始的地方：花海、微风与墨之王', 'Where it all begins: flowers, breeze, and the Ink Monarch'],
+  map_meadow_win: ['晨光驱散了墨之王', 'The dawn has banished the Ink Monarch'],
+  map_meadow_warn: ['!! 墨之王 苏醒了 !!', '!! The Ink Monarch awakens !!'],
+  map_pond: ['露珠池塘', 'Dewdrop Pond'],
+  map_pond_d: ['水皮缠步、硬壳横行的幽静池畔，泡泡大王在深处吐着泡泡', 'Slowing waters and stubborn shells; the Bubble Monarch gurgles below'],
+  map_pond_win: ['池水又清澈如镜了', 'The pond is mirror-clear once more'],
+  map_pond_warn: ['!! 泡泡大王 浮出水面 !!', '!! The Bubble Monarch surfaces !!'],
+  map_hills: ['晚霞山岗', 'Sunset Hills'],
+  map_hills_d: ['麦浪翻滚、大风定时横扫的金色山岗，风暴鸦在霞光里盘旋', 'Rolling wheat and timed gales; the Galecrow circles in the afterglow'],
+  map_hills_win: ['风停了，麦浪重新镀上金光', 'The wind rests; the wheat turns gold again'],
+  map_hills_warn: ['!! 风暴鸦 俯冲而来 !!', '!! The Galecrow dives !!'],
 
   // 金币
   coins: ['金币', 'Coins'],
@@ -212,6 +239,7 @@ const D: Dict = {
   achUnlocked: ['成就达成！', 'Achievement!'],
   ach_count: ['已达成', 'Unlocked'],
   ach_reward: ['解锁角色：{c}', 'Unlocks hero: {c}'],
+  ach_rewardMap: ['解锁地图：{m}', 'Unlocks field: {m}'],
   ach_swarm100: ['百敌斩', 'Centurion'],
   ach_swarm100_d: ['单局击败 100 个敌人', 'Defeat 100 foes in one run'],
   ach_survive5: ['晨光初照', 'First Light'],
@@ -236,6 +264,10 @@ const D: Dict = {
   ach_coins500_d: ['累计获得 500 金币', 'Earn 500 coins in total'],
   ach_firstBuy: ['第一桶金', 'First Purchase'],
   ach_firstBuy_d: ['在商店购买一项永久强化', 'Buy a permanent upgrade'],
+  ach_pondClear: ['还池清梦', 'Pond Purifier'],
+  ach_pondClear_d: ['通关露珠池塘', 'Clear the Dewdrop Pond'],
+  ach_hillsClear: ['驭风者', 'Galebreaker'],
+  ach_hillsClear_d: ['通关晚霞山岗', 'Clear the Sunset Hills'],
 
   // 设置
   set_volume: ['音量', 'Volume'],

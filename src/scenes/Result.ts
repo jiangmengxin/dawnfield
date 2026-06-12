@@ -36,6 +36,7 @@ export class ResultScene extends Phaser.Scene {
         maxWeapon: data.build.some((b) => b.evolved || b.level >= WEAPON_MAX_LEVEL),
         eliteKills: 0, // 同上，局内已评估
         win: data.win,
+        mapId: data.mapId,
       },
       stats: Meta.save.stats,
     });
@@ -90,7 +91,7 @@ export class ResultScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(2).setScale(0.4);
     this.tweens.add({ targets: title, scale: 1, duration: 450, ease: 'Back.easeOut' });
 
-    this.add.text(cx, h * 0.16 + 46, r.win ? t('victorySub') : t('defeatSub'), {
+    this.add.text(cx, h * 0.16 + 46, r.win ? t('map_' + r.mapId + '_win') : t('defeatSub'), {
       fontFamily: FONT, fontSize: '16px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(2);
 

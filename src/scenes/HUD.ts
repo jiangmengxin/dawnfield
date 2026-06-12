@@ -2,7 +2,7 @@
 // 双形态：桌面横屏显示构筑信息；手机竖屏精简（构筑详情进暂停面板）
 import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
-import { PAL } from '../gfx/palette';
+import { DEATH_COLOR, PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
 import { PASSIVE_META } from '../content/passives';
@@ -230,7 +230,7 @@ export class HUDScene extends Phaser.Scene {
     this.coinText.setText(String(Math.floor(run.coins)));
     this.levelText.setText(t('level') + ' ' + run.level);
 
-    // Boss 条
+    // Boss 条（名称/配色随本图 Boss）
     if (this.bossVisible) {
       const boss = this.gs.enemies.boss;
       if (boss && boss.active) {
@@ -238,10 +238,10 @@ export class HUDScene extends Phaser.Scene {
         const bx = safe.x + safe.w / 2 - bw / 2;
         const by = safe.y + (compact ? 154 : 108);
         const bk = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
-        this.bossName.setText(t('bossName'));
+        this.bossName.setText(t('en_' + this.gs.map.bossId));
         g.fillStyle(0x5a5248, 0.1);
         g.fillRoundedRect(bx, by, bw, 12, 6);
-        g.fillStyle(0x8a96b8, 1);
+        g.fillStyle(DEATH_COLOR[this.gs.map.bossId], 1);
         if (bk > 0.02) g.fillRoundedRect(bx, by, bw * bk, 12, 6);
         g.lineStyle(2, 0x5a6488, 0.8);
         g.strokeRoundedRect(bx, by, bw, 12, 6);

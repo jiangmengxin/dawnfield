@@ -2,6 +2,7 @@
 // + RunSystem（系统统一更新接口）+ RunModifier（规则卡钩子，M9 实装，M2 空挂）
 import type Phaser from 'phaser';
 import type { PassiveId, WeaponId } from '../content/ids';
+import type { MapSpec } from '../content/maps';
 import type { RunState, Stats } from '../core/RunState';
 import type { Effects } from './effects';
 import type { Enemy, EnemySystem } from './EnemySystem';
@@ -15,7 +16,7 @@ export interface HitOpts {
   quiet?: boolean; // 不出闪白/飘字/音效（DoT 用）
 }
 
-/** 地面区域：水洼减速 / 星尘灼烧；heal/haste 预留给地图机制（M5） */
+/** 地面区域：水洼减速 / 星尘灼烧 / 治愈；haste 预留（M6 治愈泉接入 heal） */
 export interface ZoneSpec {
   x: number;
   y: number;
@@ -23,6 +24,8 @@ export interface ZoneSpec {
   dur: number; // 秒
   effect: 'slow' | 'heal' | 'burn' | 'haste';
   dps?: number; // burn 伤害 / heal 治疗（每秒）
+  tex?: string; // slow 区域自定义贴图（地图机制水皮用）
+  affectsPlayer?: boolean; // slow 是否也减速玩家（武器水洼不减速玩家，机制水皮减速）
 }
 
 /** 敌方弹幕（参数化，供喷喷与 8 个 Boss 复用） */
@@ -53,6 +56,7 @@ export type ChestReward =
 
 export interface RunResult {
   win: boolean;
+  // time/kills/level/coins 为单局快照；charId/mapId 供谢幕与重开沿用
   time: number;
   kills: number;
   level: number;
@@ -74,6 +78,7 @@ export interface CombatContext {
   readonly player: Phaser.GameObjects.Image;
   readonly facing: { x: number; y: number };
   readonly run: RunState;
+  readonly map: MapSpec; // 本局地图（敌池/成长缩放/机制/Boss 配装的索引）
   readonly stats: Stats; // = run.stats 快捷访问
   readonly grid: SpatialGrid<Enemy>;
   readonly enemies: EnemySystem;
@@ -86,6 +91,8 @@ export interface CombatContext {
   hitStop(sec: number): void;
   addZone(z: ZoneSpec): void;
   slowAt(x: number, y: number): boolean;
+  /** 该点是否有「减速玩家」的水皮（地图机制；武器水洼不算） */
+  playerSlowAt(x: number, y: number): boolean;
   magnetizeGems(x: number, y: number, r: number): void;
   spawnEnemyBullet(spec: EnemyBulletSpec): void;
   spawnGem(x: number, y: number, value: number): void;

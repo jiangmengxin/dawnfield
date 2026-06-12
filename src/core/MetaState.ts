@@ -119,20 +119,23 @@ class MetaStateImpl {
     return this.save.achievements.includes(id);
   }
 
-  /** 返回是否为新解锁；同时应用成就携带的角色解锁 */
+  /** 返回是否为新解锁；同时应用成就携带的角色/地图解锁 */
   unlockAch(id: string): boolean {
     if (this.hasAch(id)) return false;
     this.save.achievements.push(id);
     const spec = ACHIEVEMENTS.find((a) => a.id === id);
     if (spec?.unlockChar) this.unlock('chars', spec.unlockChar);
+    if (spec?.unlockMap) this.unlock('maps', spec.unlockMap);
     persistSave();
     return true;
   }
 
-  /** 启动时补同步：旧档已有成就 → 应用其角色解锁（成就表后补 unlockChar 时也能追授） */
+  /** 启动时补同步：旧档已有成就 → 应用其角色/地图解锁（成就表后补解锁字段时也能追授） */
   syncAchUnlocks(): void {
     for (const a of ACHIEVEMENTS) {
-      if (a.unlockChar && this.hasAch(a.id)) this.unlock('chars', a.unlockChar);
+      if (!this.hasAch(a.id)) continue;
+      if (a.unlockChar) this.unlock('chars', a.unlockChar);
+      if (a.unlockMap) this.unlock('maps', a.unlockMap);
     }
   }
 

@@ -1,7 +1,8 @@
 // 敌人系统：池化 + 行为模板驱动移动 + 分离/击退/减速 + 死亡分裂
 // 刷怪节奏在 WaveDirector；Boss 技能在 BossController
 import Phaser from 'phaser';
-import { ENEMIES, SPITTER, dmgScale, hpScale } from '../content/enemies';
+import { ENEMIES, dmgScale, hpScale } from '../content/enemies';
+import { BOSSES } from '../content/bosses';
 import type { EnemyId } from '../content/ids';
 import { Meta } from '../core/MetaState';
 import { BEHAVIORS, BehaviorMove } from './behaviors';
@@ -62,31 +63,32 @@ export class EnemySystem implements RunSystem {
   spawn(id: EnemyId, x: number, y: number): Enemy {
     Meta.codexLight('enemies', id); // 图鉴首遇点亮（Set 缓存，O(1)）
     const spec = ENEMIES[id];
-    const min = this.ctx.run.elapsed / 60;
+    // 有效分钟：长图成长更平缓（timeK = 12/名义分钟）
+    const min = (this.ctx.run.elapsed / 60) * this.ctx.map.timeK;
     const e = this.obtain();
     e.id = id;
     e.setTexture(spec.tex);
     e.setPosition(x, y);
-    e.hp = e.maxHp = spec.hp * hpScale(min) * (id === 'boss' || id === 'elite' ? this.ctx.run.difficultyHp : 1);
+    e.hp = e.maxHp = spec.hp * hpScale(min) * (spec.boss || spec.elite ? this.ctx.run.difficultyHp : 1);
     e.spd = spec.speed * (0.9 + Math.random() * 0.2);
     e.dmg = spec.dmg * dmgScale(min);
     e.xpVal = spec.xp;
     e.radius = spec.radius;
     e.knockMul = spec.knockMul;
     e.kvx = e.kvy = 0;
-    e.fireT = Math.random() * SPITTER.fireCd;
+    e.fireT = spec.shoot ? Math.random() * spec.shoot.cd : 0;
     e.dashState = 'walk';
     e.stateT = 0;
     e.wobble = Math.random() * Math.PI * 2;
-    e.isElite = id === 'elite';
-    e.isBoss = id === 'boss';
+    e.isElite = spec.elite === true;
+    e.isBoss = spec.boss === true;
     e.dying = false;
     e.baseScale = 1;
-    e.setScale(1).setAlpha(1).clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+    e.setScale(1).setAlpha(1).setRotation(0).clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
     e.shadowImg.setScale(spec.radius / 16, spec.radius / 22);
     if (e.isBoss) {
       this.boss = e;
-      this.bossCtl = new BossController(this.ctx, this);
+      this.bossCtl = new BossController(this.ctx, this, BOSSES[this.ctx.map.id]);
     }
     this.actives.push(e);
     return e;
@@ -158,8 +160,8 @@ export class EnemySystem implements RunSystem {
       e.x += (mvx * slow + e.kvx) * dt;
       e.y += (mvy * slow + e.kvy) * dt;
 
-      // 朝向 + 呼吸
-      if (Math.abs(mvx) > 1) e.setFlipX(mvx < 0 === (e.id !== 'dasher')); // dasher 纹理朝右
+      // 朝向 + 呼吸（flipInvert 沿用冲冲既有朝向规则）
+      if (Math.abs(mvx) > 1) e.setFlipX((mvx < 0) !== (ENEMIES[e.id].flipInvert === true));
       e.wobble += dt * 4;
       const br = 1 + Math.sin(e.wobble * 2) * 0.04;
       if (e.dashState !== 'tele') e.setScale(e.baseScale * br, e.baseScale * (2 - br));

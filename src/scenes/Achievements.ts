@@ -3,6 +3,8 @@ import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { ACHIEVEMENTS } from '../content/achievements';
+import { MAPS } from '../content/maps';
+import { ensureMapAssets } from '../gfx/textures';
 import { Meta } from '../core/MetaState';
 import { UIScene } from '../ui/UIScene';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
@@ -15,6 +17,8 @@ export class AchievementsScene extends UIScene {
   }
 
   protected buildLayout(): void {
+    // 通关类成就图标用各图 Boss 纹理：先确保地图资产就绪（幂等）
+    for (const m of MAPS) ensureMapAssets(this, m.id);
     const content = this.buildHeader(t('scn_achievements'));
 
     const got = ACHIEVEMENTS.filter((a) => Meta.hasAch(a.id)).length;
@@ -34,10 +38,14 @@ export class AchievementsScene extends UIScene {
     panel.setContent((add) => {
       ACHIEVEMENTS.forEach((spec, i) => {
         const unlocked = Meta.hasAch(spec.id);
-        // 附带角色解锁奖励的成就：描述里点明（角色名在达成前不剧透，显示 ???）
-        const reward = spec.unlockChar
-          ? ' · ' + t('ach_reward').replace('{c}', unlocked ? t('char_' + spec.unlockChar) : '???')
-          : '';
+        // 附带解锁奖励的成就：描述里点明（角色名达成前不剧透显示 ???；地图名不剧透内容，直接显示）
+        let reward = '';
+        if (spec.unlockChar) {
+          reward += ' · ' + t('ach_reward').replace('{c}', unlocked ? t('char_' + spec.unlockChar) : '???');
+        }
+        if (spec.unlockMap) {
+          reward += ' · ' + t('ach_rewardMap').replace('{m}', t('map_' + spec.unlockMap));
+        }
         const card = new Card(this, rowW / 2, i * (rowH + gap) + rowH / 2, {
           w: rowW, h: rowH,
           layout: 'row',

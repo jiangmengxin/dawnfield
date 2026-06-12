@@ -1,7 +1,9 @@
 // 主场景：编排器 — 创建世界、注册系统按序更新、实现 CombatContext、胜负判定
 import Phaser from 'phaser';
 import { CRIT, DROPS, PLAYER } from '../content/player';
+import { getMap, MapSpec } from '../content/maps';
 import { DEATH_COLOR, PAL } from '../gfx/palette';
+import { ensureMapAssets } from '../gfx/textures';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
 import { InputManager } from '../core/input/InputManager';
@@ -16,6 +18,7 @@ import { Effects } from '../systems/effects';
 import { Enemy, EnemySystem } from '../systems/EnemySystem';
 import { SpatialGrid } from '../systems/grid';
 import { LevelUpSystem } from '../systems/LevelUpSystem';
+import { MapMechanicSystem } from '../systems/MapMechanicSystem';
 import { PickupSystem } from '../systems/PickupSystem';
 import { PlayerSystem } from '../systems/PlayerSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
@@ -40,6 +43,7 @@ export class GameScene extends Phaser.Scene {
   modifiers: RunModifier[] = [];
   charId = 'spark';
   mapId = 'meadow';
+  map: MapSpec = getMap('meadow');
 
   private ctx!: CombatContext;
   private systems: RunSystem[] = [];
@@ -57,6 +61,8 @@ export class GameScene extends Phaser.Scene {
   init(data?: { charId?: string; mapId?: string }): void {
     this.charId = data?.charId ?? 'spark';
     this.mapId = data?.mapId ?? 'meadow';
+    this.map = getMap(this.mapId);
+    this.mapId = this.map.id; // 未知 id 兜底草甸后回写
   }
 
   get speed(): 1 | 2 {
@@ -77,7 +83,8 @@ export class GameScene extends Phaser.Scene {
     this.grid = new SpatialGrid<Enemy>(72);
     this.lastKillSfx = 0;
 
-    this.cameras.main.setBackgroundColor(PAL.paperCss);
+    ensureMapAssets(this, this.map.id); // 本图敌人/装饰/弹体纹理懒生成（幂等）
+    this.cameras.main.setBackgroundColor(this.map.paperCss);
     this.player = this.add.image(0, 0, this.run.char.tex).setDepth(1000);
 
     this.ctx = this.buildContext();
@@ -94,11 +101,12 @@ export class GameScene extends Phaser.Scene {
     this.pickupsRef = pickups;
     this.projectilesRef = projectiles;
 
-    // 按帧序注册（与拆分前 update 顺序一致）
+    // 按帧序注册（与拆分前 update 顺序一致；地图机制紧随波次导演）
     this.systems = [
       this.playerSys,
       { update: () => this.grid.rebuild(this.enemies.actives) },
       new WaveDirector(this.ctx, this.enemies),
+      ...(this.map.mechanic ? [new MapMechanicSystem(this.ctx, this.map.mechanic)] : []),
       this.enemies,
       this.weapons,
       pickups,
@@ -129,7 +137,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch('hud');
     this.run.running = true;
     this.setSpeed(getSettings().speed);
-    SFX.startBgm();
+    SFX.startBgm(this.map.bgm); // 每图 BGM 主题（调式/速度/音色/打击乐）
 
     this.events.on('shutdown', () => {
       this.scale.off('resize', this.updateZoom, this);
@@ -148,6 +156,7 @@ export class GameScene extends Phaser.Scene {
       get player() { return g.player; },
       get facing() { return g.facing; },
       get run() { return g.run; },
+      get map() { return g.map; },
       get stats() { return g.run.stats; },
       get grid() { return g.grid; },
       get enemies() { return g.enemies; },
@@ -160,6 +169,7 @@ export class GameScene extends Phaser.Scene {
       hitStop: (sec) => g.clock.hitStop(sec),
       addZone: (z) => g.zonesRef.add(z),
       slowAt: (x, y) => g.zonesRef.slowAt(x, y),
+      playerSlowAt: (x, y) => g.zonesRef.playerSlowAt(x, y),
       magnetizeGems: (x, y, r) => g.pickupsRef.magnetizeGems(x, y, r),
       spawnEnemyBullet: (spec) => g.projectilesRef.spawn(spec),
       spawnGem: (x, y, v) => g.pickupsRef.spawnGem(x, y, v),
@@ -194,7 +204,7 @@ export class GameScene extends Phaser.Scene {
     this.run.elapsed += dt;
     for (const s of this.systems) s.update(dt);
     for (const m of this.modifiers) m.onTick?.(dt, this.ctx);
-    SFX.setIntensity(this.run.elapsed / 600);
+    SFX.setIntensity((this.run.elapsed * this.map.timeK) / 600); // 长图情绪曲线同步放缓
   }
 
   // ---------- 战斗结算 ----------
@@ -272,7 +282,7 @@ export class GameScene extends Phaser.Scene {
     this.clock.reset();
     emitEvent(this.game, 'hud:boss', false);
     if (getSettings().shake) this.cameras.main.shake(400, 0.008);
-    this.fx.burst(bx, by, { tex: 'p_confetti', color: PAL.boss, count: 80, speed: 320, life: 1, scale: 1.6, spin: true, grav: 200 });
+    this.fx.burst(bx, by, { tex: 'p_confetti', color: DEATH_COLOR[this.map.bossId], count: 80, speed: 320, life: 1, scale: 1.6, spin: true, grav: 200 });
     this.fx.ring(bx, by, PAL.white, 12, 0.8);
     this.enemies.clearAllSoft();
     SFX.victoryJingle();

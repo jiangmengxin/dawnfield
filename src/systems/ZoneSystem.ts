@@ -16,6 +16,7 @@ interface Zone {
   effect: ZoneSpec['effect'];
   dps: number;
   tick: number;
+  affectsPlayer: boolean;
 }
 
 export class ZoneSystem implements RunSystem {
@@ -32,8 +33,9 @@ export class ZoneSystem implements RunSystem {
     const scene = this.ctx.scene;
     let img: Phaser.GameObjects.Image;
     if (spec.effect === 'slow') {
-      // 水洼：淡入的椭圆水面
-      img = scene.add.image(spec.x, spec.y, 'w_puddle').setDepth(6).setScale((spec.r * 2) / 96).setAlpha(0);
+      // 水洼/水皮：淡入的椭圆水面（地图机制可换贴图）
+      img = scene.add.image(spec.x, spec.y, spec.tex ?? 'w_puddle').setDepth(6).setAlpha(0);
+      img.setDisplaySize(spec.r * 2, spec.r * 2 * (img.height / img.width));
       scene.tweens.add({ targets: img, alpha: 1, duration: 200 });
     } else {
       // 星尘/治愈：柔光圆斑
@@ -42,13 +44,27 @@ export class ZoneSystem implements RunSystem {
         .setAlpha(0.3)
         .setScale((spec.r * 2) / 16);
     }
-    this.zones.push({ img, x: spec.x, y: spec.y, r: spec.r, t: spec.dur, effect: spec.effect, dps: spec.dps ?? 0, tick: 0 });
+    this.zones.push({
+      img, x: spec.x, y: spec.y, r: spec.r, t: spec.dur, effect: spec.effect,
+      dps: spec.dps ?? 0, tick: 0, affectsPlayer: spec.affectsPlayer === true,
+    });
   }
 
   /** 该点是否被减速（水洼为椭圆判定：y 轴压缩一半） */
   slowAt(x: number, y: number): boolean {
     for (const z of this.zones) {
       if (z.effect !== 'slow') continue;
+      const dx = x - z.x;
+      const dy = y - z.y;
+      if (dx * dx + dy * dy * 4 < z.r * z.r) return true;
+    }
+    return false;
+  }
+
+  /** 该点是否踩在「减速玩家」的水皮上（地图机制专用；武器水洼不算） */
+  playerSlowAt(x: number, y: number): boolean {
+    for (const z of this.zones) {
+      if (z.effect !== 'slow' || !z.affectsPlayer) continue;
       const dx = x - z.x;
       const dy = y - z.y;
       if (dx * dx + dy * dy * 4 < z.r * z.r) return true;

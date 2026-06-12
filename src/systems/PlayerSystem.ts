@@ -1,6 +1,6 @@
 // 玩家系统：移动（InputManager）+ 弹跳动画 + 无敌帧闪烁 + 头顶血条 + 接触伤害
 import { PLAYER } from '../content/player';
-import { PAL } from '../gfx/palette';
+import { PAL, POND } from '../gfx/palette';
 import type { InputManager } from '../core/input/InputManager';
 import type { CombatContext, RunSystem } from './context';
 import type { Enemy } from './EnemySystem';
@@ -16,6 +16,7 @@ export class PlayerSystem implements RunSystem {
   private bounce = 0;
   private touchT = 0;
   private trailT = 0;
+  private rippleT = 0; // 水皮减速时的涟漪反馈节流
   // 角色动效帧：姿态 A/B 交替（饰件摆动）+ 随机眨眼（_p1/_k 后缀纹理）
   private pose: 0 | 1 = 0;
   private poseT = 0;
@@ -37,11 +38,21 @@ export class PlayerSystem implements RunSystem {
     let vx = mv.x;
     let vy = mv.y;
     const len = Math.hypot(vx, vy);
+    // 地图机制水皮：玩家也减速（武器水洼不影响玩家）
+    const mech = ctx.map.mechanic;
+    const slowK = mech?.kind === 'puddles' && ctx.playerSlowAt(player.x, player.y) ? mech.playerSlow : 1;
     if (len > 0.01) {
       vx /= Math.max(1, len);
       vy /= Math.max(1, len);
-      player.x += vx * ctx.stats.moveSpeed * dt;
-      player.y += vy * ctx.stats.moveSpeed * dt;
+      player.x += vx * ctx.stats.moveSpeed * slowK * dt;
+      player.y += vy * ctx.stats.moveSpeed * slowK * dt;
+      if (slowK < 1) {
+        this.rippleT -= dt;
+        if (this.rippleT <= 0) {
+          this.rippleT = 0.3;
+          ctx.fx.ring(player.x, player.y + ctx.run.char.radius * 0.7, POND.pool, 1.4, 0.45);
+        }
+      }
       ctx.facing.x = vx;
       ctx.facing.y = vy;
       if (Math.abs(vx) > 0.1) player.setFlipX(vx < 0);

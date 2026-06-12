@@ -51,8 +51,10 @@ src/
     registry.ts                # ✅ defineTable<Id,Spec> 通用注册表
   content/                     # ✅ 纯数据层，无 Phaser 依赖（含武器平衡表）
     ids.ts weapons.ts passives.ts enemies.ts player.ts
-    shop.ts achievements.ts    # ✅ M3：11 项永久强化 + 12 成就
-    characters.ts maps.ts bosses.ts arcana.ts  # M4+ 按批次补
+    shop.ts achievements.ts    # ✅ M3：11 项永久强化；成就 M5 起 14 个（含地图解锁链）
+    characters.ts              # ✅ M4：8 角色 Spec
+    maps.ts bosses.ts          # ✅ M5：MapSpec 全链路 ×3 + BossSpec 配装表
+    arcana.ts                  # M9
   scenes/                      # ✅ 全部 11 个场景已建
     Boot Title Game HUD Result
     CharacterSelect MapSelect Shop Codex Achievements Settings
@@ -62,18 +64,18 @@ src/
     weapons/ PlayerSystem PickupSystem ProjectileSystem ZoneSystem  # ✅
     LevelUpSystem DecorSystem  # ✅
     AchievementTracker         # ✅ M3 成就引擎
-    MapMechanicSystem          # M5
+    MapMechanicSystem          # ✅ M5：减速水皮 / 定时大风
     grid.ts effects.ts joystick.ts   # 保留
   ui/                          # ✅ M1 完成
     Viewport.ts                # 安全区/断点(compact|medium|wide)/缩放/防抖重建
     UIScene.ts layout.ts theme.ts
     widgets/                   # Button/Card/CardGrid/ScrollPanel/Modal/Tabs/Toggle/Slider
   gfx/
-    palette.ts                 # 扩展每图主题色组（M5）
-    textures/                  # 按域拆分 + 参数化生成器（M4）
-  audio/sound.ts               # 扩展每图 BGM 种子（M5）
-  i18n/                        # M4 起按域拆 dict/
-scripts/check-i18n.mjs         # content ids ↔ 字典 diff，缺键即 build 失败（M5）
+    palette.ts                 # ✅ M5：每图主题色组（POND/HILLS）+ DEATH_COLOR 全敌覆盖
+    textures/                  # ✅ M4 按域拆分；M5 增 mapassets.ts（makeEnemy 换皮管线 + ensureMapAssets 懒生成）
+  audio/sound.ts               # ✅ M5：BgmSpec 每图主题（调式/速度/音色/打击乐/回声）
+  i18n/                        # M6+ 视体量按域拆 dict/
+scripts/check-i18n.mjs         # ✅ M5：content ids ↔ 字典 diff，缺键即 build 失败（已挂 build 链）
 ```
 
 ### 核心接口（M2 落地）
@@ -140,9 +142,9 @@ interface CombatContext {
 - gfx/textures 拆为 6 域模块（core/characters/enemies/weapons/icons/misc）+ `makeCharacter(scene, key, recipe)` 参数化配方（异形剪影 round/drop/gem/stone/egg ×体色径向渐变×大高光眼 4 眼型×4 嘴型×17 种饰件），每角色一行配方、自动生成 4 帧动效纹理（姿态A/B 饰件摆动 × 睁眼/眨眼，PlayerSystem 驱动：移动 0.22s 摆动、随机眨眼、困倦角色眨眼帧睁眼偷看）；角色与敌人刻意拉开表现力：敌人保持扁平粉彩圆团静态单帧，角色独占渐变/异形剪影/常驻腮红/动效帧/专属移动拖尾粒子（CharacterSpec.trail，PlayerSystem 发射）；CharacterSpec 全链路生效（content/characters.ts：初始武器一一配对 + 基础 HP/移速/体积绝对值 + 乘/加属性偏移，RunState 按角色重算，PlayerSystem 体积接入接触判定/影子/血条高度）；8 角色（小萤均衡/蔷蔷小快暴击/露露厚血回复/风风极速弹快/琉璃玻璃炮/闪闪急速磁吸/墩墩重装护甲/蒲蒲金币经验幸运，HP 70-170、移速 142-215、半径 12-18 差异显著）；新武器「蒲公英」（扇形齐射飘摇种子穿透 2，进化「漫天飞絮」全周环射+缓追）；被动 6→8（瓢虫结暴击+4%/级、蜜糖罐回复 0.5/s/级）；成就解锁接入（AchievementSpec.unlockChar，7 角色挂既有成就，unlockAch 即时解锁 + Boot 旧档回填 syncAchUnlocks，成就页显示解锁奖励、未达成不剧透角色名）；图鉴角色页迁 content；CharacterSelect 实装（未解锁显示 ???+成就条件）；RunResult 携带 charId/mapId（结算谢幕用本局角色、再来一局同角色同图）；Card desc 开启 useAdvancedWrap（中文断行）
 - **验收记录**：`tsc --noEmit` 零错误 + `npm run build` 通过；选人页 8 真卡（纹理/描边色各异）+8 锁定占位、锁定卡显示「达成「晨光初照」解锁」式条件；写入全成就存档 → Boot 回填 8 角色全解锁；蒲蒲开局实测 HP95/速180/金币×1.35/经验×1.15/暴击+3%、初始武器蒲公英扇形齐射；满级+瓢虫结 → evolvable 判定 → 漫天飞絮 16 粒环射；墩墩 HP170/护甲2/速142/半径18 体积观感明显；升级卡池 200 次抽样覆盖 8 武器+8 被动；蜜糖罐 2 级实测 5s 回 5.0 HP；战败结算谢幕显示墩墩、再来一局保持 pebble/HP170；图鉴角色 16 格、首遇点亮带「新!」；成就页「· 解锁角色：露露」奖励行；1280×800 / 402×874 / 320×480(英文) 无遮挡溢出
 
-### ⬜ M5 — 地图框架 + 地图 2-3 + 轻机制 + 倍速细化
-- MapSpec 全链路（波次/时长/敌池/装饰/配色/BGM 种子）；行为模板扩到 ~12；换皮管线；MapMechanicSystem（图2 减速水皮、图3 定时风暴）；Boss 2-3；倍速穿隧细化（快弹 effDt>1/30 时半步判定）；地图解锁链；check-i18n 脚本
-- **验收**：3 图节奏明显差异；2x 下 blade 二段斩/rain 错峰/boomerang 折返专项查；手机峰值 FPS≥50
+### ✅ M5 — 地图框架 + 地图 2-3 + 轻机制 + 倍速细化（已完成并验收）
+- MapSpec 全链路（content/maps.ts：时长/纸底配色/装饰层/专属敌池波次事件/机制/BGM 主题/Boss/解锁成就，DecorSystem·WaveDirector·GameScene 全数据驱动）；行为模板 4→12（新增 drift 飘近/hop 跃扑/orbit 绕轨/swoop 俯冲/blink 闪现/pulse 脉冲滚动/turret 炮台/zigzag 锯齿，调参常量全在 content）；换皮管线 `makeEnemy(shape×palette×face)` 12 形体配方 + `ensureMapAssets` 进图/进 UI 页幂等懒生成（Codex/Achievements/MapSelect 均接入）；地图 2「露珠池塘」15 分钟（厚血慢节奏：蜗蜗坦克/水枪鱼炮台/软水母绕轨/蛙蹦蹦，水绿纸底+睡莲芦苇涟漪，76BPM A 小调五声+水滴打击乐）与地图 3「晚霞山岗」18 分钟（轻血海量快节奏：蓟滚滚冲刺/小乌鸫俯冲/风精灵闪现/松果球脉冲，暖桃纸底+麦秆落叶雏菊，116BPM G 混合利底亚+沙锤）；MapMechanicSystem（图2 减速水皮：周期生成、敌我同减速、玩家涟漪反馈；图3 定时大风：预警横幅→7s 全场推挤按 knockMul+顺风飘叶+阵风音效）；BossSpec 配装表参数化 BossController（弹幕环/瞄准扇射/召唤/冲撞四模块自由配装供 8 Boss 复用）+Boss 2「泡泡大王」（弹幕区域型，无冲撞）/Boss 3「风暴鸦」（高频扇射+凶猛冲刺）；长图成长缩放 timeK=12/分钟（hp/dmg/弹幕/BGM 强度曲线统一）；倍速穿隧细化（敌弹/疾风镖/蒲公英种子 effDt>1/30 半步推进判定）；地图解锁链（meadowClear→pond→pondClear→hills，unlockMap 经 Meta 落档+Boot 旧档回填）+成就 12→14；每图 Boss 条名称/配色、预警横幅、胜利副标题（map_<id>_warn/_win）；check-i18n 脚本（ids 联合类型↔字典机械 diff+字面量扫描，缺键即 build 失败，已挂 build 链）
+- **验收记录**：`npm run build` 通过（check-i18n 237 键/必需 220 全覆盖 + tsc 零错误）；地图选择页 3 真卡（图标/主题色/12·15·18 分钟标签各异）+5 锁定占位；写入 meadowClear+pondClear 旧档 → Boot 回填 pond/hills 解锁；池塘实测（水皮减速可见、泡泡/蝌蚪/蛙群/水母/大泡泡精英全运行、Boss 900s 准时 HP18312=hpScale(eff) 精确、泡泡弹幕、胜利副标题「池水又清澈如镜了」、pondClear 落档）；山岗实测（风暴预警→推挤实测 2s 位移 130px、风暴鸦 1080s 苏醒羽毛扇射、终局 185 敌在场 FPS143/桌面 56/竖屏、hillsClear 落档）；2x 专项（blade 二段斩双弧、rain 错峰落雨、boomerang 折返采样 2→0→2 周期归零无残留，半步判定在 2x 数学必然激活）；图鉴敌人页 26 项懒生成纹理全渲染、未遇 ???；402×874 竖屏选图/HUD/Boss 条无遮挡溢出；模拟环境峰值 FPS≥56（真机 4x throttle 基准归 M8）
 
 ### ⬜ M6 — 内容批次 B（角色/武器 9-12、地图 4-5）
 - 武器 9-12+超武（补 zone/orbit/melee/burst 空缺）；角色 9-12；被动→12；地图 4-5+Boss+机制（治愈泉/麦浪阵风）；行为模板→14；成就→28

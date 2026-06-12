@@ -43,6 +43,7 @@ export class AchievementTracker implements RunSystem {
         maxWeapon: this.weapons.list.some((w) => w.level >= WEAPON_MAX_LEVEL),
         eliteKills: run.eliteKills,
         win: false,
+        mapId: this.ctx.map.id,
       },
       // 累计类并入当前局进度，避免要再开一局才能解锁
       stats: {

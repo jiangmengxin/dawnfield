@@ -5,5 +5,7 @@ export * from './characters';
 export * from './weapons';
 export * from './passives';
 export * from './enemies';
+export * from './maps';
+export * from './bosses';
 export * from './shop';
 export * from './achievements';

@@ -1,4 +1,5 @@
-// 地面装饰系统：无限延展的草甸（确定性伪随机 chunk + 对象池回收）
+// 地面装饰系统：无限延展的地面（确定性伪随机 chunk + 对象池回收）
+// M5 起装饰层来自 MapSpec.decor：每图草甸/睡莲/麦浪各自的纹理与密度配置
 import Phaser from 'phaser';
 import type { CombatContext, RunSystem } from './context';
 
@@ -65,9 +66,12 @@ export class DecorSystem implements RunSystem {
       }
     };
     const density = this.ctx.isMobile ? 0.6 : 1;
-    place('d_grass' + Math.floor(rnd() * 3), Math.round((3 + rnd() * 3) * density));
-    if (rnd() < 0.75) place('d_flower' + Math.floor(rnd() * 3), Math.round((1 + rnd() * 2) * density));
-    if (rnd() < 0.5) place('d_pebble' + Math.floor(rnd() * 2), 1);
+    for (const layer of this.ctx.map.decor) {
+      if (rnd() >= layer.chance) continue;
+      const tex = layer.keys[Math.floor(rnd() * layer.keys.length)];
+      const n = layer.nMin + rnd() * (layer.nMax - layer.nMin);
+      place(tex, Math.max(1, Math.round(n * density)));
+    }
     this.chunks.set(key, imgs);
   }
 }
