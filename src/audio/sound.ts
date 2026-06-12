@@ -211,6 +211,13 @@ class SoundEngine {
     this.noise({ dur: 1.6, vol: 0.09, type: 'bandpass', filter: 500, slide: 1600, q: 0.7 });
     this.noise({ dur: 1.2, vol: 0.05, filter: 900, slide: 250, delay: 0.5 });
   }
+  /** 晨光大合奏（M14 toot trait）：上行号角三连 + 高音收束 */
+  fanfare(): void {
+    [392, 523, 659, 784].forEach((f, i) =>
+      this.tone({ freq: f, dur: 0.28, vol: 0.08, delay: i * 0.08, type: 'sawtooth', sendEcho: true }));
+    this.tone({ freq: 1047, dur: 0.35, vol: 0.05, delay: 0.34, type: 'triangle', sendEcho: true });
+  }
+
   /** 复活短和弦（M10）：victoryJingle 的明亮短变体 */
   revive(): void {
     [523, 659, 784, 1319].forEach((f, i) =>

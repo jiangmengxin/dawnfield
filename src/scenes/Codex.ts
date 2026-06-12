@@ -76,11 +76,17 @@ export class CodexScene extends UIScene {
     // M12 详情化：每类补一行简短信息（描述/数值/进化名），字数克制不展开成百科
     if (tab === 'weapons') {
       for (const m of WEAPON_META) {
+        // M14 进化配方：⇐ 满级 + 配对被动（mine 通配文案）
+        const recipe = m.evolvesWith
+          ? t('evoHintNeed').replace('{p}', t('p_' + m.evolvesWith))
+          : t('evoHintAny');
         items.push(this.entry(tab, m.id, {
           icon: m.icon, title: t('w_' + m.id), color: m.color, fontScale,
           desc: t('w_' + m.id + '_d'),
           tag: '★ ' + t('w_' + m.id + '_e'),
           tagColor: '#C8902A',
+          subDesc: '⇐ ' + recipe,
+          subColor: '#A89F8E',
         }));
       }
       pushLocked(TARGET.weapons - WEAPON_META.length);
@@ -107,10 +113,12 @@ export class CodexScene extends UIScene {
       }
     } else if (tab === 'chars') {
       for (const c of CHARACTERS) {
+        // M14 角色专属机制：图鉴展示机制全文（选人页只露机制名，详情在此）
         items.push(this.entry(tab, c.id, {
           icon: c.tex, iconScale: c.texScale * 0.85, title: t('char_' + c.id), color: c.color, fontScale,
-          desc: t('char_' + c.id + '_d'),
+          desc: c.trait ? t('trait_' + c.trait + '_d') : t('char_' + c.id + '_d'),
           tag: t('w_' + c.weapon),
+          subDesc: c.trait ? '✦ ' + t('trait_' + c.trait) : undefined,
         }));
       }
       pushLocked(TARGET.chars - CHARACTERS.length);

@@ -60,6 +60,9 @@ for (const id of unionMembers('PowerUpId')) {
 for (const id of unionMembers('ArcanaId')) {
   for (const suf of ['', '_d']) need(`arc_${id}${suf}`, `ArcanaId:${id}`);
 }
+for (const id of unionMembers('TraitId')) {
+  for (const suf of ['', '_d']) need(`trait_${id}${suf}`, `TraitId:${id}`);
+}
 
 // ---------- 扫描源码中的字面量键 ----------
 

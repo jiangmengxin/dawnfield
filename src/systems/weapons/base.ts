@@ -43,6 +43,11 @@ export abstract class Weapon {
     this.tick(dt);
   }
 
+  /** 立即施放（M14 toot 合奏）：清零冷却，下帧 update 自然走 fire（哨塔/地雷池上限照常生效） */
+  triggerNow(): void {
+    this.cdT = 0;
+  }
+
   protected abstract fire(): void;
   protected abstract cooldown(): number;
   /** 持续逻辑（投射物、环绕物） */

@@ -12,6 +12,7 @@ export interface GameEventMap {
   'hud:cycle': [cycle: number]; // M11 无尽：新一轮开始（金色 toast「第 {n} 轮！」）
   'hud:revive': [revivesLeft: number];
   'hud:achievement': [achId: string];
+  'hud:tip': [text: string]; // M14 引导 tips（已 t() 完成的成文，金色 toast 停留 3.5s）
   'hud:refresh': [];
   'hud:togglepause': [];
   'hud:autopause': [];

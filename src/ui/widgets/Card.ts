@@ -14,6 +14,9 @@ export interface CardOpts {
   desc?: string;
   tag?: string;
   tagColor?: string;
+  /** 卡底附加行（M14 角色 trait）：金色短句，钉在卡片底缘（仅 column 布局） */
+  subDesc?: string;
+  subColor?: string;
   color?: number;
   layout: 'row' | 'column';
   locked?: boolean;
@@ -101,6 +104,17 @@ export class Card extends Phaser.GameObjects.Container {
         }).setOrigin(0.5, 0));
         nextY += 22 * k;
       }
+      // 卡底附加行先占位（desc 缩字号的下边界据此让位）
+      let descBottom = opts.h / 2 - 8;
+      if (opts.subDesc && !locked) {
+        const sub = scene.add.text(0, opts.h / 2 - 9, opts.subDesc, {
+          fontFamily: FONT, fontSize: Math.round(12.5 * k) + 'px', fontStyle: 'bold',
+          color: opts.subColor ?? '#C8902A', align: 'center',
+          wordWrap: { width: opts.w - 20, useAdvancedWrap: true },
+        }).setOrigin(0.5, 1);
+        this.add(sub);
+        descBottom = opts.h / 2 - 9 - sub.height - 3;
+      }
       if (opts.desc) {
         const desc = scene.add.text(0, nextY, opts.desc, {
           fontFamily: FONT, fontSize: Math.round(13 * k) + 'px', color: PAL.inkSoft,
@@ -108,7 +122,7 @@ export class Card extends Phaser.GameObjects.Container {
         }).setOrigin(0.5, 0);
         // 长描述（如商店三行卡）超出卡底时逐级缩字号兜底，最小 10px
         let fs = Math.round(13 * k);
-        while (fs > 10 && nextY + desc.height > opts.h / 2 - 8) {
+        while (fs > 10 && nextY + desc.height > descBottom) {
           fs--;
           desc.setFontSize(fs);
         }

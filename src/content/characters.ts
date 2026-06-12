@@ -1,7 +1,7 @@
 // 角色表（纯数据层，禁止依赖 Phaser）
 // VS 式差异化：初始武器 + 基础体格（HP/移速/体积）+ 属性偏移；16 角色 ↔ 16 武器一一配对
 // 体积（radius）同时决定接触判定与纹理观感；数值调参只改此处
-import type { AchievementId, CharacterId, WeaponId } from './ids';
+import type { AchievementId, CharacterId, TraitId, WeaponId } from './ids';
 
 /** 属性偏移：乘子类默认 1，加法类默认 0 */
 export interface CharMods {
@@ -35,8 +35,31 @@ export interface CharacterSpec {
   radius: number;            // 体积：接触判定半径
   trail: CharTrail;
   mods?: CharMods;
+  /** 角色专属机制（M14）：后期角色独有，行为在 systems/traits.ts，数值在下方 TRAIT_FX */
+  trait?: TraitId;
   unlockAch: AchievementId | null; // null = 默认解锁
 }
+
+/** 角色 trait 数值表（M14）：调参只改此处，不碰 systems/traits.ts 行为代码 */
+export const TRAIT_FX = {
+  // wisp 轻盈残影：每 cd 秒蓄一次闪避，受击完全免疫并朝移动方向闪现
+  flickerCd: 12,
+  flickerDist: 90,
+  // berry 甜食小铺：每 per 枚金币在最近敌人处果酱爆炸 + 减速果酱
+  sweetPer: 8,
+  sweetSeekR: 600, // 找最近敌人的搜索半径（无敌人则保留计数待发）
+  sweetDmg: 30,    // × stats.dmg
+  sweetR: 90,      // 爆炸半径
+  sweetJamR: 60,   // 果酱减速区半径
+  sweetJamDur: 3,  // 果酱持续（秒）
+  // toot 晨光大合奏：每 every 秒全部武器立即同时施放一次
+  fanfareEvery: 40,
+  // ivy 收集家：升级候选张数
+  collectorOffers: 4,
+  // jingle 进化共鸣：每次进化随机未满级被动 +1 + 钟鸣新星
+  resonanceDmg: 40, // × stats.dmg
+  resonanceR: 220,
+};
 
 export const CHARACTERS: CharacterSpec[] = [
   // 小萤：均衡基准（与旧版玩家数值一致）
@@ -98,28 +121,28 @@ export const CHARACTERS: CharacterSpec[] = [
   { id: 'jingle', weapon: 'chime', tex: 'char_jingle', texScale: 1.5, color: 0x80b8a8,
     hp: 80, speed: 192, radius: 12,
     trail: { tex: 'p_dot', color: 0xd8f0e8, every: 0.09 },
-    mods: { area: 1.12, cd: 0.94 }, unlockAch: 'evolve3' },
+    mods: { area: 1.12, cd: 0.94 }, trait: 'resonance', unlockAch: 'evolve3' },
   // ---------- M7 批次 C ----------
   // 藤藤：爱收集的小藤灵 — 捡得远长得快
   { id: 'ivy', weapon: 'vine', tex: 'char_ivy', texScale: 1.4, color: 0x74a858,
     hp: 115, speed: 166, radius: 14,
     trail: { tex: 'p_dot', color: 0xb0d890, every: 0.13 },
-    mods: { magnet: 1.2, xpGain: 1.1 }, unlockAch: 'survive20' },
+    mods: { magnet: 1.2, xpGain: 1.1 }, trait: 'collector', unlockAch: 'survive20' },
   // 莓莓：甜甜的小莓果 — 运气和零钱都不少
   { id: 'berry', weapon: 'sling', tex: 'char_berry', texScale: 1.5, color: 0xc86878,
     hp: 100, speed: 176, radius: 13,
     trail: { tex: 'p_dot', color: 0xf8b8c0, every: 0.11 },
-    mods: { crit: 0.06, coinGain: 1.1 }, unlockAch: 'coins2000' },
+    mods: { crit: 0.06, coinGain: 1.1 }, trait: 'sweettooth', unlockAch: 'coins2000' },
   // 悠悠：轻飘飘的小幽光 — 施法飞快身子轻，全场最小
   { id: 'wisp', weapon: 'wisp', tex: 'char_wisp', texScale: 1.5, color: 0x76b896,
     hp: 75, speed: 196, radius: 11,
     trail: { tex: 'p_star', color: 0xc6ecd8, every: 0.08 },
-    mods: { cd: 0.88, dmg: 0.95 }, unlockAch: 'wins5' },
+    mods: { cd: 0.88, dmg: 0.95 }, trait: 'flicker', unlockAch: 'wins5' },
   // 嘟嘟：吹号的小乐手 — 嗓门大皮也厚
   { id: 'toot', weapon: 'bugle', tex: 'char_toot', texScale: 1.35, color: 0x7088c8,
     hp: 130, speed: 158, radius: 16,
     trail: { tex: 'p_dot', color: 0xb8c8f0, every: 0.14 },
-    mods: { area: 1.18, armor: 1 }, unlockAch: 'kills500' },
+    mods: { area: 1.18, armor: 1 }, trait: 'fanfare', unlockAch: 'kills500' },
 ];
 
 /** 按 id 取角色；未知 id 兜底为小萤（防坏档/旧链接） */

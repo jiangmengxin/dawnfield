@@ -57,6 +57,8 @@ export class RunState {
   arcana: ArcanaId[] = [];
   /** 晨露精华（M12 Limit Break）：满构筑后升级溢出选项的微量永续成长，本局有效不入存档 */
   essence = { dmg: 0, cd: 0, area: 0 };
+  /** wisp 闪避冷却剩余秒数（M14 flicker trait；0 = 就绪，trait modifier 维护，HUD 就绪点读取） */
+  flickerCdLeft = 0;
   // M13 成就埋点：首次受伤/首次进化时刻（秒；未发生 = Infinity）+ Boss 战受伤标记
   firstHurtAt = Infinity;
   firstEvolveAt = Infinity;

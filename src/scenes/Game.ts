@@ -26,6 +26,8 @@ import { MapMechanicSystem } from '../systems/MapMechanicSystem';
 import { PickupSystem } from '../systems/PickupSystem';
 import { PlayerSystem } from '../systems/PlayerSystem';
 import { ProjectileSystem } from '../systems/ProjectileSystem';
+import { TipSystem } from '../systems/TipSystem';
+import { createTraitModifier } from '../systems/traits';
 import { WaveDirector } from '../systems/WaveDirector';
 import { WeaponManager } from '../systems/weapons';
 import { ZoneSystem } from '../systems/ZoneSystem';
@@ -131,6 +133,11 @@ export class GameScene extends Phaser.Scene {
     this.pickupsRef = pickups;
     this.projectilesRef = projectiles;
 
+    // 角色专属 trait（M14）：在一切规则卡之前挂入（其余 11 角色无 trait，零开销缺省路径）
+    if (this.run.char.trait && !this.benchMode) {
+      this.modifiers.push(createTraitModifier(this.run.char.trait, this.ctx, this.weapons));
+    }
+
     this.waveDir = new WaveDirector(this.ctx, this.enemies);
 
     // 按帧序注册（与拆分前 update 顺序一致；地图机制紧随波次导演）
@@ -160,6 +167,7 @@ export class GameScene extends Phaser.Scene {
           this.fx,
           this.levelUp,
           new AchievementTracker(this.ctx, this.weapons),
+          new TipSystem(this.ctx, this.weapons), // M14 首局进化引导（tipsSeen 节流）
         ];
 
     // 图鉴首遇点亮：本局角色与地图（bench 不计）

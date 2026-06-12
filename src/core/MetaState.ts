@@ -142,6 +142,20 @@ class MetaStateImpl {
     return !ach || this.hasAch(ach.id);
   }
 
+  // ---------- 引导 tips（M14：每条全存档生命周期一次） ----------
+
+  hasTip(id: string): boolean {
+    return this.save.tipsSeen.includes(id);
+  }
+
+  /** 标记 tip 已展示；已标记过返回 false（调用方据此跳过展示） */
+  markTip(id: string): boolean {
+    if (this.hasTip(id)) return false;
+    this.save.tipsSeen.push(id);
+    persistSave();
+    return true;
+  }
+
   /** 启动时补同步：旧档已有成就 → 应用其角色/地图解锁（成就表后补解锁字段时也能追授） */
   syncAchUnlocks(): void {
     for (const a of ACHIEVEMENTS) {

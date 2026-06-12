@@ -382,6 +382,28 @@ const D: Dict = {
   char_toot: ['嘟嘟', 'Toot'],
   char_toot_d: ['吹号的小乐手，嗓门大皮也厚', 'A little hornblower: loud, proud, and sturdy'],
 
+  // 角色专属机制 trait（M14：5 个后期角色）
+  trait_flicker: ['轻盈残影', 'Flicker'],
+  trait_flicker_d: ['每 12 秒蓄一次闪避：受击完全免疫，并向移动方向闪现留下残影', 'Every 12s, store a dodge: fully negate a hit and blink toward your heading, leaving an afterimage'],
+  trait_sweettooth: ['甜食小铺', 'Sweet Tooth'],
+  trait_sweettooth_d: ['每拾取 8 枚金币，在最近敌人处引爆果酱，并留下减速果酱', 'Every 8 coins picked, jam bursts at the nearest foe and leaves slowing jam behind'],
+  trait_fanfare: ['晨光大合奏', 'Grand Fanfare'],
+  trait_fanfare_d: ['每 40 秒，全部武器立即同时施放一次', 'Every 40s, all weapons fire at once'],
+  trait_collector: ['收集家', 'Collector'],
+  trait_collector_d: ['升级三选一变为四选一', 'Level-up choices offer 4 picks instead of 3'],
+  trait_resonance: ['进化共鸣', 'Resonance'],
+  trait_resonance_d: ['每次武器进化：随机一个未满级被动 +1 级，并敲响钟鸣新星', 'On each evolution, a random passive gains +1 level with a chiming nova'],
+  traitAnnounce: ['角色机制：{n}', 'Trait: {n}'],
+
+  // 进化引导（M14）：选卡角标 / 图鉴配方 / 首局 tips
+  evoHintReady: ['开宝箱可进化！', 'Open a chest to evolve!'],
+  evoHintNeed: ['满级 + {p} 可进化', 'Evolves at max level + {p}'],
+  evoHintAny: ['满级 + 任意被动满级可进化', 'Evolves at max level + any maxed passive'],
+  evoHintPair: ['与「{w}」配对进化', 'Pairs with {w} to evolve'],
+  tip_eliteChest: ['精英会掉宝箱——宝箱能让满级武器进化！', 'Elites drop chests — chests can evolve max-level weapons!'],
+  tip_evoReady: ['「{w}」已就绪，击败精英开宝箱即可进化', '{w} is ready — defeat an elite and open its chest to evolve'],
+  tip_evoNeed: ['带上「{p}」即可让「{w}」进化', 'Pick up {p} to let {w} evolve'],
+
   // 地图（_d 描述点明时长/机制差异；_win 胜利副标题；_warn Boss 预警横幅）
   map_meadow: ['晨光草甸', 'Morning Meadow'],
   map_meadow_d: ['一切开始的地方：花海、微风与墨之王', 'Where it all begins: flowers, breeze, and the Ink Monarch'],

@@ -47,6 +47,9 @@ export type BehaviorId =
   | 'spiral' | 'ambush'
   | 'burrow' | 'phase';
 
+/** 角色专属机制 trait（M14：5 个后期角色，复用 M13 RunModifier 钩子体系） */
+export type TraitId = 'flicker' | 'sweettooth' | 'fanfare' | 'collector' | 'resonance';
+
 /** 规则卡 Arcana（M9：10 张基础卡；M13：6 张机制卡，成就解锁后入池） */
 export type ArcanaId =
   | 'petaltide' | 'tailwind' | 'thornlace' | 'goldbell' | 'starpop'

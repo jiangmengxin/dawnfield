@@ -39,6 +39,8 @@ export class CharacterSelectScene extends UIScene {
         title: t('char_' + c.id),
         desc: t('char_' + c.id + '_d'),
         tag: t('w_' + c.weapon),
+        // M14 角色专属机制：金色 trait 行（未解锁角色保持 ??? 不剧透）
+        subDesc: c.trait ? '✦ ' + t('trait_' + c.trait) : undefined,
         color: c.color,
         fontScale,
         onTap: () => this.goto('mapselect', { charId: c.id }),

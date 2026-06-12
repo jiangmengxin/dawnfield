@@ -7,8 +7,8 @@ import { SFX } from '../audio/sound';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { ARCANA_META } from '../content/arcana';
 import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
-import { PASSIVE_META } from '../content/passives';
-import { WEAPON_META } from '../content/weapons';
+import { PASSIVE_MAX_LEVEL, PASSIVE_META } from '../content/passives';
+import { WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
 import type { ArcanaId } from '../content/ids';
 import { makeButton, setButtonLabel, UIButton } from '../ui/widgets';
 import { Viewport } from '../ui/Viewport';
@@ -28,6 +28,8 @@ interface PickCardInfo {
   color: number;
   tag: string;
   tagColor: string;
+  /** 进化引导角标（M14）：ready=金色「开宝箱可进化！」/ 灰色配方小字 */
+  evoHint?: { text: string; ready: boolean };
 }
 
 export class HUDScene extends Phaser.Scene {
@@ -68,6 +70,10 @@ export class HUDScene extends Phaser.Scene {
     this.overlay = [];
     this.iconRow = [];
     this.bossVisible = false;
+    // toast 状态必须随场景重启复位：上一局 shutdown 会杀掉在播 toast 的 tween，
+    // busy 卡 true 则本局一切金色横幅（成就/轮次/tips/trait 宣告）永久哑火
+    this.toastQueue = [];
+    this.toastBusy = false;
 
     this.bars = this.add.graphics().setDepth(10);
     this.timerText = this.add.text(0, 0, '00:00', {
@@ -125,6 +131,7 @@ export class HUDScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-ONE', () => this.pickByIndex(0));
     this.input.keyboard!.on('keydown-TWO', () => this.pickByIndex(1));
     this.input.keyboard!.on('keydown-THREE', () => this.pickByIndex(2));
+    this.input.keyboard!.on('keydown-FOUR', () => this.pickByIndex(3)); // M14 ivy 四选一 / 精华四卡
     this.input.keyboard!.on('keydown-R', (ev: KeyboardEvent) => { if (!ev.repeat) this.doReroll(); });
     this.input.keyboard!.on('keydown-S', (ev: KeyboardEvent) => { if (!ev.repeat) this.doSkip(); });
 
@@ -138,6 +145,7 @@ export class HUDScene extends Phaser.Scene {
       onEvent(this.game, 'hud:cycle', (n) => this.queueToast(t('endlessCycleBanner').replace('{n}', String(n)))),
       onEvent(this.game, 'hud:revive', (n) => this.queueToast(t('reviveBanner').replace('{n}', String(n)))),
       onEvent(this.game, 'hud:achievement', (id) => this.queueAchToast(id)),
+      onEvent(this.game, 'hud:tip', (text) => this.queueToast(text, 3500)), // M14 引导停留更久
       onEvent(this.game, 'hud:refresh', () => this.buildIconRow()),
       onEvent(this.game, 'hud:togglepause', () => this.togglePause()),
       onEvent(this.game, 'hud:autopause', () => {
@@ -148,6 +156,12 @@ export class HUDScene extends Phaser.Scene {
     this.buildIconRow();
     this.layout();
     this.scale.on('resize', this.layout, this);
+
+    // M14 角色 trait 开局宣告（elapsed 守卫：从设置页返回重启 HUD 时不重复）
+    const trait = this.gs.run.char.trait;
+    if (trait && this.gs.run.elapsed < 0.5) {
+      this.queueToast('✦ ' + t('traitAnnounce').replace('{n}', t('trait_' + trait)), 2600);
+    }
 
     // 从设置页返回（HUD 被 router 重启）：game 仍暂停，自动重开暂停面板
     if (this.game.scene.isPaused('game')) this.showPauseMenu();
@@ -234,6 +248,16 @@ export class HUDScene extends Phaser.Scene {
       g.strokeRoundedRect(hpX - 2.5, hpY - 2.5, hpW + 5, 21, 10);
     }
     this.hpText.setPosition(hpX + 6, hpY + 8).setText(Math.ceil(run.hp) + ' / ' + run.stats.maxHp);
+    // M14 wisp 闪避就绪点：HP 条右侧小圆点（就绪 = 角色主题色实心；冷却 = 灰点变淡）
+    if (run.char.trait === 'flicker') {
+      const ready = run.flickerCdLeft <= 0;
+      g.fillStyle(ready ? 0x76b896 : 0xc8bca4, ready ? 1 : 0.45);
+      g.fillCircle(hpX + hpW + 12, hpY + 8, 5);
+      if (ready) {
+        g.lineStyle(1.5, 0xffffff, 0.9);
+        g.strokeCircle(hpX + hpW + 12, hpY + 8, 5);
+      }
+    }
 
     // 计时（Boss 战期间转金色，强化阶段感）
     const sec = Math.floor(run.elapsed);
@@ -417,34 +441,36 @@ export class HUDScene extends Phaser.Scene {
 
   // ---------- 金色横幅 toast（成就达成 / 自动选卡获得规则卡），多个时排队 ----------
 
-  private toastQueue: string[] = [];
+  private toastQueue: Array<{ text: string; hold: number }> = [];
   private toastBusy = false;
 
   private queueAchToast(id: string): void {
     this.queueToast(t('achUnlocked') + ' ' + t('ach_' + id));
   }
 
-  private queueToast(text: string): void {
-    this.toastQueue.push(text);
+  /** hold = 淡出前停留毫秒（M14 引导 tips 3500，常规横幅 1700） */
+  private queueToast(text: string, hold = 1700): void {
+    this.toastQueue.push({ text, hold });
     this.pumpToast();
   }
 
   private pumpToast(): void {
     if (this.toastBusy) return;
-    const text = this.toastQueue.shift();
-    if (text === undefined) return;
+    const entry = this.toastQueue.shift();
+    if (entry === undefined) return;
     this.toastBusy = true;
     const safe = this.vp.safe;
-    const toast = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.22, text, {
+    const toast = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.22, entry.text, {
       fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#C8902A',
-      stroke: '#FFFFFF', strokeThickness: 6,
+      stroke: '#FFFFFF', strokeThickness: 6, align: 'center',
+      wordWrap: { width: safe.w - 50, useAdvancedWrap: true },
     }).setOrigin(0.5).setDepth(21).setAlpha(0).setScale(0.8);
     SFX.levelup();
     this.tweens.add({
       targets: toast, alpha: 1, scale: 1, duration: 260, ease: 'Back.easeOut',
       onComplete: () => {
         this.tweens.add({
-          targets: toast, alpha: 0, delay: 1700, duration: 350,
+          targets: toast, alpha: 0, delay: entry.hold, duration: 350,
           onComplete: () => {
             toast.destroy();
             this.toastBusy = false;
@@ -744,10 +770,15 @@ export class HUDScene extends Phaser.Scene {
         color: meta.color,
         tag: offer.isNew ? t('newTag') : 'Lv ' + offer.toLevel,
         tagColor,
+        evoHint: this.weaponEvoHint(offer),
       };
     }
     if (offer.kind === 'passive') {
       const meta = PASSIVE_META.find((m) => m.id === offer.id)!;
+      // M14 进化引导：该被动恰是某把已持有未进化武器的配方 → 配对提示
+      const pair = this.gs.weapons.list.find(
+        (w) => !w.evolved && WEAPON_META.find((m) => m.id === w.id)?.evolvesWith === offer.id,
+      );
       return {
         icon: meta.icon,
         name: t('p_' + offer.id),
@@ -755,12 +786,33 @@ export class HUDScene extends Phaser.Scene {
         color: meta.color,
         tag: offer.isNew ? t('newTag') : 'Lv ' + offer.toLevel,
         tagColor,
+        evoHint: pair ? { text: t('evoHintPair').replace('{w}', t('w_' + pair.id)), ready: false } : undefined,
       };
     }
     if (offer.kind === 'heal') {
       return { icon: 'icon_heal', name: t('c_heal'), desc: t('c_heal_d'), color: PAL.heart, tag: '', tagColor };
     }
     return { icon: 'icon_gold', name: t('c_gold'), desc: t('c_gold_d'), color: PAL.xp, tag: '', tagColor };
+  }
+
+  /** 武器卡进化角标（M14）：toLevel===5 且配对被动已持有 → 金色就绪；否则灰色配方小字 */
+  private weaponEvoHint(offer: Offer): PickCardInfo['evoHint'] {
+    const meta = WEAPON_META.find((m) => m.id === offer.id);
+    if (!meta) return undefined;
+    const passives = this.gs.run.passives;
+    if (meta.evolvesWith === null) {
+      // mine 通配：任意被动满级
+      let anyMax = false;
+      for (const lv of passives.values()) {
+        if (lv >= PASSIVE_MAX_LEVEL) anyMax = true;
+      }
+      return offer.toLevel === WEAPON_MAX_LEVEL && anyMax
+        ? { text: t('evoHintReady'), ready: true }
+        : { text: t('evoHintAny'), ready: false };
+    }
+    return offer.toLevel === WEAPON_MAX_LEVEL && passives.has(meta.evolvesWith)
+      ? { text: t('evoHintReady'), ready: true }
+      : { text: t('evoHintNeed').replace('{p}', t('p_' + meta.evolvesWith)), ready: false };
   }
 
   /** onBanish（M10）：undefined = 无放逐角标；null = 置灰角标（次数耗尽）；函数 = 可点 */
@@ -798,6 +850,14 @@ export class HUDScene extends Phaser.Scene {
         wordWrap: { width: cw - 96 },
       });
       parts.push(icon, name, tag, desc);
+      // M14 进化角标：desc 下方 12px 一行（极矮条卡 <96 省略，与 showDesc 同门槛思路）
+      if (info.evoHint && ch >= 96) {
+        parts.push(this.add.text(-cw / 2 + 72, ch / 2 - 7, info.evoHint.text, {
+          fontFamily: FONT, fontSize: '12px', fontStyle: info.evoHint.ready ? 'bold' : 'normal',
+          color: info.evoHint.ready ? '#C8902A' : '#A89F8E',
+          wordWrap: { width: cw - 96 },
+        }).setOrigin(0, 1));
+      }
     } else {
       const icon = this.add.image(0, -ch / 2 + 56, info.icon).setScale(1.6);
       const name = this.add.text(0, -ch / 2 + 104, info.name, {
@@ -816,6 +876,14 @@ export class HUDScene extends Phaser.Scene {
         fontFamily: FONT, fontSize: '13px', color: '#C8BCA4',
       });
       parts.push(icon, name, tag, desc, num);
+      // M14 进化角标：卡底居中一行
+      if (info.evoHint) {
+        parts.push(this.add.text(0, ch / 2 - 10, info.evoHint.text, {
+          fontFamily: FONT, fontSize: '12px', fontStyle: info.evoHint.ready ? 'bold' : 'normal',
+          color: info.evoHint.ready ? '#C8902A' : '#A89F8E', align: 'center',
+          wordWrap: { width: cw - 22, useAdvancedWrap: true },
+        }).setOrigin(0.5, 1));
+      }
     }
     // M10 放逐 ✕ 角标（28px 圆）：横屏卡右上角 / 竖屏条卡右缘垂直居中（避开 tag 文字区）
     if (onBanish !== undefined) {
