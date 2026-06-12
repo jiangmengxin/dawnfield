@@ -351,16 +351,40 @@ export class HUDScene extends Phaser.Scene {
     const y = safe.y + (compact ? 56 : 44);
     this.iconRow.push(...this.drawSlotRow(x0, y, size, this.weaponSlots(), 11, gap));
     this.iconRow.push(...this.drawSlotRow(x0, y + size + gap, size, this.passiveSlots(), 11, gap));
-    // 规则卡令牌（M9）：持有时第三行小令牌（金圈，无等级数字，至多 3 张不占空槽）
+    // 规则卡令牌（M9）：第三行金底鎏边令牌（与武器/被动槽位明显区分，无等级数字、不占空槽）
     const arcana = this.gs.run.arcana;
     if (arcana.length > 0) {
-      const slots = arcana.map((id) => {
-        const meta = ARCANA_META.find((m) => m.id === id)!;
-        return { icon: meta.icon, label: '', gold: true };
-      });
       const aSize = compact ? 22 : 26;
-      this.iconRow.push(...this.drawSlotRow(x0, y + (size + gap) * 2, aSize, slots, 11, gap));
+      this.iconRow.push(...this.drawArcanaRow(x0, y + (size + gap) * 2 + 3, aSize, arcana, 11, gap));
     }
+  }
+
+  /** 规则卡令牌行：暖金底盘 + 鎏金描边 + 图标（供 HUD 常显与暂停面板共用） */
+  private drawArcanaRow(
+    x0: number,
+    y: number,
+    size: number,
+    arcana: readonly ArcanaId[],
+    depth = 11,
+    gap = 7,
+  ): Phaser.GameObjects.GameObject[] {
+    const out: Phaser.GameObjects.GameObject[] = [];
+    const r = size / 2;
+    const g = this.add.graphics().setDepth(depth);
+    out.push(g);
+    arcana.forEach((id, i) => {
+      const meta = ARCANA_META.find((m) => m.id === id)!;
+      const cx = x0 + i * (size + gap) + r;
+      const cy = y + r;
+      g.fillStyle(0xffe9a8, 1);
+      g.fillCircle(cx, cy, r + 2.5);
+      g.lineStyle(2.5, 0xe2b452, 1);
+      g.strokeCircle(cx, cy, r + 2.5);
+      const icon = this.add.image(cx, cy, meta.icon).setDepth(depth);
+      icon.setDisplaySize(size, size);
+      out.push(icon);
+    });
+    return out;
   }
 
   // ---------- 警告横幅 ----------
@@ -462,7 +486,8 @@ export class HUDScene extends Phaser.Scene {
     });
   }
 
-  /** 规则卡三选一（M9：开局选 1） */
+  /** 规则卡三选一（M9：开局选 1）——「晨曦祝福」主题，与升级三选一明显区分：
+   *  暖金幕布 + 顶部晨光 + 飘浮星光 + 金色标题星饰 + 鎏金双线塔罗卡（绽放式入场） */
   private showArcanaPick(choices: ArcanaId[]): void {
     // 调试：自动选第一张卡，跳过选卡界面
     if (getSettings().autoPick && choices.length > 0) {
@@ -472,17 +497,122 @@ export class HUDScene extends Phaser.Scene {
     }
     this.overlayMode = 'arcana';
     this.pendingArcana = choices;
-    this.overlay.push(this.addVeil());
-    this.addPickTitle(t('arcanaTitle'));
+    const w = this.vp.w;
+    const h = this.vp.h;
+
+    // 暖金幕布 + 顶部晨光（区别于升级界面的素白柔光遮罩）
+    const veil = this.add.rectangle(0, 0, w, h, 0xf6e8c6, 0.82)
+      .setOrigin(0).setDepth(100).setInteractive();
+    const dawn = this.add.image(w / 2, 0, 'p_dot').setDepth(100).setTint(0xffe9a8).setAlpha(0.6);
+    dawn.setDisplaySize(w * 1.6, h * 0.9);
+    this.overlay.push(veil, dawn);
+
+    // 飘浮星光：缓慢升降闪烁的金色小星
+    for (let i = 0; i < 10; i++) {
+      const star = this.add.image(Math.random() * w, h * (0.1 + Math.random() * 0.85), 'p_star')
+        .setDepth(100).setTint(0xe2b452).setAlpha(0.2 + Math.random() * 0.4)
+        .setScale(0.7 + Math.random() * 1.0).setAngle(Math.random() * 90);
+      this.overlay.push(star);
+      this.tweens.add({
+        targets: star,
+        y: star.y - 26 - Math.random() * 40,
+        alpha: 0.08,
+        angle: star.angle + 40,
+        duration: 2400 + Math.random() * 2200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
+    // 金色标题 + 两侧星饰（整体绽放入场）
+    const titleTxt = this.add.text(0, 0, t('arcanaTitle'), {
+      fontFamily: FONT, fontSize: Math.min(28, w * 0.058) + 'px', fontStyle: 'bold', color: '#A87818',
+      stroke: '#FFFFFF', strokeThickness: 7,
+    }).setOrigin(0.5);
+    const sOff = titleTxt.width / 2 + 24;
+    const starL = this.add.image(-sOff, 0, 'p_star').setTint(0xe2b452).setScale(1.5);
+    const starR = this.add.image(sOff, 0, 'p_star').setTint(0xe2b452).setScale(1.5);
+    const titleC = this.add.container(w / 2, h * 0.13, [starL, starR, titleTxt]).setDepth(101).setScale(0.5);
+    this.tweens.add({ targets: titleC, scale: 1, duration: 300, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: [starL, starR], angle: 360, duration: 9000, repeat: -1 });
+    this.overlay.push(titleC);
+
     choices.forEach((id, i) => {
-      const meta = ARCANA_META.find((m) => m.id === id)!;
-      // 不带角标：标题已点明是规则卡，且窄屏下长名称会与角标相挤
-      const info = {
-        icon: meta.icon, name: t('arc_' + id), desc: t('arc_' + id + '_d'),
-        color: meta.color, tag: '', tagColor: '#C8902A',
-      };
-      this.makePickCard(info, i, this.pickCardGeom(i, choices.length), () => this.chooseArcana(id));
+      this.makeArcanaCard(id, i, this.pickCardGeom(i, choices.length), () => this.chooseArcana(id));
     });
+  }
+
+  /** 鎏金塔罗卡：暖纸底 + 双线金框 + 四角金点 + 光盘托底图标 + 金棕名称，绽放式入场 */
+  private makeArcanaCard(
+    id: ArcanaId,
+    idx: number,
+    geom: { cx: number; cy: number; cw: number; ch: number; portrait: boolean },
+    onPick: () => void,
+  ): void {
+    const meta = ARCANA_META.find((m) => m.id === id)!;
+    const name = t('arc_' + id);
+    const desc = t('arc_' + id + '_d');
+    const { cx, cy, cw, ch, portrait } = geom;
+    const g = this.add.graphics();
+    const draw = (over: boolean) => {
+      g.clear();
+      // 暖色投影
+      g.fillStyle(0xb89868, 0.3);
+      g.fillRoundedRect(-cw / 2 + 3, -ch / 2 + 6, cw, ch, 14);
+      // 暖纸底 + 鎏金双线框
+      g.fillStyle(over ? 0xfffdf2 : 0xfdf4dd, 1);
+      g.fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 14);
+      g.lineStyle(3, 0xe2b452, 1);
+      g.strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 14);
+      g.lineStyle(1.5, 0xd4a84c, over ? 0.9 : 0.55);
+      g.strokeRoundedRect(-cw / 2 + 5, -ch / 2 + 5, cw - 10, ch - 10, 10);
+      // 四角金点
+      g.fillStyle(0xe2b452, over ? 1 : 0.85);
+      for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
+        g.fillCircle(sx * (cw / 2 - 11), sy * (ch / 2 - 11), 2.4);
+      }
+    };
+    draw(false);
+    const parts: Phaser.GameObjects.GameObject[] = [g];
+    if (portrait) {
+      const plate = this.add.image(-cw / 2 + 40, 0, 'p_dot').setTint(0xffe9a8).setAlpha(0.95);
+      plate.setDisplaySize(56, 56);
+      const icon = this.add.image(-cw / 2 + 40, 0, meta.icon).setScale(1.45);
+      const nameTxt = this.add.text(-cw / 2 + 76, -ch / 2 + 16, name, {
+        fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: '#8A6420',
+      });
+      const descTxt = this.add.text(-cw / 2 + 76, -ch / 2 + 44, desc, {
+        fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft,
+        wordWrap: { width: cw - 96 },
+      });
+      parts.push(plate, icon, nameTxt, descTxt);
+    } else {
+      const plate = this.add.image(0, -ch / 2 + 62, 'p_dot').setTint(0xffe9a8).setAlpha(0.95);
+      plate.setDisplaySize(68, 68);
+      const icon = this.add.image(0, -ch / 2 + 62, meta.icon).setScale(1.85);
+      const nameTxt = this.add.text(0, -ch / 2 + 110, name, {
+        fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: '#8A6420', align: 'center',
+        wordWrap: { width: cw - 20 },
+      }).setOrigin(0.5, 0);
+      const descTxt = this.add.text(0, -ch / 2 + 152, desc, {
+        fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft, align: 'center',
+        wordWrap: { width: cw - 26 },
+      }).setOrigin(0.5, 0);
+      const num = this.add.text(-cw / 2 + 12, -ch / 2 + 8, String(idx + 1), {
+        fontFamily: FONT, fontSize: '13px', color: '#D4BC8C',
+      });
+      parts.push(plate, icon, nameTxt, descTxt, num);
+    }
+    const c = this.add.container(cx, cy, parts).setDepth(101).setAlpha(0).setScale(0.6);
+    c.setSize(cw, ch);
+    c.setInteractive({ useHandCursor: true });
+    c.on('pointerover', () => draw(true));
+    c.on('pointerout', () => draw(false));
+    c.on('pointerup', onPick);
+    // 绽放式入场（区别于升级卡的上滑淡入）
+    this.tweens.add({ targets: c, alpha: 1, scale: 1, duration: 320, delay: 110 * idx, ease: 'Back.easeOut' });
+    this.overlay.push(c);
   }
 
   private chooseArcana(id: ArcanaId): void {
@@ -712,18 +842,26 @@ export class HUDScene extends Phaser.Scene {
       stroke: '#FFFFFF', strokeThickness: 7,
     }).setOrigin(0.5).setDepth(101);
 
-    // 构筑摘要：6+6 槽位（与 HUD 同一渲染，竖屏形态的详情入口）
+    // 构筑摘要：6+6 槽位 + 规则卡令牌行（与 HUD 同一渲染，竖屏形态的详情入口）
     const slotSize = 32;
     const rowW = MAX_WEAPONS * (slotSize + 7) - 7;
     const sx = w / 2 - rowW / 2;
     const rowY = h * 0.18 + 36;
     this.overlay.push(...this.drawSlotRow(sx, rowY, slotSize, this.weaponSlots(), 101));
     this.overlay.push(...this.drawSlotRow(sx, rowY + slotSize + 8, slotSize, this.passiveSlots(), 101));
-    // 四个按钮统一规格
+    let rowsBottom = rowY + (slotSize + 8) * 2;
+    const arcana = this.gs.run.arcana;
+    if (arcana.length > 0) {
+      const aSize = 26;
+      const aW = arcana.length * (aSize + 7) - 7;
+      this.overlay.push(...this.drawArcanaRow(w / 2 - aW / 2, rowsBottom + 2, aSize, arcana, 101));
+      rowsBottom += aSize + 10;
+    }
+    // 四个按钮统一规格；矮屏且持卡时按钮区下移并压缩间距，避免与令牌行相叠
     const bw = THEME.btnW;
     const bh = THEME.btnH;
-    const gap = 68;
-    const by = h * 0.42;
+    const by = Math.max(h * 0.42, rowsBottom + 16);
+    const gap = Math.min(68, Math.max(56, (h - by - bh / 2 - 16) / 3));
     const resume = makeButton(this, w / 2, by, bw, bh, t('resume'), () => this.togglePause(), { fontSize: THEME.btnFs });
     const sound = makeButton(this, w / 2, by + gap, bw, bh, SFX.muted ? t('soundOff') : t('soundOn'), () => {
       SFX.setMuted(!SFX.muted);
