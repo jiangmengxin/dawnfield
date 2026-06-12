@@ -495,6 +495,27 @@ export function createAllTextures(scene: Phaser.Scene): void {
     ctx.stroke();
   });
 
+  makeTex(scene, 'coin', 18, 18, (ctx) => {
+    ctx.beginPath();
+    ctx.arc(9, 9, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFD870';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#D8A840';
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(9, 9, 4.6, 0, Math.PI * 2);
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(216,168,64,0.7)';
+    ctx.stroke();
+    star(ctx, 9, 9, 4, 3.2, 1.3, '#FFF2C0');
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.ellipse(6.4, 5.8, 1.8, 1.1, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
   makeTex(scene, 'heart', 22, 20, (ctx) => {
     ctx.beginPath();
     ctx.moveTo(11, 18);
@@ -901,5 +922,111 @@ function createIcons(scene: Phaser.Scene): void {
     bg(ctx);
     star(ctx, 16, 17, 4, 8, 3.2, '#FFD870', '#D8A840');
     star(ctx, 27, 25, 4, 5, 2, '#FFE8A0', '#D8A840');
+  });
+
+  // ---------- 商店永久强化新增图标 ----------
+
+  // 经验成长：发光经验珠 + 小星
+  makeTex(scene, 'icon_growth', 40, 40, (ctx) => {
+    bg(ctx);
+    const g = ctx.createRadialGradient(19, 19, 1, 20, 20, 9);
+    g.addColorStop(0, '#FFFFFF');
+    g.addColorStop(0.6, '#A8E0F8');
+    g.addColorStop(1, '#78B8E0');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(20, 21, 8.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#5898D0';
+    ctx.stroke();
+    star(ctx, 28, 12, 4, 4.5, 1.8, '#FFF6D8', '#E2B452');
+  });
+
+  // 金币获取：双层金币堆
+  makeTex(scene, 'icon_greed', 40, 40, (ctx) => {
+    bg(ctx);
+    const coinAt = (cx: number, cy: number): void => {
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 9, 5.5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFD870';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#D8A840';
+      ctx.stroke();
+    };
+    coinAt(20, 25);
+    coinAt(20, 18);
+    star(ctx, 20, 17, 4, 3.4, 1.4, '#FFF2C0');
+  });
+
+  // 护甲：盾牌
+  makeTex(scene, 'icon_armor', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.beginPath();
+    ctx.moveTo(20, 9);
+    ctx.quadraticCurveTo(27, 12, 30, 12);
+    ctx.quadraticCurveTo(30, 25, 20, 31);
+    ctx.quadraticCurveTo(10, 25, 10, 12);
+    ctx.quadraticCurveTo(13, 12, 20, 9);
+    ctx.closePath();
+    ctx.fillStyle = '#B8C8E0';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#7088A8';
+    ctx.stroke();
+    star(ctx, 20, 19, 4, 5, 2, '#FFFFFF');
+  });
+
+  // 持续回复：心 + 新芽
+  makeTex(scene, 'icon_regen', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.save();
+    ctx.translate(11.5, 14);
+    ctx.scale(0.78, 0.78);
+    ctx.beginPath();
+    ctx.moveTo(11, 18);
+    ctx.bezierCurveTo(0, 10, 2, 1.5, 8, 2.5);
+    ctx.bezierCurveTo(10, 3, 11, 5, 11, 6);
+    ctx.bezierCurveTo(11, 5, 12, 3, 14, 2.5);
+    ctx.bezierCurveTo(20, 1.5, 22, 10, 11, 18);
+    ctx.fillStyle = cssOf(PAL.heart);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#D86870';
+    ctx.stroke();
+    ctx.restore();
+    // 心上冒出的小芽
+    ctx.strokeStyle = cssOf(PAL.grassDark);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(20, 14);
+    ctx.quadraticCurveTo(21, 9, 19.5, 7);
+    ctx.stroke();
+    petalShape(ctx, 16.5, 7.5, 7, 3, -0.9, cssOf(PAL.grass), cssOf(PAL.grassDark));
+    petalShape(ctx, 22.5, 6, 7, 3, 0.7, cssOf(PAL.grass), cssOf(PAL.grassDark));
+  });
+
+  // 幸运：四叶草
+  makeTex(scene, 'icon_luck', 40, 40, (ctx) => {
+    bg(ctx);
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      ctx.beginPath();
+      ctx.ellipse(19 + Math.cos(a) * 5.5, 18 + Math.sin(a) * 5.5, 5.2, 4.2, a, 0, Math.PI * 2);
+      ctx.fillStyle = cssOf(PAL.grass);
+      ctx.fill();
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = cssOf(PAL.grassDark);
+      ctx.stroke();
+    }
+    // 茎
+    ctx.strokeStyle = cssOf(PAL.grassDark);
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(21, 23);
+    ctx.quadraticCurveTo(25, 28, 24, 32);
+    ctx.stroke();
   });
 }

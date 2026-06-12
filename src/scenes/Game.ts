@@ -5,9 +5,11 @@ import { DEATH_COLOR, PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
 import { InputManager } from '../core/input/InputManager';
+import { Meta } from '../core/MetaState';
 import { RunState, Stats } from '../core/RunState';
 import { getSettings } from '../core/settings';
 import { TimeController } from '../core/TimeController';
+import { AchievementTracker } from '../systems/AchievementTracker';
 import type { CombatContext, HitOpts, RunModifier, RunResult, RunSystem } from '../systems/context';
 import { DecorSystem } from '../systems/DecorSystem';
 import { Effects } from '../systems/effects';
@@ -36,6 +38,8 @@ export class GameScene extends Phaser.Scene {
   enemyCapMul = 1;
   /** 规则卡钩子（M9 实装，当前恒为空） */
   modifiers: RunModifier[] = [];
+  charId = 'spark';
+  mapId = 'meadow';
 
   private ctx!: CombatContext;
   private systems: RunSystem[] = [];
@@ -48,6 +52,11 @@ export class GameScene extends Phaser.Scene {
 
   constructor() {
     super('game');
+  }
+
+  init(data?: { charId?: string; mapId?: string }): void {
+    this.charId = data?.charId ?? 'spark';
+    this.mapId = data?.mapId ?? 'meadow';
   }
 
   get speed(): 1 | 2 {
@@ -99,7 +108,12 @@ export class GameScene extends Phaser.Scene {
       new DecorSystem(this.ctx),
       this.fx,
       this.levelUp,
+      new AchievementTracker(this.ctx, this.weapons),
     ];
+
+    // 图鉴首遇点亮：本局角色与地图
+    Meta.codexLight('chars', this.charId);
+    Meta.codexLight('maps', this.mapId);
 
     this.recomputeStats();
     this.weapons.addOrUpgrade('blade'); // 初始武器
@@ -188,7 +202,7 @@ export class GameScene extends Phaser.Scene {
   hitEnemy(e: Enemy, dmg: number, opts: HitOpts = {}): void {
     if (!e.active || e.dying) return;
     let final = dmg * (0.9 + Math.random() * 0.2);
-    const crit = Math.random() < CRIT.chance;
+    const crit = Math.random() < CRIT.chance + this.run.stats.crit;
     if (crit) final *= CRIT.mul;
     for (const m of this.modifiers) {
       if (m.modifyDamage) final = m.modifyDamage(final, e);
@@ -218,9 +232,13 @@ export class GameScene extends Phaser.Scene {
     }
     for (const m of this.modifiers) m.onEnemyKilled?.(e, this.ctx);
     if (e.isElite) {
+      this.run.eliteKills++;
       this.clock.hitStop(0.09);
       if (getSettings().shake) this.cameras.main.shake(180, 0.005);
       this.pickupsRef.spawnPickup('chest', e.x, e.y);
+      for (let i = 0; i < DROPS.eliteCoinN; i++) {
+        this.pickupsRef.spawnCoin(e.x + (Math.random() - 0.5) * 50, e.y + (Math.random() - 0.5) * 50, DROPS.eliteCoinV);
+      }
     }
     if (e.isBoss) {
       this.victory(e.x, e.y);
@@ -228,13 +246,16 @@ export class GameScene extends Phaser.Scene {
     }
     if (e.xpVal > 0) this.pickupsRef.spawnGem(e.x, e.y, e.xpVal);
     if (Math.random() < DROPS.heartChance) this.pickupsRef.spawnPickup('heart', e.x + 10, e.y);
+    if (Math.random() < DROPS.coinChance) {
+      this.pickupsRef.spawnCoin(e.x - 10, e.y, Math.random() < DROPS.coinBigChance ? DROPS.coinBig : 1);
+    }
   }
 
   damagePlayer(d: number): void {
     if (this.run.iframeT > 0 || !this.run.running) return;
     if (getSettings().invincible) return; // 调试：无敌
     this.run.iframeT = PLAYER.iframe;
-    this.run.hp -= d;
+    this.run.hp -= Math.max(1, d - this.run.stats.armor); // 永久强化：护甲平减，至少 1 点
     SFX.hurt();
     this.fx.flash(this.player, 0xf08080);
     if (getSettings().shake) this.cameras.main.shake(120, 0.004);
@@ -272,9 +293,27 @@ export class GameScene extends Phaser.Scene {
       time: this.run.elapsed,
       kills: this.run.kills,
       level: this.run.level,
+      coins: Math.round(this.run.coins),
       build: this.weapons.list.map((w) => ({ id: w.id, level: w.level, evolved: w.evolved })),
     };
     this.scene.stop('hud');
     this.scene.start('result', result);
+  }
+
+  // ---------- 调试 ----------
+
+  /** 调试信息：实体计数（HUD 调试行显示） */
+  get debugCounts(): { gems: number; coins: number; bullets: number; zones: number } {
+    return {
+      gems: this.pickupsRef.gemCount,
+      coins: this.pickupsRef.coinCount,
+      bullets: this.projectilesRef.activeCount,
+      zones: this.zonesRef.count,
+    };
+  }
+
+  /** 调试：时间跳跃（波次/事件/成长曲线随 elapsed 前进） */
+  debugTimeSkip(sec: number): void {
+    this.run.elapsed += sec;
   }
 }

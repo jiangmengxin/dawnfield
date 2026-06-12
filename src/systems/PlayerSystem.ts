@@ -45,6 +45,9 @@ export class PlayerSystem implements RunSystem {
     player.setDepth(1000 + player.y * 0.01);
     this.shadow.setPosition(player.x, player.y + 15);
 
+    // 永久强化：持续回复
+    if (ctx.stats.regen > 0 && ctx.run.hp < ctx.stats.maxHp) ctx.run.heal(ctx.stats.regen * dt);
+
     if (ctx.run.iframeT > 0) {
       ctx.run.iframeT -= dt;
       player.setAlpha(Math.sin(ctx.run.elapsed * 40) > 0 ? 1 : 0.4);

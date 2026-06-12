@@ -6,3 +6,13 @@ export type EnemyId =
 
 /** 敌人移动行为模板（M5 起扩到 ~12 种） */
 export type BehaviorId = 'chase' | 'wobble' | 'strafeShoot' | 'dash';
+
+/** 商店永久强化（金币唯一用途，可全额重置） */
+export type PowerUpId =
+  | 'power' | 'vitality' | 'haste' | 'area' | 'speed' | 'magnet'
+  | 'growth' | 'greed' | 'armor' | 'regen' | 'luck';
+
+/** 成就（首批 12 个，M6/M7 扩到 28/40） */
+export type AchievementId =
+  | 'swarm100' | 'survive5' | 'level20' | 'eliteSlayer' | 'firstEvolve' | 'maxWeapon'
+  | 'fullArsenal' | 'fullCharms' | 'meadowClear' | 'kills1000' | 'coins500' | 'firstBuy';

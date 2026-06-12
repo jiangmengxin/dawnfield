@@ -18,6 +18,11 @@ export class ProjectileSystem implements RunSystem {
 
   constructor(private ctx: CombatContext) {}
 
+  /** 调试信息用实体计数 */
+  get activeCount(): number {
+    return this.bullets.reduce((n, b) => n + (b.active ? 1 : 0), 0);
+  }
+
   spawn(spec: EnemyBulletSpec): void {
     let b = this.bullets.find((i) => !i.active);
     if (!b) {

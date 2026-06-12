@@ -56,6 +56,7 @@ export interface RunResult {
   time: number;
   kills: number;
   level: number;
+  coins: number; // 局内获得金币（结算页入账 MetaState）
   build: Array<{ id: WeaponId; level: number; evolved: boolean }>;
 }
 

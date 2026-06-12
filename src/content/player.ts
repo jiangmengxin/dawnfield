@@ -21,6 +21,13 @@ export const DROPS = {
   heartChance: 0.035,
   heartHeal: 25,
   gemMergeCap: 260, // 场上光珠超过此数合并
+  // 金币（M3：唯一用途为商店永久强化）
+  coinChance: 0.06, // 普通敌人掉币概率
+  coinBig: 5, // 大币面值
+  coinBigChance: 0.1, // 掉币时出大币的概率
+  eliteCoinN: 5, // 精英死亡掉币枚数
+  eliteCoinV: 3, // 精英掉币单枚面值
+  coinMergeCap: 60, // 场上金币超过此数合并
 };
 
 export const CRIT = { chance: 0.1, mul: 1.6 };

@@ -42,16 +42,17 @@ src/
   core/
     events.ts                  # ✅ 类型化事件总线
     router.ts                  # ✅ 场景导航 + 返回栈
-    settings.ts                # ✅ 临时设置存储（M3 并入版本化存档）
+    settings.ts                # ✅ 设置门面（M3 起由版本化存档承载）
     input/                     # ✅ InputManager + Keyboard/Touch/Gamepad(stub)
-    save/                      # schema/migrations/storage（M3）
-    MetaState.ts               # 局外状态（M3）
+    save/                      # ✅ schema/migrations/storage（M3：v1+迁移链+损坏自愈+debounce）
+    MetaState.ts               # ✅ 局外状态（M3：金币/强化/图鉴/成就/解锁/统计）
     RunState.ts                # ✅ 局内状态 + 属性重算
     TimeController.ts          # ✅ 倍速+hitstop 统一时钟
     registry.ts                # ✅ defineTable<Id,Spec> 通用注册表
   content/                     # ✅ 纯数据层，无 Phaser 依赖（含武器平衡表）
     ids.ts weapons.ts passives.ts enemies.ts player.ts
-    characters.ts maps.ts bosses.ts achievements.ts shop.ts arcana.ts  # M3+ 按批次补
+    shop.ts achievements.ts    # ✅ M3：11 项永久强化 + 12 成就
+    characters.ts maps.ts bosses.ts arcana.ts  # M4+ 按批次补
   scenes/                      # ✅ 全部 11 个场景已建
     Boot Title Game HUD Result
     CharacterSelect MapSelect Shop Codex Achievements Settings
@@ -60,7 +61,8 @@ src/
     WaveDirector EnemySystem behaviors BossController            # ✅
     weapons/ PlayerSystem PickupSystem ProjectileSystem ZoneSystem  # ✅
     LevelUpSystem DecorSystem  # ✅
-    MapMechanicSystem AchievementTracker                         # M3/M5
+    AchievementTracker         # ✅ M3 成就引擎
+    MapMechanicSystem          # M5
     grid.ts effects.ts joystick.ts   # 保留
   ui/                          # ✅ M1 完成
     Viewport.ts                # 安全区/断点(compact|medium|wide)/缩放/防抖重建
@@ -130,9 +132,9 @@ interface CombatContext {
 - content/ 数据层建立（config.ts 全量迁入，武器平衡表一并抽出）；Game.ts 拆 8 系统 + RunState；敌人行为模板表（chase/wobble/strafeShoot/dash）；weapons 拆目录接 CombatContext；InputManager（键盘/触控/手柄 stub）；类型化事件（core/events）；TimeController 正式化；宝箱内容分层（可进化→进化，否则→升级×N，无可升级→金币）；RunModifier 六钩子全部空挂；registry.ts defineTable
 - **验收记录**：`tsc --noEmit` 零错误；Game.ts 249 行；运行时逐项对照——波次混合/定点事件、7 武器全运行、喷喷弹幕、冲冲冲刺、分裂球死亡分裂×2、水洼减速与星尘灼烧（ZoneSystem）、升级三选一（暂停/恢复/属性重算 65→84.5 磁吸）、宝箱三层（进化「晨曦」/升级「疾风镖 Lv2」/金币）、Boss 720s 准时苏醒（HP 15696=hpScale 精确一致）二阶段弹幕环、胜负两条结算链、重开局状态清零、1x/2x 三时钟同步
 
-### ⬜ M3 — 存档/金币/解锁/成就/图鉴骨架 + 调试面板完善
-- save 模块（v1+迁移+损坏兜底，吸收现有 lang/muted/settings 键）；MetaState；金币掉落+结算入账；Shop 实装（10-12 项 PowerUp，重置全返）；成就引擎+首批 ~12；图鉴首遇点亮+New 角标；调试面板补充（加币/时间跳跃/指定武器/实体计数）
-- **验收**：刷新数据保留；手工破坏 localStorage 自愈且留备份；商店买/重置数额正确
+### ✅ M3 — 存档/金币/解锁/成就/图鉴骨架 + 调试面板完善（已完成并验收）
+- save 模块（v1+迁移链+损坏兜底，吸收现有 lang/muted/volume/settings 键；300ms debounce + visibilitychange/pagehide 强制 flush）；MetaState 单例；金币掉落（普通 6% 概率/精英爆 5×3/宝箱金币层 30+治疗 30）+ 金币球磁吸收取 + 结算与中途退出入账；Shop 实装（11 项 PowerUp，逐级涨价 base×(lv+1)，重置全额返还，余额/不足提示）；永久强化汇入 RunState（伤害/生命/冷却/范围/移速/磁吸/经验/金币/护甲/回复/暴击，开局快照）；成就引擎（条件全在 content 表，局内每秒评估+金色 toast，结算/购买补评）+ 首批 12；图鉴首遇点亮（武器/被动/敌人/角色/地图五类全 hook）+ New 角标 + 浏览即清除 + 主菜单红点；调试面板补充（加币 +1000 不计累计/时间跳跃 +60s/指定武器弹窗/HUD 实体计数行：敌珠币弹域）；HUD 桌面金币计数；结算页金币行+本局新成就展示
+- **验收记录**：`tsc --noEmit` 零错误；v0 散键吸收（lang=en/muted/volume=0.4/settings 全并入且旧键删除）；手工写入损坏 JSON → 原文备份 `dawnfield.save.corrupt` + 默认档重建零报错；刷新后成就/金币/图鉴/统计全保留；全流程通局（胜利 12:05/365 杀/+20 币）→ 结算入账 runs/wins/kills/bestSurvival/coinsEarned 精确累计；中途退出经 `recordRun` 入账不计胜场；商店购买 23→15（磁场 8 币）、二次价格 16、余额不足提示、重置返还 8 → 23、返还不计累计获得、firstBuy 成就即时解锁；图鉴 6 武器点亮带「新!」、未遇见细雨显示 ???、浏览后角标清除、敌人 9 种全点亮；成就页 6/12 锁定项显示条件；调试三键实测生效（+1000 币/暂停局 +60s/弹窗给武器并点亮图鉴）；402×874 / 320×480（设置页矮屏行高压缩修复）/ 1440×900 无溢出
 
 ### ⬜ M4 — 角色系统 + 内容批次 A（角色 1-8）
 - textures 拆分+参数化生成器；CharacterSpec 生效（初始武器+属性偏移）；8 角色配对现 7 武器+新武器 1 把；被动 6→8；解锁成就接入；图鉴角色页

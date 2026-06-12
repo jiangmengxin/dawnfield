@@ -23,6 +23,11 @@ export class ZoneSystem implements RunSystem {
 
   constructor(private ctx: CombatContext) {}
 
+  /** 调试信息用实体计数 */
+  get count(): number {
+    return this.zones.length;
+  }
+
   add(spec: ZoneSpec): void {
     const scene = this.ctx.scene;
     let img: Phaser.GameObjects.Image;

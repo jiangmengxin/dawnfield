@@ -1,5 +1,6 @@
-// 地图选择：8 格（M1：1 真实 + 7 锁定占位）
+// 地图选择：8 格（1 真实 + 7 锁定占位）；解锁状态读存档（M5 起地图解锁链接入）
 import { t } from '../i18n';
+import { Meta } from '../core/MetaState';
 import { resetStack } from '../core/router';
 import { UIScene } from '../ui/UIScene';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
@@ -25,6 +26,7 @@ export class MapSelectScene extends UIScene {
     const content = this.buildHeader(t('scn_mapSelect'));
     const panel = new ScrollPanel(this, content);
 
+    const meadowUnlocked = Meta.isUnlocked('maps', 'meadow');
     const items: CardGridItem[] = [
       {
         icon: 'd_flower1',
@@ -33,12 +35,13 @@ export class MapSelectScene extends UIScene {
         desc: this.vp.bp === 'compact' ? undefined : t('map_meadow_d'),
         tag: '12 ' + t('ui_minutes'),
         color: 0xa8cd8c,
+        locked: !meadowUnlocked,
         fontScale: this.vp.bp === 'compact' ? 0.9 : 1,
-        onTap: () => {
+        onTap: meadowUnlocked ? () => {
           resetStack();
           const data: RunLaunchData = { charId: this.charId, mapId: 'meadow' };
           this.scene.start('game', data);
-        },
+        } : undefined,
       },
     ];
     for (let i = 1; i < 8; i++) {

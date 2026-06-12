@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { FONT, getLang, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
+import { Meta } from '../core/MetaState';
 import { resetStack } from '../core/router';
 import { UIScene } from '../ui/UIScene';
 import { UIButton } from '../ui/widgets/UIButton';
@@ -66,12 +67,12 @@ export class TitleScene extends UIScene {
       },
     }).setDepth(3);
 
-    // 次级入口：商店 / 图鉴 / 成就 / 设置
-    const entries: Array<[string, () => void]> = [
-      [t('menu_shop'), () => this.goto('shop')],
-      [t('menu_codex'), () => this.goto('codex')],
-      [t('menu_ach'), () => this.goto('achievements')],
-      [t('menu_settings'), () => this.goto('settings')],
+    // 次级入口：商店 / 图鉴 / 成就 / 设置（图鉴有新点亮条目时带红点角标）
+    const entries: Array<[string, () => void, boolean]> = [
+      [t('menu_shop'), () => this.goto('shop'), false],
+      [t('menu_codex'), () => this.goto('codex'), Meta.codexHasNew()],
+      [t('menu_ach'), () => this.goto('achievements'), false],
+      [t('menu_settings'), () => this.goto('settings'), false],
     ];
     const rowY = startY + vp.s(60);
     const btnH = Math.max(THEME.hitMin, vp.s(48));
@@ -79,20 +80,20 @@ export class TitleScene extends UIScene {
     if (totalW / 4 >= 96) {
       // 一行四个
       const cells = hstack(rect(cx - totalW / 2, rowY, totalW, btnH), THEME.gapSm, ['flex', 'flex', 'flex', 'flex']);
-      entries.forEach(([label, fn], i) => {
+      entries.forEach(([label, fn, badge], i) => {
         const c = cells[i];
         new UIButton(this, c.x + c.w / 2, c.y + c.h / 2, {
-          w: c.w, h: c.h, label, fontSize: vp.fs(15), onTap: fn,
+          w: c.w, h: c.h, label, fontSize: vp.fs(15), badge, onTap: fn,
         }).setDepth(3);
       });
     } else {
       // 2×2 网格（窄竖屏）
       const gw = Math.min(safe.w - 40, 340);
       const cells = gridCells(rect(cx - gw / 2, rowY, gw, btnH * 2 + THEME.gapSm), 2, 2, THEME.gapSm);
-      entries.forEach(([label, fn], i) => {
+      entries.forEach(([label, fn, badge], i) => {
         const c = cells[i];
         new UIButton(this, c.x + c.w / 2, c.y + c.h / 2, {
-          w: c.w, h: c.h, label, fontSize: vp.fs(15), onTap: fn,
+          w: c.w, h: c.h, label, fontSize: vp.fs(15), badge, onTap: fn,
         }).setDepth(3);
       });
     }

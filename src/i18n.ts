@@ -1,7 +1,7 @@
-// 极简 i18n：扁平字典 + t()，localStorage 持久化，切换时广播
-export type Lang = 'zh' | 'en';
+// 极简 i18n：扁平字典 + t()，语言持久化进版本化存档（core/save），切换时广播
+import { getSave, persistSave } from './core/save';
 
-const LS_KEY = 'dawnfield.lang';
+export type Lang = 'zh' | 'en';
 
 type Dict = Record<string, [zh: string, en: string]>;
 
@@ -34,7 +34,7 @@ const D: Dict = {
   // 宝箱
   chestTitle: ['晨光宝箱', 'Dawn Chest'],
   chestOpen: ['点击开启', 'Tap to open'],
-  chestGold: ['一捧晨光！+80 经验 +30 生命', 'A handful of dawnlight! +80 XP, +30 HP'],
+  chestGold: ['金光闪闪！金币 +{c}，生命 +{h}', 'Shiny! +{c} coins, +{h} HP'],
   chestUpgrade: ['装备升级！', 'Gear upgraded!'],
 
   // 结算
@@ -45,6 +45,7 @@ const D: Dict = {
   statTime: ['存活时间', 'Time Survived'],
   statKills: ['击败', 'Defeated'],
   statLevel: ['最终等级', 'Final Level'],
+  statCoins: ['获得金币', 'Coins Earned'],
   statBuild: ['你的武器', 'Your Arsenal'],
   retry: ['再来一局', 'Play Again'],
 
@@ -112,6 +113,7 @@ const D: Dict = {
   // 通用 UI
   ui_back: ['返回', 'Back'],
   ui_ok: ['好的', 'OK'],
+  ui_cancel: ['取消', 'Cancel'],
   ui_locked: ['未解锁', 'Locked'],
   ui_lockedHint: ['达成条件后解锁', 'Unlocks via achievements'],
   ui_comingSoon: ['敬请期待', 'Coming soon'],
@@ -141,11 +143,42 @@ const D: Dict = {
   map_meadow: ['晨光草甸', 'Morning Meadow'],
   map_meadow_d: ['一切开始的地方：花海、微风与墨之王', 'Where it all begins: flowers, breeze, and the Ink Monarch'],
 
-  // 商店占位
-  shop_coming: ['永久强化商店将随存档系统一起开放', 'Permanent upgrades arrive with the save system'],
-  shop_slotHint: ['强化槽位', 'Upgrade slot'],
+  // 金币
+  coins: ['金币', 'Coins'],
 
-  // 图鉴占位
+  // 商店（永久强化）
+  shop_hint: ['永久强化对所有角色生效，可随时全额重置返还', 'Permanent boosts for every hero; reset any time for a full refund'],
+  shop_price: ['价格', 'Cost'],
+  shop_max: ['已满级', 'MAX'],
+  shop_noCoins: ['金币不足', 'Not enough coins'],
+  shop_reset: ['重置', 'Reset'],
+  shop_resetTitle: ['重置永久强化', 'Reset Upgrades'],
+  shop_resetDesc: ['将清空全部强化并返还 {n} 金币，确定吗？', 'Clear all upgrades and refund {n} coins?'],
+
+  pu_power: ['晨光之力', 'Morning Might'],
+  pu_power_d: ['每级伤害 +4%', '+4% damage per level'],
+  pu_vitality: ['蒲公英活力', 'Dandelion Vigor'],
+  pu_vitality_d: ['每级生命上限 +10', '+10 max HP per level'],
+  pu_haste: ['露珠急速', 'Dewdrop Haste'],
+  pu_haste_d: ['每级冷却 -2.5%', '-2.5% cooldown per level'],
+  pu_area: ['晨雾扩散', 'Mist Spread'],
+  pu_area_d: ['每级攻击范围 +4%', '+4% area per level'],
+  pu_speed: ['轻风步', 'Breeze Step'],
+  pu_speed_d: ['每级移速 +2.5%', '+2.5% move speed per level'],
+  pu_magnet: ['花蜜磁场', 'Nectar Magnet'],
+  pu_magnet_d: ['每级拾取范围 +12%', '+12% pickup range per level'],
+  pu_growth: ['茁壮成长', 'Flourish'],
+  pu_growth_d: ['每级经验获取 +4%', '+4% XP gain per level'],
+  pu_greed: ['松鼠囤货', 'Squirrel Stash'],
+  pu_greed_d: ['每级金币获取 +12%', '+12% coin gain per level'],
+  pu_armor: ['坚果甲壳', 'Nutshell Armor'],
+  pu_armor_d: ['每级受到伤害 -1', '-1 damage taken per level'],
+  pu_regen: ['晨露回复', 'Morning Dew'],
+  pu_regen_d: ['每级每秒回复 0.3 生命', '+0.3 HP/s per level'],
+  pu_luck: ['四叶草', 'Lucky Clover'],
+  pu_luck_d: ['每级暴击率 +2%', '+2% crit chance per level'],
+
+  // 图鉴
   codex_weapons: ['武器', 'Weapons'],
   codex_passives: ['被动', 'Passives'],
   codex_enemies: ['敌人', 'Enemies'],
@@ -153,8 +186,33 @@ const D: Dict = {
   codex_maps: ['地图', 'Fields'],
   codex_hint: ['游玩中遇见即点亮', 'Encounter things in a run to light them up'],
 
-  // 成就占位
-  ach_coming: ['成就将在后续版本点亮解锁之路', 'Achievements will pave the unlock road soon'],
+  // 成就
+  achUnlocked: ['成就达成！', 'Achievement!'],
+  ach_count: ['已达成', 'Unlocked'],
+  ach_swarm100: ['百敌斩', 'Centurion'],
+  ach_swarm100_d: ['单局击败 100 个敌人', 'Defeat 100 foes in one run'],
+  ach_survive5: ['晨光初照', 'First Light'],
+  ach_survive5_d: ['单局存活 5 分钟', 'Survive 5 minutes in a run'],
+  ach_level20: ['茁壮新芽', 'Sprouting Up'],
+  ach_level20_d: ['单局达到 20 级', 'Reach level 20 in a run'],
+  ach_eliteSlayer: ['精英克星', 'Elite Slayer'],
+  ach_eliteSlayer_d: ['击败一只精英敌人', 'Defeat an elite enemy'],
+  ach_firstEvolve: ['破晓进化', 'Dawn Evolution'],
+  ach_firstEvolve_d: ['首次进化一件武器', 'Evolve a weapon for the first time'],
+  ach_maxWeapon: ['锋芒毕露', 'Honed Edge'],
+  ach_maxWeapon_d: ['将任一武器升至满级', 'Max out any weapon'],
+  ach_fullArsenal: ['武库满载', 'Full Arsenal'],
+  ach_fullArsenal_d: ['同时持有 6 件武器', 'Hold 6 weapons at once'],
+  ach_fullCharms: ['护符满匣', 'Charm Collector'],
+  ach_fullCharms_d: ['同时持有 6 件被动', 'Hold 6 passives at once'],
+  ach_meadowClear: ['驱散墨色', 'Ink Banisher'],
+  ach_meadowClear_d: ['通关晨光草甸', 'Clear the Morning Meadow'],
+  ach_kills1000: ['千敌将', 'Thousandfold'],
+  ach_kills1000_d: ['累计击败 1000 个敌人', 'Defeat 1000 foes in total'],
+  ach_coins500: ['小小财富', 'Tidy Sum'],
+  ach_coins500_d: ['累计获得 500 金币', 'Earn 500 coins in total'],
+  ach_firstBuy: ['第一桶金', 'First Purchase'],
+  ach_firstBuy_d: ['在商店购买一项永久强化', 'Buy a permanent upgrade'],
 
   // 设置
   set_volume: ['音量', 'Volume'],
@@ -169,13 +227,14 @@ const D: Dict = {
   set_invincible: ['无敌', 'Invincible'],
   set_fullPickup: ['全屏拾取', 'Magnet All'],
   set_autoPick: ['自动选卡', 'Auto Pick'],
+  set_addCoins: ['金币 +1000', '+1000 Coins'],
+  set_timeSkip: ['时间 +60s', '+60s Time'],
+  set_giveWeapon: ['获得武器', 'Give Weapon'],
 };
 
 let lang: Lang = (() => {
-  try {
-    const saved = localStorage.getItem(LS_KEY);
-    if (saved === 'zh' || saved === 'en') return saved;
-  } catch { /* ignore */ }
+  const saved = getSave().settings.lang;
+  if (saved === 'zh' || saved === 'en') return saved;
   return navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
 })();
 
@@ -193,7 +252,8 @@ export function getLang(): Lang {
 
 export function setLang(l: Lang): void {
   lang = l;
-  try { localStorage.setItem(LS_KEY, l); } catch { /* ignore */ }
+  getSave().settings.lang = l;
+  persistSave();
   listeners.forEach((f) => f());
 }
 

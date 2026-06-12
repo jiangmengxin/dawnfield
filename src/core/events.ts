@@ -7,6 +7,7 @@ export interface GameEventMap {
   'hud:chest': [reward: ChestReward];
   'hud:boss': [visible: boolean];
   'hud:warn': [i18nKey: string];
+  'hud:achievement': [achId: string];
   'hud:refresh': [];
   'hud:togglepause': [];
   'hud:autopause': [];

@@ -6,11 +6,12 @@ import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
 import { PASSIVE_META } from '../content/passives';
-import { WEAPON_META } from '../content/weapons';
+import { CHEST, WEAPON_META } from '../content/weapons';
 import { makeButton, setButtonLabel } from '../ui/widgets';
 import { Viewport } from '../ui/Viewport';
 import { THEME } from '../ui/theme';
 import { onEvent } from '../core/events';
+import { Meta } from '../core/MetaState';
 import { getSettings, updateSettings } from '../core/settings';
 import { go } from '../core/router';
 import type { ChestReward, Offer } from '../systems/context';
@@ -22,6 +23,8 @@ export class HUDScene extends Phaser.Scene {
   private timerText!: Phaser.GameObjects.Text;
   private killText!: Phaser.GameObjects.Text;
   private killIcon!: Phaser.GameObjects.Image;
+  private coinText!: Phaser.GameObjects.Text;
+  private coinIcon!: Phaser.GameObjects.Image;
   private levelText!: Phaser.GameObjects.Text;
   private hpText!: Phaser.GameObjects.Text;
   private bossName!: Phaser.GameObjects.Text;
@@ -61,6 +64,11 @@ export class HUDScene extends Phaser.Scene {
     this.killIcon = this.add.image(0, 0, 'e_blob').setScale(0.62).setDepth(11);
     this.killText = this.add.text(0, 0, '0', {
       fontFamily: FONT, fontSize: '18px', fontStyle: 'bold', color: PAL.inkCss,
+      stroke: '#FFFFFF', strokeThickness: 4,
+    }).setOrigin(0, 0.5).setDepth(11);
+    this.coinIcon = this.add.image(0, 0, 'coin').setDepth(11);
+    this.coinText = this.add.text(0, 0, '0', {
+      fontFamily: FONT, fontSize: '17px', fontStyle: 'bold', color: '#C8902A',
       stroke: '#FFFFFF', strokeThickness: 4,
     }).setOrigin(0, 0.5).setDepth(11);
     this.levelText = this.add.text(0, 0, 'LV 1', {
@@ -110,6 +118,7 @@ export class HUDScene extends Phaser.Scene {
       onEvent(this.game, 'hud:chest', (reward) => this.showChest(reward)),
       onEvent(this.game, 'hud:boss', (v) => { this.bossVisible = v; this.bossName.setVisible(v); }),
       onEvent(this.game, 'hud:warn', (key) => this.showWarn(key)),
+      onEvent(this.game, 'hud:achievement', (id) => this.queueAchToast(id)),
       onEvent(this.game, 'hud:refresh', () => this.buildIconRow()),
       onEvent(this.game, 'hud:togglepause', () => this.togglePause()),
       onEvent(this.game, 'hud:autopause', () => {
@@ -152,6 +161,8 @@ export class HUDScene extends Phaser.Scene {
     }
     this.killIcon.setPosition(cx - 24, safe.y + 64).setVisible(!compact);
     this.killText.setPosition(cx - 8, safe.y + 64).setVisible(!compact);
+    this.coinIcon.setPosition(cx - 23, safe.y + 92).setVisible(!compact);
+    this.coinText.setPosition(cx - 8, safe.y + 92).setVisible(!compact);
     this.levelText.setPosition(safe.x + safe.w - 14, safe.y + 12).setVisible(!compact);
     this.warnText.setPosition(cx, safe.y + safe.h * 0.3);
     this.debugText.setPosition(safe.x + 10, safe.y + safe.h - 8);
@@ -201,19 +212,22 @@ export class HUDScene extends Phaser.Scene {
     const ss = String(sec % 60).padStart(2, '0');
     this.timerText.setText(mm + ':' + ss);
 
-    // 调试信息（设置中开启）
+    // 调试信息（设置中开启）：FPS / 实体计数 / 倍速 / 开关状态
     const dbg = getSettings();
     if (dbg.debugInfo) {
       const flags = (dbg.invincible ? ' 无敌' : '') + (dbg.fullPickup ? ' 全拾' : '');
+      const c = this.gs.debugCounts;
       this.debugText.setVisible(true).setText(
         'FPS ' + Math.round(this.game.loop.actualFps) +
         ' | 敌 ' + this.gs.enemies.actives.length +
+        ' 珠 ' + c.gems + ' 币 ' + c.coins + ' 弹 ' + c.bullets + ' 域 ' + c.zones +
         ' | ' + this.gs.speed + 'x' + flags,
       );
     } else if (this.debugText.visible) {
       this.debugText.setVisible(false);
     }
     this.killText.setText(String(run.kills));
+    this.coinText.setText(String(Math.floor(run.coins)));
     this.levelText.setText(t('level') + ' ' + run.level);
 
     // Boss 条
@@ -324,6 +338,43 @@ export class HUDScene extends Phaser.Scene {
         this.tweens.add({
           targets: this.warnText, alpha: 0, delay: 1600, duration: 400,
           onComplete: () => this.warnText.setVisible(false),
+        });
+      },
+    });
+  }
+
+  // ---------- 成就达成 toast（金色横幅，多个时排队） ----------
+
+  private achQueue: string[] = [];
+  private achBusy = false;
+
+  private queueAchToast(id: string): void {
+    this.achQueue.push(id);
+    this.pumpAchToast();
+  }
+
+  private pumpAchToast(): void {
+    if (this.achBusy) return;
+    const id = this.achQueue.shift();
+    if (!id) return;
+    this.achBusy = true;
+    const safe = this.vp.safe;
+    const toast = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.22,
+      t('achUnlocked') + ' ' + t('ach_' + id), {
+        fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#C8902A',
+        stroke: '#FFFFFF', strokeThickness: 6,
+      }).setOrigin(0.5).setDepth(21).setAlpha(0).setScale(0.8);
+    SFX.levelup();
+    this.tweens.add({
+      targets: toast, alpha: 1, scale: 1, duration: 260, ease: 'Back.easeOut',
+      onComplete: () => {
+        this.tweens.add({
+          targets: toast, alpha: 0, delay: 1700, duration: 350,
+          onComplete: () => {
+            toast.destroy();
+            this.achBusy = false;
+            this.pumpAchToast();
+          },
         });
       },
     });
@@ -528,7 +579,9 @@ export class HUDScene extends Phaser.Scene {
             .map((o) => (o.kind === 'weapon' ? t('w_' + o.id) : t('p_' + o.id)) + ' Lv ' + o.toLevel)
             .join('\n');
         } else {
-          label = t('chestGold');
+          label = t('chestGold')
+            .replace('{c}', String(CHEST.goldCoins))
+            .replace('{h}', String(CHEST.goldHeal));
         }
         if (iconKey) {
           const icon = this.add.image(w / 2, h * 0.42, iconKey).setScale(0).setDepth(104);
@@ -597,6 +650,9 @@ export class HUDScene extends Phaser.Scene {
       go(this, 'settings');
     }, { fontSize: THEME.btnFs });
     const quit = makeButton(this, w / 2, by + gap * 3, bw, bh, t('quit'), () => {
+      // 中途退出也入账：金币/统计不丢（不计胜场）
+      const run = this.gs.run;
+      Meta.recordRun({ win: false, time: run.elapsed, kills: run.kills, coins: run.coins });
       this.closeOverlay();
       this.scene.stop('game');
       this.scene.stop();

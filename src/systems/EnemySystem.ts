@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { ENEMIES, SPITTER, dmgScale, hpScale } from '../content/enemies';
 import type { EnemyId } from '../content/ids';
+import { Meta } from '../core/MetaState';
 import { BEHAVIORS, BehaviorMove } from './behaviors';
 import { BossController } from './BossController';
 import type { CombatContext, RunSystem } from './context';
@@ -59,6 +60,7 @@ export class EnemySystem implements RunSystem {
 
   /** 生成并加入 actives */
   spawn(id: EnemyId, x: number, y: number): Enemy {
+    Meta.codexLight('enemies', id); // 图鉴首遇点亮（Set 缓存，O(1)）
     const spec = ENEMIES[id];
     const min = this.ctx.run.elapsed / 60;
     const e = this.obtain();

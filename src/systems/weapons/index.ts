@@ -3,6 +3,7 @@
 import { PASSIVE_MAX_LEVEL } from '../../content/passives';
 import { WEAPON_MAX_LEVEL, WEAPON_META } from '../../content/weapons';
 import type { WeaponId } from '../../content/ids';
+import { Meta } from '../../core/MetaState';
 import type { CombatContext, RunSystem } from '../context';
 import { Weapon } from './base';
 import { BladeWeapon } from './blade';
@@ -47,6 +48,7 @@ export class WeaponManager implements RunSystem {
       }
     } else {
       this.list.push(new FACTORY[id](this.ctx, id));
+      Meta.codexLight('weapons', id); // 图鉴首遇点亮
     }
   }
 

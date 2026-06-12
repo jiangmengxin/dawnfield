@@ -1,6 +1,6 @@
 // WebAudio 程序化音频：SFX 即时合成 + 生成式五声音阶 BGM（零外部资源）
-const LS_KEY = 'dawnfield.muted';
-const LS_VOL = 'dawnfield.volume';
+// 静音/音量持久化进版本化存档（core/save），旧散键由 v0 迁移吸收
+import { getSave, persistSave } from '../core/save';
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
@@ -14,11 +14,9 @@ class SoundEngine {
   volume = 1;
 
   constructor() {
-    try {
-      this.muted = localStorage.getItem(LS_KEY) === '1';
-      const v = parseFloat(localStorage.getItem(LS_VOL) ?? '1');
-      if (!Number.isNaN(v)) this.volume = Math.max(0, Math.min(1, v));
-    } catch { /* ignore */ }
+    const st = getSave().settings;
+    this.muted = st.muted;
+    this.volume = st.volume;
   }
 
   /** 必须在用户手势中首次调用（移动端 AudioContext 解锁） */
@@ -58,13 +56,15 @@ class SoundEngine {
 
   setMuted(m: boolean): void {
     this.muted = m;
-    try { localStorage.setItem(LS_KEY, m ? '1' : '0'); } catch { /* ignore */ }
+    getSave().settings.muted = m;
+    persistSave();
     if (this.master && this.ctx) this.master.gain.setTargetAtTime(m ? 0 : this.volume, this.ctx.currentTime, 0.05);
   }
 
   setVolume(v: number): void {
     this.volume = Math.max(0, Math.min(1, v));
-    try { localStorage.setItem(LS_VOL, String(this.volume)); } catch { /* ignore */ }
+    getSave().settings.volume = this.volume;
+    persistSave();
     if (this.master && this.ctx && !this.muted) {
       this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.05);
     }
@@ -127,6 +127,10 @@ class SoundEngine {
   pickup(combo = 0): void {
     const f = 620 * Math.pow(1.06, Math.min(combo, 12));
     this.tone({ freq: f, end: f * 1.5, dur: 0.1, type: 'sine', vol: 0.07 });
+  }
+  coin(): void {
+    this.tone({ freq: 1050, end: 1400, dur: 0.09, type: 'triangle', vol: 0.06 });
+    this.tone({ freq: 1580, dur: 0.07, type: 'sine', vol: 0.04, delay: 0.05 });
   }
   heal(): void {
     this.tone({ freq: 520, end: 780, dur: 0.22, vol: 0.08 });

@@ -1,8 +1,10 @@
-// 结算场景：胜利（阳光+纸屑）/ 失败（柔和告别）
+// 结算场景：胜利（阳光+纸屑）/ 失败（柔和告别）；金币/统计入账 + 本局新成就展示
 import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
-import { WEAPON_META } from '../content/weapons';
+import { WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
+import { Meta } from '../core/MetaState';
+import { evalAchievements } from '../systems/AchievementTracker';
 import { makeButton } from '../ui/widgets';
 import { THEME } from '../ui/theme';
 import { Viewport } from '../ui/Viewport';
@@ -11,6 +13,7 @@ import type { RunResult } from '../systems/context';
 export class ResultScene extends Phaser.Scene {
   private data2!: RunResult;
   private confettiTimer: Phaser.Time.TimerEvent | null = null;
+  private newAch: string[] = [];
 
   constructor() {
     super('result');
@@ -18,6 +21,23 @@ export class ResultScene extends Phaser.Scene {
 
   init(data: RunResult): void {
     this.data2 = data;
+    // 结算入账：金币 + 累计统计（create 可能因场景重启重复，入账只在 init 一次）
+    Meta.recordRun(data);
+    // 终局成就评估：胜利类 + 累计类（局内已解锁的由 Tracker 负责，这里只补尾）
+    this.newAch = evalAchievements({
+      run: {
+        kills: data.kills,
+        time: data.time,
+        level: data.level,
+        weapons: data.build.length,
+        passives: 0, // 结算数据不含被动，被动类成就由局内 Tracker 评估
+        evolves: data.build.filter((b) => b.evolved).length,
+        maxWeapon: data.build.some((b) => b.evolved || b.level >= WEAPON_MAX_LEVEL),
+        eliteKills: 0, // 同上，局内已评估
+        win: data.win,
+      },
+      stats: Meta.save.stats,
+    });
   }
 
   create(): void {
@@ -85,32 +105,46 @@ export class ResultScene extends Phaser.Scene {
       [t('statTime'), mm + ':' + ss],
       [t('statKills'), String(r.kills)],
       [t('statLevel'), String(r.level)],
+      [t('statCoins'), '+' + r.coins],
     ];
+    const rowGap = 30;
     rows.forEach(([k, v], i) => {
-      const y = h * 0.45 + i * 34;
+      const y = h * 0.44 + i * rowGap;
+      const gold = i === rows.length - 1;
       this.add.text(cx - 16, y, k, {
         fontFamily: FONT, fontSize: '17px', color: PAL.inkSoft,
       }).setOrigin(1, 0.5).setDepth(2);
       this.add.text(cx + 16, y, v, {
-        fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: PAL.inkCss,
+        fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: gold ? '#C8902A' : PAL.inkCss,
       }).setOrigin(0, 0.5).setDepth(2);
+      if (gold) this.add.image(cx + 16 + 56, y, 'coin').setDepth(2);
     });
 
     // 武器构成
-    this.add.text(cx, h * 0.45 + 3 * 34 + 12, t('statBuild'), {
+    const buildLabelY = h * 0.44 + rows.length * rowGap + 6;
+    this.add.text(cx, buildLabelY, t('statBuild'), {
       fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(2);
     const bw = r.build.length * 46;
+    const iconY = buildLabelY + 30;
     r.build.forEach((b, i) => {
       const x = cx - bw / 2 + 23 + i * 46;
-      const y = h * 0.45 + 3 * 34 + 44;
       const meta = WEAPON_META.find((m) => m.id === b.id)!;
-      this.add.image(x, y, meta.icon).setDepth(2);
-      this.add.text(x + 11, y + 11, b.evolved ? '★' : String(b.level), {
+      this.add.image(x, iconY, meta.icon).setDepth(2);
+      this.add.text(x + 11, iconY + 11, b.evolved ? '★' : String(b.level), {
         fontFamily: FONT, fontSize: '12px', fontStyle: 'bold',
         color: b.evolved ? '#C8902A' : PAL.inkCss, stroke: '#FFFFFF', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(3);
     });
+
+    // 本局新达成的成就
+    if (this.newAch.length > 0) {
+      const lines = this.newAch.map((id) => '★ ' + t('achUnlocked') + ' ' + t('ach_' + id));
+      this.add.text(cx, iconY + 30, lines.join('\n'), {
+        fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#C8902A', align: 'center',
+        stroke: '#FFFFFF', strokeThickness: 4,
+      }).setOrigin(0.5, 0).setDepth(2);
+    }
 
     const retry = makeButton(this, cx, h * 0.82, THEME.btnW, THEME.btnH, t('retry'), () => {
       this.cleanup();

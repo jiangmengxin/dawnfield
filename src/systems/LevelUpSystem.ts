@@ -7,6 +7,7 @@ import type { PassiveId, WeaponId } from '../content/ids';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
+import { Meta } from '../core/MetaState';
 import type { ChestReward, CombatContext, Offer, RunModifier, RunSystem } from './context';
 import type { WeaponManager } from './weapons';
 
@@ -98,6 +99,7 @@ export class LevelUpSystem implements RunSystem {
       this.weapons.addOrUpgrade(offer.id as WeaponId);
     } else if (offer.kind === 'passive' && offer.id) {
       const id = offer.id as PassiveId;
+      if (!ctx.run.passives.has(id)) Meta.codexLight('passives', id); // 图鉴首遇点亮
       ctx.run.passives.set(id, (ctx.run.passives.get(id) ?? 0) + 1);
       ctx.recomputeStats();
       if (id === 'bloom') ctx.run.heal(PASSIVE_FX.bloomHp);
@@ -148,7 +150,7 @@ export class LevelUpSystem implements RunSystem {
       }
       return { kind: 'upgrade', items };
     }
-    // 第三层：金币（M3 前以经验+治疗代偿）
+    // 第三层：金币
     return { kind: 'gold' };
   }
 
@@ -161,8 +163,9 @@ export class LevelUpSystem implements RunSystem {
     } else if (reward.kind === 'upgrade') {
       for (const offer of reward.items) this.applyOne(offer);
     } else {
-      ctx.run.addXp(CHEST.goldXp);
+      ctx.run.addCoins(CHEST.goldCoins);
       ctx.run.heal(CHEST.goldHeal);
+      SFX.coin();
     }
     emitEvent(ctx.scene.game, 'hud:refresh');
   }

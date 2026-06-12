@@ -4,3 +4,5 @@ export * from './player';
 export * from './weapons';
 export * from './passives';
 export * from './enemies';
+export * from './shop';
+export * from './achievements';
