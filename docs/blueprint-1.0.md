@@ -40,24 +40,27 @@
 src/
   main.ts                      # 仅注册场景
   core/
-    events.ts                  # 类型化事件总线（M2）
+    events.ts                  # ✅ 类型化事件总线
     router.ts                  # ✅ 场景导航 + 返回栈
     settings.ts                # ✅ 临时设置存储（M3 并入版本化存档）
-    input/                     # InputManager + Keyboard/Touch/Gamepad(stub)（M2）
+    input/                     # ✅ InputManager + Keyboard/Touch/Gamepad(stub)
     save/                      # schema/migrations/storage（M3）
-    MetaState.ts RunState.ts   # 局外/局内状态分离（M2-M3）
-    TimeController.ts          # 倍速+hitstop 统一时钟（M2；基础版已在 Game.setSpeed）
-    registry.ts                # defineTable<Id,Spec> 通用注册表（M2）
-  content/                     # ★ 纯数据层，无 Phaser 依赖（M2）
-    ids.ts characters.ts weapons.ts passives.ts enemies.ts
-    maps.ts bosses.ts achievements.ts shop.ts arcana.ts
+    MetaState.ts               # 局外状态（M3）
+    RunState.ts                # ✅ 局内状态 + 属性重算
+    TimeController.ts          # ✅ 倍速+hitstop 统一时钟
+    registry.ts                # ✅ defineTable<Id,Spec> 通用注册表
+  content/                     # ✅ 纯数据层，无 Phaser 依赖（含武器平衡表）
+    ids.ts weapons.ts passives.ts enemies.ts player.ts
+    characters.ts maps.ts bosses.ts achievements.ts shop.ts arcana.ts  # M3+ 按批次补
   scenes/                      # ✅ 全部 11 个场景已建
     Boot Title Game HUD Result
     CharacterSelect MapSelect Shop Codex Achievements Settings
-  systems/                     # 局内运行时（M2 起从 Game.ts 拆分）
-    WaveDirector EnemySystem behaviors BossController
-    weapons/ PlayerSystem PickupSystem ProjectileSystem ZoneSystem
-    LevelUpSystem MapMechanicSystem DecorSystem AchievementTracker
+  systems/                     # ✅ M2 已拆分（Game.ts → 249 行编排器）
+    context.ts                 # ✅ CombatContext + RunSystem + RunModifier
+    WaveDirector EnemySystem behaviors BossController            # ✅
+    weapons/ PlayerSystem PickupSystem ProjectileSystem ZoneSystem  # ✅
+    LevelUpSystem DecorSystem  # ✅
+    MapMechanicSystem AchievementTracker                         # M3/M5
     grid.ts effects.ts joystick.ts   # 保留
   ui/                          # ✅ M1 完成
     Viewport.ts                # 安全区/断点(compact|medium|wide)/缩放/防抖重建
@@ -123,9 +126,9 @@ interface CombatContext {
 - **验收记录**：402×874 竖屏全流程、1440×900 桌面、320×480、21:9 均无遮挡溢出；语言切换全页重建；设置持久化
 - **超出计划完成**：1x/2x 倍速基础版（dt/time/tweens 三时钟同步+持久化）；6+6 携带上限与 HUD 圆形令牌槽位常显；调试开关（信息/无敌/全屏拾取）实际生效；伤害数字/屏幕震动开关接入全部调用点；语言选择弹窗
 
-### ⬜ M2 — 核心重构（不加内容，行为等价）
-- content/ 数据层建立（config.ts 全量迁入）；Game.ts 拆 8 系统 + RunState；敌人行为模板表；weapons 拆目录接 CombatContext；InputManager（预留手柄 stub）；类型化事件；TimeController 正式化；宝箱内容分层（可进化→进化，否则→升级×N/金币）；RunModifier 空挂
-- **验收**：回归清单逐项对照（7 武器+进化/9 敌行为/波次时间点/Boss 二阶段）；`tsc --noEmit` 过；Game.ts < 250 行
+### ✅ M2 — 核心重构（不加内容，行为等价）（已完成并验收）
+- content/ 数据层建立（config.ts 全量迁入，武器平衡表一并抽出）；Game.ts 拆 8 系统 + RunState；敌人行为模板表（chase/wobble/strafeShoot/dash）；weapons 拆目录接 CombatContext；InputManager（键盘/触控/手柄 stub）；类型化事件（core/events）；TimeController 正式化；宝箱内容分层（可进化→进化，否则→升级×N，无可升级→金币）；RunModifier 六钩子全部空挂；registry.ts defineTable
+- **验收记录**：`tsc --noEmit` 零错误；Game.ts 249 行；运行时逐项对照——波次混合/定点事件、7 武器全运行、喷喷弹幕、冲冲冲刺、分裂球死亡分裂×2、水洼减速与星尘灼烧（ZoneSystem）、升级三选一（暂停/恢复/属性重算 65→84.5 磁吸）、宝箱三层（进化「晨曦」/升级「疾风镖 Lv2」/金币）、Boss 720s 准时苏醒（HP 15696=hpScale 精确一致）二阶段弹幕环、胜负两条结算链、重开局状态清零、1x/2x 三时钟同步
 
 ### ⬜ M3 — 存档/金币/解锁/成就/图鉴骨架 + 调试面板完善
 - save 模块（v1+迁移+损坏兜底，吸收现有 lang/muted/settings 键）；MetaState；金币掉落+结算入账；Shop 实装（10-12 项 PowerUp，重置全返）；成就引擎+首批 ~12；图鉴首遇点亮+New 角标；调试面板补充（加币/时间跳跃/指定武器/实体计数）

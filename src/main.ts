@@ -12,6 +12,7 @@ import { HUDScene } from './scenes/HUD';
 import { ResultScene } from './scenes/Result';
 import { PAL } from './gfx/palette';
 import { SFX } from './audio/sound';
+import { emitEvent } from './core/events';
 import { Viewport } from './ui/Viewport';
 
 // 高分屏适配：画布按 物理像素(CSS × DPR) 渲染，否则浏览器拉伸导致整体模糊。
@@ -57,7 +58,7 @@ Viewport.init(game);
 // 标签页隐藏时自动暂停（移动端切后台必备）
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
-    game.events.emit('hud:autopause');
+    emitEvent(game, 'hud:autopause');
   } else {
     SFX.unlock();
   }

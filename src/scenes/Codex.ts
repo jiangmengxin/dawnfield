@@ -1,7 +1,7 @@
 // 图鉴：五类标签页；M1 用现有内容点亮 + 余量锁定占位（M3 接首遇点亮存档）
 import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
-import { PASSIVE_META, WEAPON_META, ENEMIES, EnemyId } from '../config';
+import { PASSIVE_META, WEAPON_META, ENEMIES, EnemyId } from '../content';
 import { UIScene } from '../ui/UIScene';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { Tabs } from '../ui/widgets/Tabs';

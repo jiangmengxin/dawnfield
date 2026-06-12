@@ -2,11 +2,11 @@
 import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
-import { WEAPON_META } from '../config';
+import { WEAPON_META } from '../content/weapons';
 import { makeButton } from '../ui/widgets';
 import { THEME } from '../ui/theme';
 import { Viewport } from '../ui/Viewport';
-import type { RunResult } from './Game';
+import type { RunResult } from '../systems/context';
 
 export class ResultScene extends Phaser.Scene {
   private data2!: RunResult;

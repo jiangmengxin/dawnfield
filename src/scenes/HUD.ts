@@ -4,13 +4,17 @@ import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
-import { MAX_PASSIVES, MAX_WEAPONS, PASSIVE_META, WEAPON_META, WeaponId } from '../config';
+import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
+import { PASSIVE_META } from '../content/passives';
+import { WEAPON_META } from '../content/weapons';
 import { makeButton, setButtonLabel } from '../ui/widgets';
 import { Viewport } from '../ui/Viewport';
 import { THEME } from '../ui/theme';
+import { onEvent } from '../core/events';
 import { getSettings, updateSettings } from '../core/settings';
 import { go } from '../core/router';
-import type { GameScene, Offer } from './Game';
+import type { ChestReward, Offer } from '../systems/context';
+import type { GameScene } from './Game';
 
 export class HUDScene extends Phaser.Scene {
   private gs!: GameScene;
@@ -101,21 +105,17 @@ export class HUDScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-TWO', () => this.pickByIndex(1));
     this.input.keyboard!.on('keydown-THREE', () => this.pickByIndex(2));
 
-    const ev = this.game.events;
-    const onLevelup = (offers: Offer[]) => this.showLevelUp(offers);
-    const onChest = (pick: WeaponId | null) => this.showChest(pick);
-    const onBoss = (v: boolean) => { this.bossVisible = v; this.bossName.setVisible(v); };
-    const onWarn = (key: string) => this.showWarn(key);
-    const onRefresh = () => this.buildIconRow();
-    const onToggle = () => this.togglePause();
-    const onAuto = () => { if (this.overlayMode === 'none' && this.gs.running) this.togglePause(); };
-    ev.on('hud:levelup', onLevelup);
-    ev.on('hud:chest', onChest);
-    ev.on('hud:boss', onBoss);
-    ev.on('hud:warn', onWarn);
-    ev.on('hud:refresh', onRefresh);
-    ev.on('hud:togglepause', onToggle);
-    ev.on('hud:autopause', onAuto);
+    const subs = [
+      onEvent(this.game, 'hud:levelup', (offers) => this.showLevelUp(offers)),
+      onEvent(this.game, 'hud:chest', (reward) => this.showChest(reward)),
+      onEvent(this.game, 'hud:boss', (v) => { this.bossVisible = v; this.bossName.setVisible(v); }),
+      onEvent(this.game, 'hud:warn', (key) => this.showWarn(key)),
+      onEvent(this.game, 'hud:refresh', () => this.buildIconRow()),
+      onEvent(this.game, 'hud:togglepause', () => this.togglePause()),
+      onEvent(this.game, 'hud:autopause', () => {
+        if (this.overlayMode === 'none' && this.gs.run.running) this.togglePause();
+      }),
+    ];
 
     this.buildIconRow();
     this.layout();
@@ -126,13 +126,7 @@ export class HUDScene extends Phaser.Scene {
 
     this.events.on('shutdown', () => {
       this.scale.off('resize', this.layout, this);
-      ev.off('hud:levelup', onLevelup);
-      ev.off('hud:chest', onChest);
-      ev.off('hud:boss', onBoss);
-      ev.off('hud:warn', onWarn);
-      ev.off('hud:refresh', onRefresh);
-      ev.off('hud:togglepause', onToggle);
-      ev.off('hud:autopause', onAuto);
+      subs.forEach((unsub) => unsub());
     });
   }
 
@@ -179,7 +173,8 @@ export class HUDScene extends Phaser.Scene {
     const g = this.bars;
     g.clear();
     // XP 条（安全区顶部通栏）
-    const xpK = Phaser.Math.Clamp(this.gs.xp / this.gs.xpNeed, 0, 1);
+    const run = this.gs.run;
+    const xpK = Phaser.Math.Clamp(run.xp / run.xpNeed, 0, 1);
     g.fillStyle(PAL.xpBack, 0.9);
     g.fillRect(0, safe.y, w, 9);
     g.fillStyle(PAL.xp, 1);
@@ -191,17 +186,17 @@ export class HUDScene extends Phaser.Scene {
     // 桌面 HP 条与下方 6 格技能区等宽
     const slotRowW = MAX_WEAPONS * (32 + 7) - 7;
     const hpW = compact ? Math.min(130, safe.w * 0.32) : Math.min(slotRowW, safe.w * 0.35);
-    const hpK = Phaser.Math.Clamp(this.gs.hp / this.gs.stats.maxHp, 0, 1);
+    const hpK = Phaser.Math.Clamp(run.hp / run.stats.maxHp, 0, 1);
     g.fillStyle(0x5a5248, 0.08);
     g.fillRoundedRect(hpX, hpY, hpW, 16, 8);
     g.fillStyle(PAL.hp, 1);
     if (hpK > 0.03) g.fillRoundedRect(hpX, hpY, Math.max(12, hpW * hpK), 16, 8);
     g.lineStyle(2, 0xe0d4bc, 1);
     g.strokeRoundedRect(hpX, hpY, hpW, 16, 8);
-    this.hpText.setPosition(hpX + 6, hpY + 8).setText(Math.ceil(this.gs.hp) + ' / ' + this.gs.stats.maxHp);
+    this.hpText.setPosition(hpX + 6, hpY + 8).setText(Math.ceil(run.hp) + ' / ' + run.stats.maxHp);
 
     // 计时
-    const sec = Math.floor(this.gs.elapsed);
+    const sec = Math.floor(run.elapsed);
     const mm = String(Math.floor(sec / 60)).padStart(2, '0');
     const ss = String(sec % 60).padStart(2, '0');
     this.timerText.setText(mm + ':' + ss);
@@ -218,8 +213,8 @@ export class HUDScene extends Phaser.Scene {
     } else if (this.debugText.visible) {
       this.debugText.setVisible(false);
     }
-    this.killText.setText(String(this.gs.kills));
-    this.levelText.setText(t('level') + ' ' + this.gs.level);
+    this.killText.setText(String(run.kills));
+    this.levelText.setText(t('level') + ' ' + run.level);
 
     // Boss 条
     if (this.bossVisible) {
@@ -255,7 +250,7 @@ export class HUDScene extends Phaser.Scene {
 
   private passiveSlots(): Array<{ icon: string; label: string; gold: boolean } | null> {
     const out: Array<{ icon: string; label: string; gold: boolean } | null> = [];
-    for (const [pid, plv] of this.gs.passives) {
+    for (const [pid, plv] of this.gs.run.passives) {
       const meta = PASSIVE_META.find((m) => m.id === pid)!;
       out.push({ icon: meta.icon, label: String(plv), gold: false });
     }
@@ -341,7 +336,7 @@ export class HUDScene extends Phaser.Scene {
   private showLevelUp(offers: Offer[]): void {
     // 调试：自动选第一张卡，跳过选卡界面
     if (getSettings().autoPick && offers.length > 0) {
-      this.gs.applyOffer(offers[0]);
+      this.gs.levelUp.applyOffer(offers[0]);
       this.scene.resume('game');
       return;
     }
@@ -472,13 +467,13 @@ export class HUDScene extends Phaser.Scene {
     if (this.overlayMode !== 'levelup') return;
     SFX.uiClick();
     this.closeOverlay();
-    this.gs.applyOffer(offer);
+    this.gs.levelUp.applyOffer(offer);
     this.scene.resume('game');
   }
 
   // ---------- 宝箱 ----------
 
-  private showChest(pick: WeaponId | null): void {
+  private showChest(reward: ChestReward): void {
     this.overlayMode = 'chest';
     const w = this.vp.w;
     const h = this.vp.h;
@@ -520,14 +515,25 @@ export class HUDScene extends Phaser.Scene {
       }
       this.time.delayedCall(330, () => {
         let label: string;
-        if (pick) {
-          const icon = this.add.image(w / 2, h * 0.42, WEAPON_META.find((m) => m.id === pick)!.icon)
-            .setScale(0).setDepth(104);
-          this.overlay.push(icon);
-          this.tweens.add({ targets: icon, scale: 2.4, duration: 400, ease: 'Back.easeOut' });
-          label = t('evolveTag') + '！ ' + t('w_' + pick + '_e') + '\n' + t('w_' + pick + '_e_d');
+        let iconKey: string | null = null;
+        if (reward.kind === 'evolve') {
+          iconKey = WEAPON_META.find((m) => m.id === reward.weapon)!.icon;
+          label = t('evolveTag') + '！ ' + t('w_' + reward.weapon + '_e') + '\n' + t('w_' + reward.weapon + '_e_d');
+        } else if (reward.kind === 'upgrade') {
+          const first = reward.items[0];
+          iconKey = first.kind === 'weapon'
+            ? WEAPON_META.find((m) => m.id === first.id)!.icon
+            : PASSIVE_META.find((m) => m.id === first.id)!.icon;
+          label = t('chestUpgrade') + '\n' + reward.items
+            .map((o) => (o.kind === 'weapon' ? t('w_' + o.id) : t('p_' + o.id)) + ' Lv ' + o.toLevel)
+            .join('\n');
         } else {
           label = t('chestGold');
+        }
+        if (iconKey) {
+          const icon = this.add.image(w / 2, h * 0.42, iconKey).setScale(0).setDepth(104);
+          this.overlay.push(icon);
+          this.tweens.add({ targets: icon, scale: 2.4, duration: 400, ease: 'Back.easeOut' });
         }
         const txt = this.add.text(w / 2, h * 0.58, label, {
           fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: PAL.inkCss, align: 'center',
@@ -536,7 +542,7 @@ export class HUDScene extends Phaser.Scene {
         this.overlay.push(txt);
         const ok = makeButton(this, w / 2, h * 0.74, THEME.btnW, THEME.btnH, 'OK', () => {
           this.closeOverlay();
-          this.gs.applyChest(pick);
+          this.gs.levelUp.applyChest(reward);
           this.scene.resume('game');
         }, { fontSize: THEME.btnFs });
         ok.setDepth(104);
@@ -554,7 +560,7 @@ export class HUDScene extends Phaser.Scene {
       this.scene.resume('game');
       return;
     }
-    if (!this.gs.running) return;
+    if (!this.gs.run.running) return;
     this.scene.pause('game');
     this.showPauseMenu();
   }

@@ -35,6 +35,7 @@ const D: Dict = {
   chestTitle: ['晨光宝箱', 'Dawn Chest'],
   chestOpen: ['点击开启', 'Tap to open'],
   chestGold: ['一捧晨光！+80 经验 +30 生命', 'A handful of dawnlight! +80 XP, +30 HP'],
+  chestUpgrade: ['装备升级！', 'Gear upgraded!'],
 
   // 结算
   victory: ['胜 利 ！', 'VICTORY!'],

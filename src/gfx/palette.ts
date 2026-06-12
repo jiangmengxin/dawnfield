@@ -57,6 +57,13 @@ export const PAL = {
 // 彩虹渐变（棱镜光束用）
 export const RAINBOW = [0xf8a0a8, 0xf8c890, 0xf8eea0, 0xb0e8b0, 0xa0d8f0, 0xc0b0e8];
 
+// 敌人死亡纸屑颜色（与本体同色；mini 沿用分裂球色）
+import type { EnemyId } from '../content/ids';
+export const DEATH_COLOR: Record<EnemyId, number> = {
+  blob: PAL.blob, midge: PAL.midge, shelly: PAL.shelly, spitter: PAL.spitter,
+  dasher: PAL.dasher, splitter: PAL.splitter, mini: PAL.splitter, elite: PAL.elite, boss: PAL.boss,
+};
+
 export function cssOf(c: number): string {
   return '#' + c.toString(16).padStart(6, '0');
 }
