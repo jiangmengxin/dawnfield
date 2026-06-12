@@ -1,7 +1,7 @@
 // check-i18n：content ids ↔ i18n 字典机械校验（M5 起每内容批次必跑，缺键即 build 失败）
 // 1. 解析 src/content/ids.ts 的 ID 联合类型 → 按键名公约推导必需键
 //    w_<id>(_d/_e/_e_d) / p_<id>(_d) / en_<id> / char_<id>(_d) /
-//    map_<id>(_d/_win/_warn) / ach_<id>(_d) / pu_<id>(_d)
+//    map_<id>(_d/_win/_warn) / ach_<id>(_d) / pu_<id>(_d) / arc_<id>(_d)
 // 2. 扫描 src/**/*.ts 中 t('key') 字面量与 'hud:warn' 字面量键
 // 3. 缺键 → exit 1；字典里从未被引用的键 → 警告（不失败）
 import { readdirSync, readFileSync, statSync } from 'node:fs';
@@ -56,6 +56,9 @@ for (const id of unionMembers('AchievementId')) {
 }
 for (const id of unionMembers('PowerUpId')) {
   for (const suf of ['', '_d']) need(`pu_${id}${suf}`, `PowerUpId:${id}`);
+}
+for (const id of unionMembers('ArcanaId')) {
+  for (const suf of ['', '_d']) need(`arc_${id}${suf}`, `ArcanaId:${id}`);
 }
 
 // ---------- 扫描源码中的字面量键 ----------

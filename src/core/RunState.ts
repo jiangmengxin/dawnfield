@@ -1,7 +1,7 @@
 // 局内运行时状态（与局外 MetaState 配对）
 // 纯状态 + 属性重算，无 Phaser 依赖；商店永久强化在 computeStats 汇入基础值
 // M4 起角色差异化：基础 HP/移速/体积来自 CharacterSpec，属性偏移在重算时叠乘
-import type { PassiveId } from '../content/ids';
+import type { ArcanaId, PassiveId } from '../content/ids';
 import { CharacterSpec, getCharacter } from '../content/characters';
 import { PASSIVE_FX } from '../content/passives';
 import { PLAYER, xpForLevel } from '../content/player';
@@ -39,6 +39,10 @@ export class RunState {
   iframeT = 0; // 受击无敌帧剩余秒数
   pendingLevels = 0;
   choosing = false;
+  /** 规则卡（M9）：开局三选一待开（设置开关开启时置位），LevelUpSystem 消费 */
+  pendingArcana = false;
+  /** 本局已持有的规则卡（modifier 实体在 GameScene.modifiers） */
+  arcana: ArcanaId[] = [];
   difficultyHp = 1;
   passives = new Map<PassiveId, number>();
   stats: Stats;

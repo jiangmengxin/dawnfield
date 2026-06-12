@@ -54,7 +54,7 @@ src/
     shop.ts achievements.ts    # ✅ M3：11 项永久强化；成就 M7 起 40 个全量（含地图解锁链）
     characters.ts              # ✅ M4/M6/M7：16 角色 Spec 全量
     maps.ts bosses.ts          # ✅ M5/M6/M7：MapSpec 全链路 ×8 + BossSpec 配装表 ×8
-    arcana.ts                  # M9
+    arcana.ts                  # ✅ M9：10 规则卡 META + 获取规则 + ARC_FX 数值表
   scenes/                      # ✅ 全部 11 个场景已建
     Boot Title Game HUD Result
     CharacterSelect MapSelect Shop Codex Achievements Settings
@@ -64,6 +64,7 @@ src/
     weapons/ PlayerSystem PickupSystem ProjectileSystem ZoneSystem  # ✅
     LevelUpSystem DecorSystem  # ✅
     AchievementTracker         # ✅ M3 成就引擎
+    arcana.ts                  # ✅ M9：规则卡行为工厂（RunModifier 六钩子实装）
     MapMechanicSystem          # ✅ M5/M6/M7：水皮/大风/治愈泉/顺风带/荆棘地皮/流星雨/晨光柱
     grid.ts effects.ts joystick.ts   # 保留
   ui/                          # ✅ M1 完成
@@ -158,10 +159,11 @@ interface CombatContext {
 - BGM/SFX 分轨音量（SaveSettings.volBgm/volSfx 纯增量字段，旧档单一 volume 在 sanitize 作两轨默认值吸收、v0 散键迁移同步改写；合成时按声音所属轨乘入音量，回声随声源同轨缩放；设置页双滑杆替代「单音量+声音开关」两行，SFX 滑杆拖动即时试听；静音开关仍在主菜单/暂停面板）；武器 DPS 统计（systems/DpsTracker 滚动 10s 窗口+累计，hitEnemy 改为返回实际结算伤害，WeaponManager 给每武器发归账子上下文——原型链委托 + 重写 hitEnemy/addZone 注入来源，16 个武器行为文件零改动；ZoneSpec.src 让星尘雷灼烧区域伤害也归账；HUD 调试覆盖层第三行显示 top6）；波次预览（WaveDirector.preview() 当前波+下一事件进 HUD 调试第二行；设置页调试区第 4 键弹出当前局完整波次/事件时间表弹窗，当前波金色高亮、ScrollPanel 滚动）；FPS 采样动态敌人上限（每秒采样 actualFps：<45 每秒 cap×-0.1 至 0.4、≥57 每秒 +0.05 回升；ctx.enemyCapMul 乘入动态系数，Effects.setQuality 粒子同步降档 0.6；HUD 调试行显示 cap×N）；纹理生命周期（ensureMapAssets 以前后 getTextureKeys 差集登记每图懒生成键，进图 releaseMapAssets 释放其它图——8 图全量 293 纹理 → 进图 180；图鉴/成就/选图页需要时经 ensureMapAssets 重新懒生成）；ScrollPanel 遮罩修复（存量 bug：Phaser 4 WebGL 不支持 GeometryMask，setMask 仅 console 告警导致滚动内容溢出视口——WebGL 改用 Mask filter（enableFilters+filters.internal.addMask），Canvas 渲染器保留 GeometryMask）；数值平衡巡检（16 武器同场景单武器 Lv5×30s 实测横向对比，中位 ≈190 DPS：流萤珠 49→86（+弹数/弹伤/转向力 520/弹速 280）、喇叭花 79（哨塔射程内供怪饱和非弹伤不足，仍提弹伤 27→33+射速 0.5 利后期高血量）、蒲公英 90→101（粒伤+15%）；星尘雷 333 居顶属站桩基准虚高保留；其余 100-308 按角色定位（纯输出/带控制/带防御）认定合理）
 - **验收记录**：`npm run build` 通过（check-i18n 416 键/必需 397 全覆盖 + tsc 零错误）；旧档 volume=0.4 → 重载后两轨各 0.4 精确吸收；8 图全链路脚本通局（每图 Boss 准时苏醒 → 斩杀 → 结算页，`__errs` 全程零错误，无一软锁）；峰值帧耗实测（1280×800 dpr2、Boss 在场+刷怪满上限 94-210 敌、终局图另测满配 6 武器全进化）avg 1.25-1.98ms / p95 2.7-4.4ms——按 4x CPU throttle 折算 p95 ≈17.6ms ≈ 57 FPS ≥45 达标；动态上限实测（采样源置 30fps → 5 秒后 cap×0.5+粒子 0.6 档；恢复 60fps → 15 秒回升 ×1.0）；纹理释放实测（池塘→山岗 e_tad 移除、图鉴全量生成后进图 293→180、重进图鉴 67 敌全部重新懒生成渲染）；DPS 归账实测（四武器并行独立计数、星尘雷含灼烧区域伤害）；波次预览弹窗当前波金色高亮、内容精确裁剪在面板内；402×874 / 320×480（中英文）/ 1260×540 / 1280×800 设置页、竖屏 HUD 三行调试覆盖层、图鉴滚动页均无遮挡溢出
 
-### ⬜ M9 — 规则卡 Arcana（10 张）+ 收尾
-- ArcanaSpec+10 卡实装 RunModifier 钩子（开局选 1，Boss 宝箱可再得）；选卡 UI；规则卡图鉴页；最终润色
-- **验收**：10 卡可叠加无冲突；关闭规则卡开关行为与 M8 等价
-- 备注：M8 交付的单武器 DPS 基准（`__bench` 思路：同图同时刻单武器 Lv5×30s 实测）可在 M9 调卡牌数值时复用
+### ✅ M9 — 规则卡 Arcana（10 张）+ 收尾（已完成并验收）
+- content/arcana.ts（ArcanaId×10 + ArcanaMeta + ARCANA 获取规则{开局三选一/宝箱 30% 再得/单局上限 3}+ ARC_FX 数值表）+ systems/arcana.ts `createArcanaModifier(id, ctx)`——RunModifier 六钩子全部实装：statMods（花开满野 范围1.25×弹速1.1 / 顺风童谣 移速1.12×冷却0.9 / 小小尖刺 暴击+0.1×伤害1.08 / 金铃叮当 金币1.25 / 萤火向导 磁吸1.35 / 专一之路 冷却0.92）、modifyOffers（专一之路：三选一只出已持有项，无可升级回落原样）、onEnemyKilled（金铃 12% 掉币——CombatContext 新增 spawnCoin；星屑爆响 15% 半径 90 爆炸 16×stats.dmg，本地数组防连锁嵌套覆写）、modifyDamage（月夜勇气：损失生命×0.5 至多 +40%）、onChest（藏宝罗盘：金币层 ×2——ChestReward gold 改携带 coins/heal 数额）、onTick（甘露清泉 25s 周期 heal 区域复用 ZoneSystem / 萤火向导 30s 全场磁吸 / 罗盘开局掉宝箱）
+- 获取链路：开局三选一（`RunState.pendingArcana` → LevelUpSystem.openArcanaPick 优先于升级 → `hud:arcana` 事件 → HUD 选卡覆盖层，与升级三选一共用 makePickCard/pickCardGeom 渲染、键盘 1/2/3、autoPick 调试直选）+ 宝箱第二层（进化层之后 30% 概率，未到上限且开关开启）+ 设置页调试「获得规则卡」直给弹窗（绕过单局上限，供叠加验收）；统一入口 `GameScene.grantArcana`（去重 → 推 modifier → 图鉴点亮 → 重算属性 → 金环特效）；`modifiers` 每局 create 重置（保数组引用）
+- UI/存档：HUD 第三行金圈令牌常显（桌面 26px/竖屏 22px，无空槽占位）；宝箱开出规则卡的图标+文案展示；图鉴第六类「规则卡」标签页（CodexCat 增 'arcana' 纯增量、emptyCats/sanitize 兜底旧档，首遇点亮带「新!」）；设置「规则卡」开关（SaveSettings.arcana 纯增量默认开，sanitize 双向兼容无需迁移）；i18n `arc_<id>(_d)` ×10 + 4 UI 键（check-i18n 增 ArcanaId 推导，441 键/必需 421 全覆盖）；图标 `icon_arc_<id>` ×10 程序化令牌；设置页行高极矮屏下限 34→26（12 行 + 5 调试键 320×480 收入屏内）；选卡卡片去角标（窄屏长英文名与角标相挤）
+- **验收记录**：`npm run build` 通过（check-i18n 441 键全覆盖 + tsc 零错误）；开局三选一桌面 1280×800 三卡横排 / 竖屏 402×874 纵排（中英文、320×480 英文长名无重叠）；选「顺风童谣」→ 移速 196=175×1.12、冷却 0.9 精确，选后即恢复运行；10 卡全叠加（调试直给）复合属性逐项精确（范围 1.25/冷却 0.828=0.9×0.92/暴击 +0.1/伤害 ×1.08/金币 ×1.25/磁吸 87.75=65×1.35/弹速 ×1.1），带 10 卡跑 50+ 秒 `__errs` 零错误；钩子逐项实测——专一之路升级三选一仅出已持有「光刃 Lv2」一张、罗盘开局宝箱在场且金币层 30→60、甘露泉 50.4s 准时二次涌泉（25s 周期）站入回满、金铃击杀掉币经 coinGain 入账 2.5；宝箱分层采样：持有全部 10 张 200/200 不出卡层、未持有 49/200≈30% 出卡层；宝箱开出「月夜勇气」展示链路（图标弹出+名称+描述+OK 应用）；关闭设置开关 → 新局无开局选卡、modifiers 空、宝箱 100/100 无卡层（与 M8 等价）；图鉴规则卡页 10 卡点亮带「新!」、HUD 第三行 3 令牌（竖屏）/10 令牌（调试满给桌面）均不遮挡；设置页 12 行 1280×800 / 402×874 / 320×480 无溢出；旧档（无 arcana 字段）加载默认开关开、图鉴类目自动补空，零报错
 
 ## 五、风险与缓解
 

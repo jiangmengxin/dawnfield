@@ -47,6 +47,11 @@ export type BehaviorId =
   | 'spiral' | 'ambush'
   | 'burrow' | 'phase';
 
+/** 规则卡 Arcana（M9：10 张，开局选 1，精英宝箱可再得） */
+export type ArcanaId =
+  | 'petaltide' | 'tailwind' | 'thornlace' | 'goldbell' | 'starpop'
+  | 'moonheart' | 'dewspring' | 'fireflyway' | 'compass' | 'onepath';
+
 /** 商店永久强化（金币唯一用途，可全额重置） */
 export type PowerUpId =
   | 'power' | 'vitality' | 'haste' | 'area' | 'speed' | 'magnet'

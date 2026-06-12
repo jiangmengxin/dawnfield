@@ -9,3 +9,4 @@ export * from './maps';
 export * from './bosses';
 export * from './shop';
 export * from './achievements';
+export * from './arcana';

@@ -12,6 +12,8 @@ import { RunState, Stats } from '../core/RunState';
 import { getSettings } from '../core/settings';
 import { TimeController } from '../core/TimeController';
 import { AchievementTracker } from '../systems/AchievementTracker';
+import { createArcanaModifier } from '../systems/arcana';
+import type { ArcanaId } from '../content/ids';
 import type { CombatContext, HitOpts, RunModifier, RunResult, RunSystem } from '../systems/context';
 import { DecorSystem } from '../systems/DecorSystem';
 import { DpsTracker } from '../systems/DpsTracker';
@@ -45,7 +47,7 @@ export class GameScene extends Phaser.Scene {
   /** 武器 DPS 统计（M8 调试面板） */
   dps = new DpsTracker();
   waveDir!: WaveDirector;
-  /** 规则卡钩子（M9 实装，当前恒为空） */
+  /** 规则卡钩子（M9）：每持有一张卡推入一个 modifier，create 时清空重建 */
   modifiers: RunModifier[] = [];
   charId = 'spark';
   mapId = 'meadow';
@@ -85,6 +87,8 @@ export class GameScene extends Phaser.Scene {
 
     // 重置局内状态（场景可重开）；角色差异（HP/移速/体积/偏移）经 RunState.char 生效
     this.run = new RunState(this.charId);
+    this.modifiers.length = 0; // 规则卡逐局重置（LevelUpSystem 持同一数组引用，不可换新）
+    this.run.pendingArcana = getSettings().arcana; // 开局三选一（设置可关；关闭即与 M8 等价）
     this.facing = { x: 1, y: 0 };
     this.grid = new SpatialGrid<Enemy>(72);
     this.lastKillSfx = 0;
@@ -102,7 +106,7 @@ export class GameScene extends Phaser.Scene {
     this.inputMgr = new InputManager(this, { touch: this.isMobile });
     this.enemies = new EnemySystem(this.ctx);
     this.weapons = new WeaponManager(this.ctx);
-    this.levelUp = new LevelUpSystem(this.ctx, this.weapons, this.modifiers);
+    this.levelUp = new LevelUpSystem(this.ctx, this.weapons, this.modifiers, (id) => this.grantArcana(id));
     this.playerSys = new PlayerSystem(this.ctx, this.inputMgr);
     const zones = new ZoneSystem(this.ctx);
     const pickups = new PickupSystem(this.ctx, () => this.levelUp.openChest());
@@ -187,6 +191,7 @@ export class GameScene extends Phaser.Scene {
       magnetizeGems: (x, y, r) => g.pickupsRef.magnetizeGems(x, y, r),
       spawnEnemyBullet: (spec) => g.projectilesRef.spawn(spec),
       spawnGem: (x, y, v) => g.pickupsRef.spawnGem(x, y, v),
+      spawnCoin: (x, y, v) => g.pickupsRef.spawnCoin(x, y, v),
       spawnPickup: (kind, x, y) => g.pickupsRef.spawnPickup(kind, x, y),
       recomputeStats: () => g.recomputeStats(),
     };
@@ -203,6 +208,17 @@ export class GameScene extends Phaser.Scene {
       .map((m) => m.statMods?.bind(m))
       .filter((f): f is (s: Stats) => void => f !== undefined);
     this.run.recomputeStats(mods);
+  }
+
+  /** 获得规则卡（M9）：开局三选一 / 宝箱再得 / 调试面板直给，叠加挂入 modifiers */
+  grantArcana(id: ArcanaId): void {
+    if (this.run.arcana.includes(id)) return;
+    this.run.arcana.push(id);
+    this.modifiers.push(createArcanaModifier(id, this.ctx));
+    Meta.codexLight('arcana', id); // 图鉴首遇点亮
+    this.recomputeStats();
+    this.fx.ring(this.player.x, this.player.y, 0xe2b452, 9, 0.7);
+    emitEvent(this.game, 'hud:refresh');
   }
 
   // ---------- 主循环 ----------

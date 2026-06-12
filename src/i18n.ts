@@ -147,6 +147,30 @@ const D: Dict = {
   p_trellis: ['小花架', 'Flower Trellis'],
   p_trellis_d: ['拾取范围 +15%，经验获取 +4%', 'Pickup range +15%, XP gain +4%'],
 
+  // 规则卡 Arcana（M9）
+  arcanaTitle: ['晨曦的祝福！选择一张规则卡', 'A dawn blessing! Pick an arcana'],
+  arcTag: ['规则卡', 'ARCANA'],
+  arc_petaltide: ['花开满野', 'Blooming Tide'],
+  arc_petaltide_d: ['攻击范围 +25%，弹速 +10%', 'Area +25%, projectile speed +10%'],
+  arc_tailwind: ['顺风童谣', 'Tailwind Rhyme'],
+  arc_tailwind_d: ['移速 +12%，冷却 -10%', 'Move speed +12%, cooldown -10%'],
+  arc_thornlace: ['小小尖刺', 'Tiny Thorns'],
+  arc_thornlace_d: ['暴击率 +10%，伤害 +8%', 'Crit chance +10%, damage +8%'],
+  arc_goldbell: ['金铃叮当', 'Golden Jingle'],
+  arc_goldbell_d: ['金币获取 +25%，敌人偶尔抖落金币', 'Coin gain +25%; foes sometimes shake loose a coin'],
+  arc_starpop: ['星屑爆响', 'Star Pop'],
+  arc_starpop_d: ['敌人倒下时偶尔迸发星屑爆炸', 'Fallen foes sometimes burst into searing stardust'],
+  arc_moonheart: ['月夜勇气', 'Moonlit Courage'],
+  arc_moonheart_d: ['生命越低伤害越高（至多 +40%）', 'The lower your HP, the higher your damage (up to +40%)'],
+  arc_dewspring: ['甘露清泉', 'Sweet Springwater'],
+  arc_dewspring_d: ['每 25 秒在脚下涌出一汪治愈泉', 'Every 25s a healing spring wells up underfoot'],
+  arc_fireflyway: ['萤火向导', 'Firefly Guide'],
+  arc_fireflyway_d: ['拾取范围 +35%，每 30 秒吸来全场光珠', 'Pickup range +35%; every 30s gathers every gem afield'],
+  arc_compass: ['藏宝罗盘', 'Treasure Compass'],
+  arc_compass_d: ['开局送一个宝箱，宝箱金币翻倍', 'Start with a chest; chest coins are doubled'],
+  arc_onepath: ['专一之路', 'The Single Path'],
+  arc_onepath_d: ['升级只出现已持有的选项，冷却 -8%', 'Level-ups offer only what you hold; cooldown -8%'],
+
   // 兜底卡
   c_heal: ['野莓甜点', 'Berry Treat'],
   c_heal_d: ['恢复 40 生命', 'Restore 40 HP'],
@@ -363,6 +387,7 @@ const D: Dict = {
   codex_enemies: ['敌人', 'Enemies'],
   codex_chars: ['角色', 'Heroes'],
   codex_maps: ['地图', 'Fields'],
+  codex_arcana: ['规则卡', 'Arcana'],
   codex_hint: ['游玩中遇见即点亮', 'Encounter things in a run to light them up'],
 
   // 成就
@@ -456,6 +481,7 @@ const D: Dict = {
   set_volSfx: ['音效音量', 'SFX Volume'],
   set_dmgNum: ['伤害数字', 'Damage Numbers'],
   set_shake: ['屏幕震动', 'Screen Shake'],
+  set_arcana: ['规则卡', 'Arcana Cards'],
   set_lang: ['语言', 'Language'],
 
   // 调试
@@ -469,6 +495,7 @@ const D: Dict = {
   set_timeSkip: ['时间+60s', 'Time +60s'],
   set_giveWeapon: ['获得武器', 'Weapon'],
   set_wavePreview: ['波次预览', 'Waves'],
+  set_giveArcana: ['获得规则卡', 'Arcana'],
 };
 
 let lang: Lang = (() => {

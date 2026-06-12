@@ -1,13 +1,15 @@
-// 升级/宝箱系统：三选一候选生成、选卡应用、宝箱内容分层
-// 宝箱分层：可进化 → 进化；否则 → 已持有项升级×N；无可升级 → 金币
+// 升级/宝箱/规则卡系统：三选一候选生成、选卡应用、宝箱内容分层、规则卡开局三选一（M9）
+// 宝箱分层：可进化 → 进化；否则概率再得规则卡；否则 → 已持有项升级×N；无可升级 → 金币
+import { ARCANA, ARCANA_META } from '../content/arcana';
 import { CHEST, WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
 import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
 import { PASSIVE_MAX_LEVEL, PASSIVE_META, PASSIVE_FX } from '../content/passives';
-import type { PassiveId, WeaponId } from '../content/ids';
+import type { ArcanaId, PassiveId, WeaponId } from '../content/ids';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
 import { Meta } from '../core/MetaState';
+import { getSettings } from '../core/settings';
 import type { ChestReward, CombatContext, Offer, RunModifier, RunSystem } from './context';
 import type { WeaponManager } from './weapons';
 
@@ -16,12 +18,42 @@ export class LevelUpSystem implements RunSystem {
     private ctx: CombatContext,
     private weapons: WeaponManager,
     private modifiers: RunModifier[],
+    private grantArcana: (id: ArcanaId) => void,
   ) {}
 
-  /** 每帧末尾检查待结算升级 */
+  /** 每帧末尾检查待结算升级；规则卡开局三选一优先于升级 */
   update(_dt: number): void {
     const run = this.ctx.run;
+    if (run.pendingArcana && !run.choosing) {
+      this.openArcanaPick();
+      return;
+    }
     if (run.pendingLevels > 0 && !run.choosing) this.openLevelUp();
+  }
+
+  // ---------- 规则卡三选一（M9：开局选 1） ----------
+
+  private openArcanaPick(): void {
+    const ctx = this.ctx;
+    const run = ctx.run;
+    run.pendingArcana = false;
+    const pool = ARCANA_META.map((m) => m.id).filter((id) => !run.arcana.includes(id));
+    if (pool.length === 0) return;
+    run.choosing = true;
+    const choices: ArcanaId[] = [];
+    for (let i = 0; i < ARCANA.pickCount && pool.length > 0; i++) {
+      choices.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    }
+    SFX.levelup();
+    ctx.fx.ring(ctx.player.x, ctx.player.y, 0xe2b452, 7, 0.6);
+    ctx.scene.scene.pause();
+    emitEvent(ctx.scene.game, 'hud:arcana', choices);
+  }
+
+  /** HUD 规则卡选卡回调 */
+  applyArcana(id: ArcanaId): void {
+    this.ctx.run.choosing = false;
+    this.grantArcana(id);
   }
 
   // ---------- 升级三选一 ----------
@@ -126,13 +158,20 @@ export class LevelUpSystem implements RunSystem {
   }
 
   private buildChestReward(): ChestReward {
+    const run = this.ctx.run;
     // 第一层：进化
     const evolvable = this.weapons.evolvable();
     if (evolvable.length > 0) {
       return { kind: 'evolve', weapon: evolvable[Math.floor(Math.random() * evolvable.length)] };
     }
-    // 第二层：已持有项升级 ×N
-    const run = this.ctx.run;
+    // 第二层（M9 规则卡）：开关开启且未到单局上限时，有概率再得一张
+    if (getSettings().arcana && run.arcana.length < ARCANA.maxPerRun && Math.random() < ARCANA.chestChance) {
+      const pool = ARCANA_META.map((m) => m.id).filter((id) => !run.arcana.includes(id));
+      if (pool.length > 0) {
+        return { kind: 'arcana', card: pool[Math.floor(Math.random() * pool.length)] };
+      }
+    }
+    // 第三层：已持有项升级 ×N
     const cands: Offer[] = [];
     for (const w of this.weapons.list) {
       if (!w.evolved && w.level < WEAPON_MAX_LEVEL) {
@@ -151,8 +190,8 @@ export class LevelUpSystem implements RunSystem {
       }
       return { kind: 'upgrade', items };
     }
-    // 第三层：金币
-    return { kind: 'gold' };
+    // 末层：金币（数额随结果携带，规则卡 onChest 可改写）
+    return { kind: 'gold', coins: CHEST.goldCoins, heal: CHEST.goldHeal };
   }
 
   /** HUD 宝箱动画结束后回调 */
@@ -161,11 +200,14 @@ export class LevelUpSystem implements RunSystem {
     if (reward.kind === 'evolve') {
       this.weapons.evolve(reward.weapon);
       SFX.evolve();
+    } else if (reward.kind === 'arcana') {
+      this.grantArcana(reward.card);
+      SFX.levelup();
     } else if (reward.kind === 'upgrade') {
       for (const offer of reward.items) this.applyOne(offer);
     } else {
-      ctx.run.addCoins(CHEST.goldCoins);
-      ctx.run.heal(CHEST.goldHeal);
+      ctx.run.addCoins(reward.coins);
+      ctx.run.heal(reward.heal);
       SFX.coin();
     }
     emitEvent(ctx.scene.game, 'hud:refresh');

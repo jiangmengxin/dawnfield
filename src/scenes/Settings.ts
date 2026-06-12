@@ -1,13 +1,14 @@
-// 设置页：BGM/SFX 分轨音量（M8）/ 伤害数字 / 屏幕震动 / 语言 + 调试区
+// 设置页：BGM/SFX 分轨音量（M8）/ 伤害数字 / 屏幕震动 / 规则卡（M9）/ 语言 + 调试区
 // （静音开关仍在主菜单与暂停面板；两轨拉零等效静音）
-// 调试：信息/无敌/全屏拾取/自动选卡/解锁全部内容 + 加币/时间跳跃/指定武器/波次预览（后三者仅对进行中的局生效）
+// 调试：信息/无敌/全屏拾取/自动选卡/解锁全部内容 + 加币/时间跳跃/指定武器/波次预览/规则卡直给（后四者仅对进行中的局生效）
 // M3 起设置持久化进版本化存档（core/save）；行高随可用高度自适应，矮屏不溢出
 import { FONT, getLang, Lang, setLang, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
+import { ARCANA_META } from '../content/arcana';
 import { MAX_WEAPONS } from '../content/player';
 import { WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
-import type { WeaponId } from '../content/ids';
+import type { ArcanaId, WeaponId } from '../content/ids';
 import { Meta } from '../core/MetaState';
 import { getSettings, updateSettings, TempSettings } from '../core/settings';
 import { UIScene } from '../ui/UIScene';
@@ -38,11 +39,11 @@ export class SettingsScene extends UIScene {
 
     const maxW = Math.min(content.w, 480);
     const x0 = content.x + (content.w - maxW) / 2;
-    // 5 设置行 + 1 分区标题 + 6 调试行；行高自适应：空间充裕时 ≥44pt 命中区，
-    // 极矮屏（320×480 等）允许压到 34 以保证全部行可见可点
+    // 6 设置行 + 1 分区标题 + 6 调试行；行高自适应：空间充裕时 ≥44pt 命中区，
+    // 极矮屏（320×480 等）允许压到 26 以保证全部行可见可点（M9 增「规则卡」行后 12 行）
     const sectionH = 34;
-    const fit = (content.h - sectionH - THEME.gapMd * 2) / 11;
-    const rowH = fit >= 44 ? Math.max(44, Math.min(vp.s(60), fit)) : Math.max(34, fit);
+    const fit = (content.h - sectionH - THEME.gapMd * 2) / 12;
+    const rowH = fit >= 44 ? Math.max(44, Math.min(vp.s(60), fit)) : Math.max(26, fit);
     let y = content.y + THEME.gapMd;
 
     const label = (ty: number, key: string): void => {
@@ -89,6 +90,7 @@ export class SettingsScene extends UIScene {
 
     toggleRow('set_dmgNum', s.dmgNumbers, boolSetting('dmgNumbers'));
     toggleRow('set_shake', s.shake, boolSetting('shake'));
+    toggleRow('set_arcana', s.arcana, boolSetting('arcana')); // 规则卡（M9）：下一局生效
 
     // 语言：显示当前语言，点击弹出语言列表（支持多语言扩展）
     const cy = y + rowH / 2;
@@ -115,11 +117,11 @@ export class SettingsScene extends UIScene {
     toggleRow('set_autoPick', s.autoPick, boolSetting('autoPick'));
     toggleRow('set_unlockAll', s.unlockAll, boolSetting('unlockAll'));
 
-    // 调试操作行：加币 / 时间跳跃 / 指定武器 / 波次预览（后三者仅对进行中的局生效）
+    // 调试操作行：加币 / 时间跳跃 / 指定武器 / 波次预览 / 规则卡直给（后四者仅对进行中的局生效）
     const opCy = y + rowH / 2;
     rowBg(opCy);
     const btnH = Math.min(THEME.hitMin, rowH - 12);
-    const cells = hstack(rect(x0 - 4, opCy - btnH / 2, maxW + 8, btnH), THEME.gapXs, ['flex', 'flex', 'flex', 'flex']);
+    const cells = hstack(rect(x0 - 4, opCy - btnH / 2, maxW + 8, btnH), THEME.gapXs, ['flex', 'flex', 'flex', 'flex', 'flex']);
     const ops: Array<[string, () => void]> = [
       [t('set_addCoins'), () => {
         Meta.addCoins(1000, false); // 调试加币不计入累计获得（不触发金币成就）
@@ -131,6 +133,7 @@ export class SettingsScene extends UIScene {
       }],
       [t('set_giveWeapon'), () => this.openWeaponPicker()],
       [t('set_wavePreview'), () => this.openWavePreview()],
+      [t('set_giveArcana'), () => this.openArcanaPicker()],
     ];
     cells.forEach((c, i) => {
       new UIButton(this, c.x + c.w / 2, c.y + c.h / 2, {
@@ -138,6 +141,46 @@ export class SettingsScene extends UIScene {
       });
     });
     y += rowH;
+  }
+
+  /** 规则卡直给弹窗（M9 调试）：点选即为当前局叠加该卡（绕过单局上限，便于验收 10 卡可叠加）；
+   *  已持有置灰，弹窗保持打开可连续操作 */
+  private openArcanaPicker(): void {
+    const gs = this.liveGame();
+    if (!gs) return;
+    const gap = THEME.gapXs;
+    const availH = Math.min(this.vp.h - 48, 560) - 64 - THEME.gapMd * 2;
+    const btnH = Math.max(26, Math.min(40, Math.floor(availH / ARCANA_META.length) - gap));
+    const btns: Array<{ btn: UIButton; id: ArcanaId }> = [];
+    const refresh = (): void => {
+      for (const { btn, id } of btns) {
+        const owned = gs.run.arcana.includes(id);
+        btn.setLabel(owned ? '★ ' + t('arc_' + id) : t('arc_' + id));
+        btn.setEnabled(!owned);
+      }
+    };
+    Modal.open(this, {
+      title: t('set_giveArcana'),
+      w: 320,
+      h: 64 + ARCANA_META.length * (btnH + gap) + THEME.gapMd * 2,
+      build: (panel, inner) => {
+        ARCANA_META.forEach((m, i) => {
+          const btn = new UIButton(this, 0, inner.y + THEME.gapSm + btnH / 2 + i * (btnH + gap), {
+            w: Math.min(THEME.btnW, inner.w - 8),
+            h: btnH,
+            label: '',
+            fontSize: 15,
+            onTap: () => {
+              gs.grantArcana(m.id);
+              refresh();
+            },
+          });
+          btns.push({ btn, id: m.id });
+          panel.add(btn);
+        });
+        refresh();
+      },
+    });
   }
 
   /** 波次预览弹窗（M8 调试）：当前局地图的完整波次/事件时间表，标出当前所处位置 */

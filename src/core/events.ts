@@ -1,10 +1,12 @@
 // 类型化事件总线：包装 game.events，事件名与载荷集中登记
 import type Phaser from 'phaser';
+import type { ArcanaId } from '../content/ids';
 import type { ChestReward, Offer } from '../systems/context';
 
 export interface GameEventMap {
   'hud:levelup': [offers: Offer[]];
   'hud:chest': [reward: ChestReward];
+  'hud:arcana': [choices: ArcanaId[]];
   'hud:boss': [visible: boolean];
   'hud:warn': [i18nKey: string];
   'hud:achievement': [achId: string];

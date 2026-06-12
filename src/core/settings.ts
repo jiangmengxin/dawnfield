@@ -12,8 +12,9 @@ export interface TempSettings {
   debugInfo: boolean; // FPS/实体数等运行信息
   invincible: boolean;
   fullPickup: boolean; // 全屏拾取范围
-  autoPick: boolean; // 升级时自动选第一张卡
+  autoPick: boolean; // 升级时自动选第一张卡（规则卡三选一同样自动选）
   unlockAll: boolean; // 解锁全部内容（角色/地图视为全解锁，可逆）
+  arcana: boolean; // 规则卡 Arcana（M9）：关闭后局内行为与 M8 等价
 }
 
 export function getSettings(): TempSettings {

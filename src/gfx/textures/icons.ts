@@ -1,6 +1,6 @@
 // 武器/被动/商店图标（40×40 圆形令牌：白底圆 + 描边，铺满槽位即完整令牌）
 import { PAL, RAINBOW, cssOf } from '../palette';
-import { Ctx, makeTex, petalShape, star } from './core';
+import { Ctx, makeTex, petalShape, softGlow, star } from './core';
 
 export function createIcons(scene: Phaser.Scene): void {
   const bg = (ctx: Ctx) => {
@@ -1035,5 +1035,214 @@ export function createIcons(scene: Phaser.Scene): void {
     ctx.moveTo(21, 23);
     ctx.quadraticCurveTo(25, 28, 24, 32);
     ctx.stroke();
+  });
+
+  // ---------- 规则卡 Arcana（M9）：10 张 ----------
+
+  // 花开满野：满圈花瓣
+  makeTex(scene, 'icon_arc_petaltide', 40, 40, (ctx) => {
+    bg(ctx);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+      petalShape(ctx, 20 + Math.cos(a) * 8.5, 20 + Math.sin(a) * 8.5, 11, 3.8, a + Math.PI / 2, cssOf(PAL.petal), cssOf(PAL.petalDeep));
+    }
+    ctx.beginPath();
+    ctx.arc(20, 20, 4, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(PAL.xp);
+    ctx.fill();
+  });
+
+  // 顺风童谣：三道带回卷的风线
+  makeTex(scene, 'icon_arc_tailwind', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = cssOf(PAL.boomDeep);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    [13, 20, 27].forEach((yy, i) => {
+      ctx.beginPath();
+      ctx.moveTo(9, yy);
+      ctx.quadraticCurveTo(20, yy - 3, 27, yy);
+      if (i === 1) ctx.arc(29, yy - 2.5, 2.5, Math.PI / 2, Math.PI * 2);
+      ctx.stroke();
+    });
+  });
+
+  // 小小尖刺：带刺的蔷薇茎
+  makeTex(scene, 'icon_arc_thornlace', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = cssOf(PAL.grassDark);
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(13, 31);
+    ctx.quadraticCurveTo(18, 22, 24, 13);
+    ctx.stroke();
+    // 刺
+    ctx.fillStyle = cssOf(PAL.grassDark);
+    for (const [tx, ty, dir] of [[16, 26, -1], [20, 19.5, 1], [17.5, 22.5, 1]] as const) {
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(tx + dir * 4.5, ty - 1);
+      ctx.lineTo(tx + 1, ty - 3.5);
+      ctx.closePath();
+      ctx.fill();
+    }
+    // 顶端花苞
+    ctx.beginPath();
+    ctx.arc(25.5, 11, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(PAL.heart);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#D86870';
+    ctx.stroke();
+  });
+
+  // 金铃叮当：小金铃
+  makeTex(scene, 'icon_arc_goldbell', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.beginPath();
+    ctx.moveTo(13, 24);
+    ctx.quadraticCurveTo(13, 11, 20, 11);
+    ctx.quadraticCurveTo(27, 11, 27, 24);
+    ctx.lineTo(29, 27);
+    ctx.lineTo(11, 27);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(PAL.xp);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(PAL.honeyDeep);
+    ctx.stroke();
+    // 铃舌 + 提环
+    ctx.beginPath();
+    ctx.arc(20, 30, 2.6, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(PAL.honeyDeep);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(20, 10, 2.4, Math.PI, Math.PI * 2);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  });
+
+  // 星屑爆响：迸发的星星
+  makeTex(scene, 'icon_arc_starpop', 40, 40, (ctx) => {
+    bg(ctx);
+    star(ctx, 20, 20, 5, 10, 4.5, cssOf(PAL.spark), cssOf(PAL.sparkDeep));
+    ctx.fillStyle = cssOf(PAL.sparkDeep);
+    for (const [dx, dy] of [[-11, -8], [12, -6], [-9, 10], [11, 10]] as const) {
+      ctx.beginPath();
+      ctx.arc(20 + dx, 20 + dy, 1.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // 月夜勇气：弯月
+  makeTex(scene, 'icon_arc_moonheart', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.beginPath();
+    ctx.arc(19, 21, 11, 0, Math.PI * 2);
+    ctx.fillStyle = '#9AA8D8';
+    ctx.fill();
+    // 月牙缺口（以底色咬出）
+    ctx.beginPath();
+    ctx.arc(25, 16, 9.5, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.fill();
+    star(ctx, 28, 12, 4, 3.5, 1.4, cssOf(PAL.spark));
+  });
+
+  // 甘露清泉：水滴与涟漪
+  makeTex(scene, 'icon_arc_dewspring', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.beginPath();
+    ctx.moveTo(20, 7);
+    ctx.quadraticCurveTo(27, 17, 20, 22);
+    ctx.quadraticCurveTo(13, 17, 20, 7);
+    ctx.fillStyle = cssOf(PAL.rain);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = cssOf(PAL.rainDeep);
+    ctx.stroke();
+    ctx.strokeStyle = cssOf(PAL.rainDeep);
+    ctx.lineWidth = 2;
+    for (const r of [5, 9]) {
+      ctx.beginPath();
+      ctx.ellipse(20, 28, r, r * 0.34, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
+
+  // 萤火向导：荧光与点点轨迹
+  makeTex(scene, 'icon_arc_fireflyway', 40, 40, (ctx) => {
+    bg(ctx);
+    softGlow(ctx, 23, 15, 10, 'rgba(255,240,160,0.95)');
+    ctx.beginPath();
+    ctx.arc(23, 15, 3.4, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(PAL.spark);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(PAL.sparkDeep);
+    ctx.stroke();
+    // 点点飞行轨迹
+    ctx.fillStyle = cssOf(PAL.sparkDeep);
+    for (const [px, py, pr] of [[11, 28, 1.8], [15, 24.5, 1.5], [18.5, 21, 1.2]] as const) {
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // 藏宝罗盘：罗盘与指针
+  makeTex(scene, 'icon_arc_compass', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.beginPath();
+    ctx.arc(20, 20, 11.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFF6D8';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = cssOf(PAL.honeyDeep);
+    ctx.stroke();
+    // 四向刻度
+    ctx.strokeStyle = cssOf(PAL.honeyDeep);
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(20 + Math.cos(a) * 9, 20 + Math.sin(a) * 9);
+      ctx.lineTo(20 + Math.cos(a) * 11, 20 + Math.sin(a) * 11);
+      ctx.stroke();
+    }
+    // 指针（北红南灰）
+    ctx.beginPath();
+    ctx.moveTo(20, 12.5);
+    ctx.lineTo(23, 20);
+    ctx.lineTo(17, 20);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(PAL.ladybug);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(20, 27.5);
+    ctx.lineTo(23, 20);
+    ctx.lineTo(17, 20);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(PAL.ink);
+    ctx.fill();
+  });
+
+  // 专一之路：一条蜿蜒虚线小路通向星星
+  makeTex(scene, 'icon_arc_onepath', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.save();
+    ctx.setLineDash([3.5, 3]);
+    ctx.strokeStyle = cssOf(PAL.mineDeep);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(11, 31);
+    ctx.quadraticCurveTo(24, 27, 17, 19);
+    ctx.quadraticCurveTo(11, 12, 23, 11);
+    ctx.stroke();
+    ctx.restore();
+    star(ctx, 27.5, 11, 5, 5, 2.2, cssOf(PAL.spark), cssOf(PAL.sparkDeep));
   });
 }

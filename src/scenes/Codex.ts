@@ -3,7 +3,7 @@
 import { t } from '../i18n';
 import { FONT } from '../i18n';
 import { PAL } from '../gfx/palette';
-import { PASSIVE_META, WEAPON_META, ENEMIES, EnemyId, CHARACTERS, MAPS } from '../content';
+import { ARCANA_META, PASSIVE_META, WEAPON_META, ENEMIES, EnemyId, CHARACTERS, MAPS } from '../content';
 import { ensureMapAssets } from '../gfx/textures';
 import { CodexCat } from '../core/save';
 import { Meta } from '../core/MetaState';
@@ -14,7 +14,7 @@ import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
 import { THEME } from '../ui/theme';
 
 // 1.0 目标量级（锁定占位补齐到这些数字；敌人按实装量展示，未遇见即 ???）
-const TARGET = { weapons: 16, passives: 16, chars: 16, maps: 8 } as const;
+const TARGET = { weapons: 16, passives: 16, chars: 16, maps: 8, arcana: 10 } as const;
 
 export class CodexScene extends UIScene {
   private tab: CodexCat = 'weapons';
@@ -35,6 +35,7 @@ export class CodexScene extends UIScene {
       { id: 'enemies', label: t('codex_enemies') },
       { id: 'chars', label: t('codex_chars') },
       { id: 'maps', label: t('codex_maps') },
+      { id: 'arcana', label: t('codex_arcana') },
     ], (id) => {
       if (this.panel) this.savedScroll[this.tab] = this.panel.scrollY;
       this.tab = id as CodexCat;
@@ -92,6 +93,11 @@ export class CodexScene extends UIScene {
         items.push(this.entry(tab, c.id, { icon: c.tex, iconScale: c.texScale * 0.85, title: t('char_' + c.id), color: c.color, fontScale }));
       }
       pushLocked(TARGET.chars - CHARACTERS.length);
+    } else if (tab === 'arcana') {
+      for (const m of ARCANA_META) {
+        items.push(this.entry(tab, m.id, { icon: m.icon, title: t('arc_' + m.id), color: m.color, fontScale }));
+      }
+      pushLocked(TARGET.arcana - ARCANA_META.length);
     } else {
       for (const m of MAPS) {
         ensureMapAssets(this, m.id);

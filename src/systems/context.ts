@@ -1,7 +1,7 @@
 // 局内核心接口：CombatContext（武器/敌人系统看到的世界，GameScene 实现）
 // + RunSystem（系统统一更新接口）+ RunModifier（规则卡钩子，M9 实装，M2 空挂）
 import type Phaser from 'phaser';
-import type { PassiveId, WeaponId } from '../content/ids';
+import type { ArcanaId, PassiveId, WeaponId } from '../content/ids';
 import type { MapSpec } from '../content/maps';
 import type { RunState, Stats } from '../core/RunState';
 import type { Effects } from './effects';
@@ -50,11 +50,12 @@ export interface Offer {
   toLevel: number;
 }
 
-/** 宝箱分层结果：可进化 → 进化；否则 → 已持有项升级×N；无可升级 → 金币 */
+/** 宝箱分层结果：可进化 → 进化；否则概率再得规则卡（M9）；否则 → 已持有项升级×N；无可升级 → 金币 */
 export type ChestReward =
   | { kind: 'evolve'; weapon: WeaponId }
+  | { kind: 'arcana'; card: ArcanaId }
   | { kind: 'upgrade'; items: Offer[] }
-  | { kind: 'gold' };
+  | { kind: 'gold'; coins: number; heal: number };
 
 export interface RunResult {
   win: boolean;
@@ -103,11 +104,12 @@ export interface CombatContext {
   magnetizeGems(x: number, y: number, r: number): void;
   spawnEnemyBullet(spec: EnemyBulletSpec): void;
   spawnGem(x: number, y: number, value: number): void;
+  spawnCoin(x: number, y: number, value: number): void;
   spawnPickup(kind: 'heart' | 'chest', x: number, y: number): void;
   recomputeStats(): void;
 }
 
-/** 规则卡钩子（10 张 Arcana，M9 实装；M2 起所有调用点空挂） */
+/** 规则卡钩子（10 张 Arcana，M9 实装于 systems/arcana.ts；调用点 M2 起全挂） */
 export interface RunModifier {
   /** 属性重算后追加修正 */
   statMods?(stats: Stats): void;

@@ -4,9 +4,11 @@ import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { DEATH_COLOR, PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
+import { ARCANA_META } from '../content/arcana';
 import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
 import { PASSIVE_META } from '../content/passives';
-import { CHEST, WEAPON_META } from '../content/weapons';
+import { WEAPON_META } from '../content/weapons';
+import type { ArcanaId } from '../content/ids';
 import { makeButton, setButtonLabel } from '../ui/widgets';
 import { Viewport } from '../ui/Viewport';
 import { THEME } from '../ui/theme';
@@ -16,6 +18,16 @@ import { getSettings, updateSettings } from '../core/settings';
 import { go } from '../core/router';
 import type { ChestReward, Offer } from '../systems/context';
 import type { GameScene } from './Game';
+
+/** 选卡卡片渲染信息（升级三选一与规则卡三选一共用） */
+interface PickCardInfo {
+  icon: string;
+  name: string;
+  desc: string;
+  color: number;
+  tag: string;
+  tagColor: string;
+}
 
 export class HUDScene extends Phaser.Scene {
   private gs!: GameScene;
@@ -34,7 +46,7 @@ export class HUDScene extends Phaser.Scene {
   private speedBtn!: Phaser.GameObjects.Container;
   private iconRow: Phaser.GameObjects.GameObject[] = [];
   private overlay: Phaser.GameObjects.GameObject[] = [];
-  private overlayMode: 'none' | 'levelup' | 'chest' | 'pause' = 'none';
+  private overlayMode: 'none' | 'levelup' | 'chest' | 'arcana' | 'pause' = 'none';
   private bossVisible = false;
 
   constructor() {
@@ -116,6 +128,7 @@ export class HUDScene extends Phaser.Scene {
     const subs = [
       onEvent(this.game, 'hud:levelup', (offers) => this.showLevelUp(offers)),
       onEvent(this.game, 'hud:chest', (reward) => this.showChest(reward)),
+      onEvent(this.game, 'hud:arcana', (choices) => this.showArcanaPick(choices)),
       onEvent(this.game, 'hud:boss', (v) => { this.bossVisible = v; this.bossName.setVisible(v); }),
       onEvent(this.game, 'hud:warn', (key) => this.showWarn(key)),
       onEvent(this.game, 'hud:achievement', (id) => this.queueAchToast(id)),
@@ -338,6 +351,16 @@ export class HUDScene extends Phaser.Scene {
     const y = safe.y + (compact ? 56 : 44);
     this.iconRow.push(...this.drawSlotRow(x0, y, size, this.weaponSlots(), 11, gap));
     this.iconRow.push(...this.drawSlotRow(x0, y + size + gap, size, this.passiveSlots(), 11, gap));
+    // 规则卡令牌（M9）：持有时第三行小令牌（金圈，无等级数字，至多 3 张不占空槽）
+    const arcana = this.gs.run.arcana;
+    if (arcana.length > 0) {
+      const slots = arcana.map((id) => {
+        const meta = ARCANA_META.find((m) => m.id === id)!;
+        return { icon: meta.icon, label: '', gold: true };
+      });
+      const aSize = compact ? 22 : 26;
+      this.iconRow.push(...this.drawSlotRow(x0, y + (size + gap) * 2, aSize, slots, 11, gap));
+    }
   }
 
   // ---------- 警告横幅 ----------
@@ -392,9 +415,36 @@ export class HUDScene extends Phaser.Scene {
     });
   }
 
-  // ---------- 升级三选一 ----------
+  // ---------- 升级三选一 / 规则卡三选一 ----------
 
   private pendingOffers: Offer[] = [];
+  private pendingArcana: ArcanaId[] = [];
+
+  /** 选卡卡片几何（升级与规则卡共用）：竖屏纵排 / 横屏横排 */
+  private pickCardGeom(i: number, n: number): { cx: number; cy: number; cw: number; ch: number; portrait: boolean } {
+    const w = this.vp.w;
+    const h = this.vp.h;
+    const portrait = h > w;
+    if (portrait) {
+      const cw = Math.min(340, w - 40);
+      const ch = Math.min(120, (h * 0.6) / n - 14);
+      return { cx: w / 2, cy: h * 0.3 + i * (ch + 16), cw, ch, portrait };
+    }
+    const cw = Math.min(215, (w - 80) / n - 16);
+    const ch = 250;
+    return { cx: w / 2 + (i - (n - 1) / 2) * (cw + 18), cy: h * 0.52, cw, ch, portrait };
+  }
+
+  /** 选卡标题（升级与规则卡共用） */
+  private addPickTitle(text: string): void {
+    const w = this.vp.w;
+    const title = this.add.text(w / 2, this.vp.h * 0.14, text, {
+      fontFamily: FONT, fontSize: Math.min(30, w * 0.062) + 'px', fontStyle: 'bold', color: PAL.inkCss,
+      stroke: '#FFFFFF', strokeThickness: 7,
+    }).setOrigin(0.5).setDepth(101).setScale(0.5);
+    this.tweens.add({ targets: title, scale: 1, duration: 280, ease: 'Back.easeOut' });
+    this.overlay.push(title);
+  }
 
   private showLevelUp(offers: Offer[]): void {
     // 调试：自动选第一张卡，跳过选卡界面
@@ -405,38 +455,46 @@ export class HUDScene extends Phaser.Scene {
     }
     this.overlayMode = 'levelup';
     this.pendingOffers = offers;
-    const w = this.vp.w;
-    const h = this.vp.h;
-    const veil = this.addVeil();
-    const title = this.add.text(w / 2, h * 0.14, t('levelUpTitle'), {
-      fontFamily: FONT, fontSize: Math.min(30, w * 0.062) + 'px', fontStyle: 'bold', color: PAL.inkCss,
-      stroke: '#FFFFFF', strokeThickness: 7,
-    }).setOrigin(0.5).setDepth(101).setScale(0.5);
-    this.tweens.add({ targets: title, scale: 1, duration: 280, ease: 'Back.easeOut' });
-    this.overlay.push(veil, title);
-
-    const portrait = h > w;
+    this.overlay.push(this.addVeil());
+    this.addPickTitle(t('levelUpTitle'));
     offers.forEach((offer, i) => {
-      let cx: number;
-      let cy: number;
-      let cw: number;
-      let ch: number;
-      if (portrait) {
-        cw = Math.min(340, w - 40);
-        ch = Math.min(120, (h * 0.6) / offers.length - 14);
-        cx = w / 2;
-        cy = h * 0.3 + i * (ch + 16);
-      } else {
-        cw = Math.min(215, (w - 80) / offers.length - 16);
-        ch = 250;
-        cx = w / 2 + (i - (offers.length - 1) / 2) * (cw + 18);
-        cy = h * 0.52;
-      }
-      this.makeOfferCard(offer, i, cx, cy, cw, ch, portrait);
+      this.makePickCard(this.offerInfo(offer), i, this.pickCardGeom(i, offers.length), () => this.chooseOffer(offer));
     });
   }
 
-  private offerInfo(offer: Offer): { icon: string; name: string; desc: string; color: number; tag: string } {
+  /** 规则卡三选一（M9：开局选 1） */
+  private showArcanaPick(choices: ArcanaId[]): void {
+    // 调试：自动选第一张卡，跳过选卡界面
+    if (getSettings().autoPick && choices.length > 0) {
+      this.gs.levelUp.applyArcana(choices[0]);
+      this.scene.resume('game');
+      return;
+    }
+    this.overlayMode = 'arcana';
+    this.pendingArcana = choices;
+    this.overlay.push(this.addVeil());
+    this.addPickTitle(t('arcanaTitle'));
+    choices.forEach((id, i) => {
+      const meta = ARCANA_META.find((m) => m.id === id)!;
+      // 不带角标：标题已点明是规则卡，且窄屏下长名称会与角标相挤
+      const info = {
+        icon: meta.icon, name: t('arc_' + id), desc: t('arc_' + id + '_d'),
+        color: meta.color, tag: '', tagColor: '#C8902A',
+      };
+      this.makePickCard(info, i, this.pickCardGeom(i, choices.length), () => this.chooseArcana(id));
+    });
+  }
+
+  private chooseArcana(id: ArcanaId): void {
+    if (this.overlayMode !== 'arcana') return;
+    SFX.uiClick();
+    this.closeOverlay();
+    this.gs.levelUp.applyArcana(id);
+    this.scene.resume('game');
+  }
+
+  private offerInfo(offer: Offer): PickCardInfo {
+    const tagColor = offer.isNew ? '#C06870' : '#B8924A';
     if (offer.kind === 'weapon') {
       const meta = WEAPON_META.find((m) => m.id === offer.id)!;
       return {
@@ -445,6 +503,7 @@ export class HUDScene extends Phaser.Scene {
         desc: t('w_' + offer.id + '_d'),
         color: meta.color,
         tag: offer.isNew ? t('newTag') : 'Lv ' + offer.toLevel,
+        tagColor,
       };
     }
     if (offer.kind === 'passive') {
@@ -455,16 +514,22 @@ export class HUDScene extends Phaser.Scene {
         desc: t('p_' + offer.id + '_d'),
         color: meta.color,
         tag: offer.isNew ? t('newTag') : 'Lv ' + offer.toLevel,
+        tagColor,
       };
     }
     if (offer.kind === 'heal') {
-      return { icon: 'icon_heal', name: t('c_heal'), desc: t('c_heal_d'), color: PAL.heart, tag: '' };
+      return { icon: 'icon_heal', name: t('c_heal'), desc: t('c_heal_d'), color: PAL.heart, tag: '', tagColor };
     }
-    return { icon: 'icon_gold', name: t('c_gold'), desc: t('c_gold_d'), color: PAL.xp, tag: '' };
+    return { icon: 'icon_gold', name: t('c_gold'), desc: t('c_gold_d'), color: PAL.xp, tag: '', tagColor };
   }
 
-  private makeOfferCard(offer: Offer, idx: number, cx: number, cy: number, cw: number, ch: number, portrait: boolean): void {
-    const info = this.offerInfo(offer);
+  private makePickCard(
+    info: PickCardInfo,
+    idx: number,
+    geom: { cx: number; cy: number; cw: number; ch: number; portrait: boolean },
+    onPick: () => void,
+  ): void {
+    const { cx, cy, cw, ch, portrait } = geom;
     const g = this.add.graphics();
     const draw = (over: boolean) => {
       g.clear();
@@ -484,7 +549,7 @@ export class HUDScene extends Phaser.Scene {
       });
       const tag = this.add.text(cw / 2 - 14, -ch / 2 + 16, info.tag, {
         fontFamily: FONT, fontSize: '14px', fontStyle: 'bold',
-        color: offer.isNew ? '#C06870' : '#B8924A',
+        color: info.tagColor,
       }).setOrigin(1, 0);
       const desc = this.add.text(-cw / 2 + 72, -ch / 2 + 44, info.desc, {
         fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft,
@@ -499,7 +564,7 @@ export class HUDScene extends Phaser.Scene {
       }).setOrigin(0.5, 0);
       const tag = this.add.text(0, -ch / 2 + 132, info.tag, {
         fontFamily: FONT, fontSize: '14px', fontStyle: 'bold',
-        color: offer.isNew ? '#C06870' : '#B8924A',
+        color: info.tagColor,
       }).setOrigin(0.5, 0);
       const desc = this.add.text(0, -ch / 2 + 158, info.desc, {
         fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft, align: 'center',
@@ -515,15 +580,19 @@ export class HUDScene extends Phaser.Scene {
     c.setInteractive({ useHandCursor: true });
     c.on('pointerover', () => draw(true));
     c.on('pointerout', () => draw(false));
-    c.on('pointerup', () => this.chooseOffer(offer));
+    c.on('pointerup', onPick);
     this.tweens.add({ targets: c, alpha: 1, y: cy, duration: 260, delay: 90 * idx, ease: 'Cubic.easeOut' });
     this.overlay.push(c);
   }
 
   private pickByIndex(i: number): void {
-    if (this.overlayMode !== 'levelup') return;
-    const offer = this.pendingOffers[i];
-    if (offer) this.chooseOffer(offer);
+    if (this.overlayMode === 'levelup') {
+      const offer = this.pendingOffers[i];
+      if (offer) this.chooseOffer(offer);
+    } else if (this.overlayMode === 'arcana') {
+      const id = this.pendingArcana[i];
+      if (id) this.chooseArcana(id);
+    }
   }
 
   private chooseOffer(offer: Offer): void {
@@ -582,6 +651,9 @@ export class HUDScene extends Phaser.Scene {
         if (reward.kind === 'evolve') {
           iconKey = WEAPON_META.find((m) => m.id === reward.weapon)!.icon;
           label = t('evolveTag') + '！ ' + t('w_' + reward.weapon + '_e') + '\n' + t('w_' + reward.weapon + '_e_d');
+        } else if (reward.kind === 'arcana') {
+          iconKey = ARCANA_META.find((m) => m.id === reward.card)!.icon;
+          label = t('arcTag') + '！ ' + t('arc_' + reward.card) + '\n' + t('arc_' + reward.card + '_d');
         } else if (reward.kind === 'upgrade') {
           const first = reward.items[0];
           iconKey = first.kind === 'weapon'
@@ -592,8 +664,8 @@ export class HUDScene extends Phaser.Scene {
             .join('\n');
         } else {
           label = t('chestGold')
-            .replace('{c}', String(CHEST.goldCoins))
-            .replace('{h}', String(CHEST.goldHeal));
+            .replace('{c}', String(reward.coins))
+            .replace('{h}', String(reward.heal));
         }
         if (iconKey) {
           const icon = this.add.image(w / 2, h * 0.42, iconKey).setScale(0).setDepth(104);
@@ -619,7 +691,7 @@ export class HUDScene extends Phaser.Scene {
   // ---------- 暂停 ----------
 
   private togglePause(): void {
-    if (this.overlayMode === 'levelup' || this.overlayMode === 'chest') return;
+    if (this.overlayMode === 'levelup' || this.overlayMode === 'chest' || this.overlayMode === 'arcana') return;
     if (this.overlayMode === 'pause') {
       this.closeOverlay();
       this.scene.resume('game');
