@@ -5,7 +5,8 @@ import { FONT, getLang, Lang, setLang, t } from '../i18n';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { MAX_WEAPONS } from '../content/player';
-import { WEAPON_META } from '../content/weapons';
+import { WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
+import type { WeaponId } from '../content/ids';
 import { Meta } from '../core/MetaState';
 import { getSettings, updateSettings, TempSettings } from '../core/settings';
 import { UIScene } from '../ui/UIScene';
@@ -141,34 +142,45 @@ export class SettingsScene extends UIScene {
     return null;
   }
 
-  /** 指定武器弹窗：点选即为当前局添加/升级该武器 */
+  /** 指定武器弹窗：点选即为当前局添加/升级该武器；弹窗保持打开可连续操作，满级/满槽置灰 */
   private openWeaponPicker(): void {
     const gs = this.liveGame();
     if (!gs) return;
     const btnH = 40;
     const gap = THEME.gapXs;
-    const handle = Modal.open(this, {
+    const btns: Array<{ btn: UIButton; id: WeaponId }> = [];
+    const refresh = (): void => {
+      for (const { btn, id } of btns) {
+        const w = gs.weapons.get(id);
+        // 未持有且已满 6 槽不可再塞入（与正常选卡规则一致）；满级/已进化不可再升
+        const slotFull = !w && gs.weapons.list.length >= MAX_WEAPONS;
+        const maxed = !!w && (w.evolved || w.level >= WEAPON_MAX_LEVEL);
+        btn.setLabel(t('w_' + id) + (w
+          ? '  Lv ' + w.level + (w.evolved ? '★' : maxed ? ' · ' + t('maxTag') : '')
+          : ''));
+        btn.setEnabled(!slotFull && !maxed);
+      }
+    };
+    Modal.open(this, {
       title: t('set_giveWeapon'),
       w: 320,
       h: 64 + WEAPON_META.length * (btnH + gap) + THEME.gapMd * 2,
       build: (panel, inner) => {
         WEAPON_META.forEach((m, i) => {
-          const w = gs.weapons.get(m.id);
-          const label = t('w_' + m.id) + (w ? '  Lv ' + w.level + (w.evolved ? '★' : '') : '');
           const btn = new UIButton(this, 0, inner.y + THEME.gapSm + btnH / 2 + i * (btnH + gap), {
             w: Math.min(THEME.btnW, inner.w - 8),
             h: btnH,
-            label,
+            label: '',
             fontSize: 15,
             onTap: () => {
-              // 未持有且已满 6 槽时不再塞入（与正常选卡规则一致）
-              if (!gs.weapons.has(m.id) && gs.weapons.list.length >= MAX_WEAPONS) return;
               gs.weapons.addOrUpgrade(m.id);
-              handle.close();
+              refresh();
             },
           });
+          btns.push({ btn, id: m.id });
           panel.add(btn);
         });
+        refresh();
       },
     });
   }
