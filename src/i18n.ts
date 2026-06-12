@@ -39,6 +39,25 @@ const D: Dict = {
   reviveBanner: ['再次绽放！剩余复活 ×{n}', 'Bloom again! Revives left ×{n}'],
   statRevives: ['使用复活', 'Revives Used'],
 
+  // 无尽与狂暴（M11）
+  tab_normal: ['普通', 'Standard'],
+  tab_endless: ['无尽', 'Endless'],
+  ui_endlessLocked: ['通关该图后解锁无尽', 'Clear this map to unlock Endless'],
+  ui_noRecord: ['暂无记录', 'No record yet'],
+  endlessRecord: ['第{n}轮 · {t}', 'Round {n} · {t}'],
+  endlessCycleBanner: ['第 {n} 轮！', 'Round {n}!'],
+  endlessBossDown: ['Boss 倒下！晨光不灭', 'Boss down! The dawn holds'],
+  endlessTitle: ['坚守了 {n} 轮', 'Held for {n} rounds'],
+  statCycle: ['坚守轮次', 'Rounds Held'],
+  newRecord: ['新纪录！', 'New Record!'],
+  diffPick: ['选择难度', 'Choose Difficulty'],
+  diff_normal: ['普通', 'Normal'],
+  diff_normal_d: ['标准的晨野之旅', 'The standard journey'],
+  diff_hyper1: ['狂暴 I', 'Hyper I'],
+  diff_hyper1_d: ['敌人更强更快 · 金币×1.5 · 经验×1.1', 'Tougher, faster foes · Coins ×1.5 · XP ×1.1'],
+  diff_hyper2: ['狂暴 II', 'Hyper II'],
+  diff_hyper2_d: ['敌人凶猛 · 精英双刷 · 金币×2 · 经验×1.2', 'Ferocious foes · Double elites · Coins ×2 · XP ×1.2'],
+
   // 宝箱
   chestTitle: ['晨光宝箱', 'Dawn Chest'],
   chestOpen: ['点击开启', 'Tap to open'],
@@ -493,6 +512,16 @@ const D: Dict = {
   ach_runs50_d: ['累计出击 50 局', 'Set out on 50 runs'],
   ach_buy25: ['囤货大师', 'Master Stockpiler'],
   ach_buy25_d: ['在商店累计购买 25 次强化', 'Buy 25 upgrades at the shop'],
+  // M11 无尽与狂暴
+  ach_hyperClear1: ['狂暴洗礼', 'Hyper Baptism'],
+  ach_hyperClear1_d: ['以狂暴 I 或更高难度通关任一地图', 'Clear any map on Hyper I or above'],
+  ach_hyperAll: ['狂暴全制霸', 'Hyper Dominator'],
+  ach_hyperAll_d: ['全部 8 张地图以狂暴难度通关', 'Clear all 8 maps on Hyper difficulty'],
+  ach_endless3: ['长夜守望', 'Long Night Watch'],
+  ach_endless3_d: ['任一地图无尽模式坚守到第 3 轮', 'Reach round 3 in Endless on any map'],
+  ach_endless6: ['不灭晨星', 'Undying Morningstar'],
+  ach_endless6_d: ['任一地图无尽模式坚守到第 6 轮', 'Reach round 6 in Endless on any map'],
+  ach_rewardCoins: ['奖励 {n} 金币', 'Reward: {n} coins'],
 
   // 设置
   set_volBgm: ['音乐音量', 'Music Volume'],

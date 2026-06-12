@@ -46,6 +46,9 @@ export class AchievementsScene extends UIScene {
         if (spec.unlockMap) {
           reward += ' · ' + t('ach_rewardMap').replace('{m}', t('map_' + spec.unlockMap));
         }
+        if (spec.rewardCoins) {
+          reward += ' · ' + t('ach_rewardCoins').replace('{n}', String(spec.rewardCoins));
+        }
         const card = new Card(this, rowW / 2, i * (rowH + gap) + rowH / 2, {
           w: rowW, h: rowH,
           layout: 'row',

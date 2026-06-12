@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { CRIT, DROPS, PLAYER } from '../content/player';
 import { getMap, MapSpec } from '../content/maps';
 import { DEATH_COLOR, PAL } from '../gfx/palette';
+import { ENDLESS } from '../content/endless';
 import { ensureMapAssets, releaseMapAssets } from '../gfx/textures';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
@@ -91,7 +92,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyCapMul = this.isMobile ? 0.75 : 1;
 
     // 重置局内状态（场景可重开）；角色差异（HP/移速/体积/偏移）经 RunState.char 生效
-    this.run = new RunState(this.charId);
+    this.run = new RunState(this.charId, this.mode, this.diff);
     this.modifiers.length = 0; // 规则卡逐局重置（LevelUpSystem 持同一数组引用，不可换新）
     this.run.pendingArcana = getSettings().arcana; // 开局三选一（设置可关；关闭即与 M8 等价）
     this.facing = { x: 1, y: 0 };
@@ -309,7 +310,9 @@ export class GameScene extends Phaser.Scene {
       }
     }
     if (e.isBoss) {
-      this.victory(e.x, e.y);
+      // M11 无尽分叉：Boss 击杀不结算，发补给后战斗继续（Boss 每轮末重临）
+      if (this.mode === 'endless') this.endlessBossDown(e);
+      else this.victory(e.x, e.y);
       return;
     }
     if (e.xpVal > 0) this.pickupsRef.spawnGem(e.x, e.y, e.xpVal);
@@ -317,6 +320,23 @@ export class GameScene extends Phaser.Scene {
     if (Math.random() < DROPS.coinChance) {
       this.pickupsRef.spawnCoin(e.x - 10, e.y, Math.random() < DROPS.coinBigChance ? DROPS.coinBig : 1);
     }
+  }
+
+  /** 无尽 Boss 击杀（M11）：宝箱 + 金币雨（基础 25，轮衰减在拾取时生效）+ 全场磁吸脉冲 */
+  private endlessBossDown(e: Enemy): void {
+    emitEvent(this.game, 'hud:boss', false);
+    this.clock.hitStop(0.2);
+    if (getSettings().shake) this.cameras.main.shake(300, 0.006);
+    this.fx.ring(e.x, e.y, PAL.white, 12, 0.8);
+    this.pickupsRef.spawnPickup('chest', e.x, e.y);
+    for (let i = 0; i < ENDLESS.bossCoinN; i++) {
+      this.pickupsRef.spawnCoin(
+        e.x + (Math.random() - 0.5) * 90, e.y + (Math.random() - 0.5) * 90, ENDLESS.bossCoinV,
+      );
+    }
+    this.pickupsRef.magnetizeGems(e.x, e.y, 1e5);
+    SFX.victoryJingle();
+    emitEvent(this.game, 'hud:warn', 'endlessBossDown');
   }
 
   damagePlayer(d: number): void {
@@ -411,7 +431,7 @@ export class GameScene extends Phaser.Scene {
       mapId: this.mapId,
       mode: this.mode,
       diff: this.diff,
-      cycle: 0, // M11 无尽实装后写入轮次
+      cycle: this.run.cycle,
       revivesUsed: this.run.revivesUsed,
       build: this.weapons.list.map((w) => ({ id: w.id, level: w.level, evolved: w.evolved })),
     };

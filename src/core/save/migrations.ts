@@ -1,10 +1,10 @@
-// 存档迁移：v0 散键吸收 + 版本迁移链（未来 v2+ 在此登记）
-import type { SaveV1 } from './schema';
+// 存档迁移：v0 散键吸收 + 版本迁移链（未来 v3+ 在此登记）
+import type { SaveV2 } from './schema';
 
 const LEGACY_KEYS = ['dawnfield.lang', 'dawnfield.muted', 'dawnfield.volume', 'dawnfield.settings'];
 
 /** v0 → v1：吸收旧散键（lang/muted/volume/settings）进 settings，读取后删除旧键 */
-export function absorbLegacy(s: SaveV1): void {
+export function absorbLegacy(s: SaveV2): void {
   try {
     const lang = localStorage.getItem('dawnfield.lang');
     if (lang === 'zh' || lang === 'en') s.settings.lang = lang;
@@ -41,6 +41,15 @@ export function absorbLegacy(s: SaveV1): void {
  * storage 按 v..SAVE_VERSION-1 依次执行后再 sanitize。
  */
 export const MIGRATIONS: Record<number, (o: Record<string, unknown>) => void> = {
-  // 示例（M4+ schema 变更时）：
-  // 1: (o) => { o.newField = ...; o.v = 2; },
+  // v1 → v2（M11）：无尽/狂暴顶层字段 + 搭车字段 tipsSeen（M14 引导节流）与
+  // stats.winsByChar（M13 成就）；具体值守卫交给 sanitize（MapId 白名单 + num）
+  1: (o) => {
+    o.endless = {};
+    o.hyper = {};
+    o.tipsSeen = [];
+    if (typeof o.stats === 'object' && o.stats !== null) {
+      (o.stats as Record<string, unknown>).winsByChar = {};
+    }
+    o.v = 2;
+  },
 };

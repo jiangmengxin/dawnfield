@@ -9,6 +9,7 @@ export interface GameEventMap {
   'hud:arcana': [choices: ArcanaId[]];
   'hud:boss': [visible: boolean];
   'hud:warn': [i18nKey: string];
+  'hud:cycle': [cycle: number]; // M11 无尽：新一轮开始（金色 toast「第 {n} 轮！」）
   'hud:revive': [revivesLeft: number];
   'hud:achievement': [achId: string];
   'hud:refresh': [];

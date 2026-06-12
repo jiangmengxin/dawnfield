@@ -2,6 +2,7 @@
 // check 在统一视图上判定：run 为当前单局快照（局外评估时缺省），stats 为局外累计
 // unlockChar / unlockMap：达成时解锁对应角色/地图（游玩成就式解锁；地图解锁链 = 通关上一图）
 import type { AchievementId, CharacterId, MapId } from './ids';
+import { MAPS } from './maps';
 
 export interface AchRunView {
   kills: number;
@@ -15,6 +16,8 @@ export interface AchRunView {
   eliteKills: number;
   win: boolean;
   mapId: string; // 本局地图（通关类成就按图判定）
+  difficulty: number; // 狂暴档位 0–2（M11）
+  endlessCycle: number; // 无尽当前轮次（M11；普通局恒 0）
 }
 
 export interface AchStatsView {
@@ -28,6 +31,8 @@ export interface AchStatsView {
 export interface AchView {
   run?: AchRunView;
   stats: AchStatsView;
+  /** 各图已通关最高狂暴档位（M11；hyperAll 用，局外评估时缺省） */
+  hyper?: Partial<Record<string, number>>;
 }
 
 export interface AchievementSpec {
@@ -35,6 +40,7 @@ export interface AchievementSpec {
   icon: string; // 纹理 key
   unlockChar?: CharacterId; // 达成时解锁角色
   unlockMap?: MapId; // 达成时解锁地图
+  rewardCoins?: number; // 达成时奖励金币（不计入 coinsEarned 成就链，M11 起）
   check(v: AchView): boolean;
 }
 
@@ -98,4 +104,13 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
   { id: 'wins10',      icon: 'chest',        check: (v) => v.stats.wins >= 10 },
   { id: 'runs50',      icon: 'd_flower2',    check: (v) => v.stats.runs >= 50 },
   { id: 'buy25',       icon: 'icon_pouch',   check: (v) => v.stats.purchases >= 25 },
+  // ---------- M11（无尽与狂暴；win 类天然安全——无尽永不产生 win:true） ----------
+  { id: 'hyperClear1', icon: 'e_shadelord',
+    check: (v) => v.run?.win === true && v.run.difficulty >= 1 },
+  { id: 'hyperAll',    icon: 'sd_ray',
+    check: (v) => MAPS.every((m) => (v.hyper?.[m.id] ?? 0) >= 1) },
+  { id: 'endless3',    icon: 'nd_star',
+    check: (v) => (v.run?.endlessCycle ?? 0) >= 3 },
+  { id: 'endless6',    icon: 'nd_crystal',   rewardCoins: 300,
+    check: (v) => (v.run?.endlessCycle ?? 0) >= 6 },
 ];

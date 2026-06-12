@@ -70,4 +70,6 @@ export type AchievementId =
   | 'fullHouse' | 'maxPassive'
   // M7
   | 'brambleClear' | 'nocturneClear' | 'summitClear' | 'survive20' | 'kills500' | 'level40'
-  | 'evolve6' | 'coins5000' | 'kills10000' | 'wins10' | 'runs50' | 'buy25';
+  | 'evolve6' | 'coins5000' | 'kills10000' | 'wins10' | 'runs50' | 'buy25'
+  // M11（无尽与狂暴）
+  | 'hyperClear1' | 'hyperAll' | 'endless3' | 'endless6';

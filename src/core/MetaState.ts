@@ -1,15 +1,15 @@
 // 局外状态（MetaState）：金币 / 商店强化 / 图鉴点亮 / 成就 / 解锁 / 累计统计
 // 存档读写经 core/save；与局内 RunState 配对
-import type { PowerUpId } from '../content/ids';
+import type { MapId, PowerUpId } from '../content/ids';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { POWERUPS, PowerUpSpec, powerUpPrice } from '../content/shop';
-import { CodexCat, flushSave, getSave, persistSave, SaveV1 } from './save';
+import { CodexCat, flushSave, getSave, persistSave, SaveV2 } from './save';
 
 class MetaStateImpl {
   /** 图鉴点亮 Set 缓存：EnemySystem.spawn 高频调用，避免每次扫数组 */
   private litCache: Partial<Record<CodexCat, Set<string>>> = {};
 
-  get save(): SaveV1 {
+  get save(): SaveV2 {
     return getSave();
   }
 
@@ -119,13 +119,15 @@ class MetaStateImpl {
     return this.save.achievements.includes(id);
   }
 
-  /** 返回是否为新解锁；同时应用成就携带的角色/地图解锁 */
+  /** 返回是否为新解锁；同时应用成就携带的角色/地图解锁与金币奖励 */
   unlockAch(id: string): boolean {
     if (this.hasAch(id)) return false;
     this.save.achievements.push(id);
     const spec = ACHIEVEMENTS.find((a) => a.id === id);
     if (spec?.unlockChar) this.unlock('chars', spec.unlockChar);
     if (spec?.unlockMap) this.unlock('maps', spec.unlockMap);
+    // 金币奖励不计入累计获得（不污染 coins 成就连锁）
+    if (spec?.rewardCoins) this.addCoins(spec.rewardCoins, false);
     persistSave();
     return true;
   }
@@ -156,16 +158,38 @@ class MetaStateImpl {
 
   // ---------- 结算入账 ----------
 
-  /** 单局结束（结算页 / 中途退出）：统计累计 + 金币入账，立即落盘 */
-  recordRun(r: { win: boolean; time: number; kills: number; coins: number }): void {
+  /** 单局结束（结算页 / 中途退出）：统计累计 + 金币入账，立即落盘。
+   *  M11 扩参：胜利且带狂暴档位 → 写 hyper 最高档；无尽局 → 以 sec 判优写每图最佳。
+   *  返回是否刷新无尽纪录（Result 页「新纪录！」标记） */
+  recordRun(r: {
+    win: boolean; time: number; kills: number; coins: number;
+    mapId?: string; mode?: 'normal' | 'endless'; diff?: 0 | 1 | 2; cycle?: number;
+  }): boolean {
     const st = this.save.stats;
     st.runs++;
     if (r.win) st.wins++;
     st.kills += r.kills;
     st.playSeconds += Math.round(r.time);
     st.bestSurvival = Math.max(st.bestSurvival, Math.round(r.time));
+    let newBest = false;
+    const mapId = r.mapId as MapId | undefined;
+    if (mapId) {
+      // 狂暴通关：记录最高档（更难覆盖更易；普通通关 diff=0 不落键）
+      if (r.win && r.diff && (this.save.hyper[mapId] ?? 0) < r.diff) {
+        this.save.hyper[mapId] = r.diff;
+      }
+      if (r.mode === 'endless') {
+        const sec = Math.round(r.time);
+        const prev = this.save.endless[mapId];
+        if (!prev || sec > prev.sec) {
+          this.save.endless[mapId] = { sec, kills: r.kills, cycle: r.cycle ?? 0, diff: r.diff ?? 0 };
+          newBest = true;
+        }
+      }
+    }
     this.addCoins(Math.max(0, Math.round(r.coins)));
     flushSave();
+    return newBest;
   }
 }
 

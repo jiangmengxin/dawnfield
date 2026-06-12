@@ -1,15 +1,15 @@
 // 存档读写：单例缓存 + 300ms debounce 写入 + 损坏自愈（原文备份 .corrupt 键）
-import { defaultSave, sanitize, SAVE_VERSION, SaveV1 } from './schema';
+import { defaultSave, sanitize, SAVE_VERSION, SaveV2 } from './schema';
 import { absorbLegacy, MIGRATIONS } from './migrations';
 
 const KEY = 'dawnfield.save';
 const CORRUPT_KEY = 'dawnfield.save.corrupt';
 const DEBOUNCE_MS = 300;
 
-let cache: SaveV1 | null = null;
+let cache: SaveV2 | null = null;
 let timer: number | null = null;
 
-function load(): SaveV1 {
+function load(): SaveV2 {
   let raw: string | null = null;
   try { raw = localStorage.getItem(KEY); } catch { /* ignore */ }
 
@@ -38,7 +38,7 @@ function load(): SaveV1 {
 }
 
 /** 当前存档（首次访问时加载）；改动后须调 persistSave()/flushSave() */
-export function getSave(): SaveV1 {
+export function getSave(): SaveV2 {
   if (!cache) {
     cache = load();
     flushSave(); // 立即落盘：建立新键 / 覆盖损坏内容

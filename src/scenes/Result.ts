@@ -15,6 +15,7 @@ export class ResultScene extends Phaser.Scene {
   private data2!: RunResult;
   private confettiTimer: Phaser.Time.TimerEvent | null = null;
   private newAch: string[] = [];
+  private newEndlessBest = false;
 
   constructor() {
     super('result');
@@ -23,7 +24,8 @@ export class ResultScene extends Phaser.Scene {
   init(data: RunResult): void {
     this.data2 = data;
     // 结算入账：金币 + 累计统计（create 可能因场景重启重复，入账只在 init 一次）
-    Meta.recordRun(data);
+    // M11：胜利写狂暴档位、无尽局以 sec 判优写每图最佳（返回是否新纪录）
+    this.newEndlessBest = Meta.recordRun(data);
     // 终局成就评估：胜利类 + 累计类（局内已解锁的由 Tracker 负责，这里只补尾）
     this.newAch = evalAchievements({
       run: {
@@ -38,8 +40,11 @@ export class ResultScene extends Phaser.Scene {
         eliteKills: 0, // 同上，局内已评估
         win: data.win,
         mapId: data.mapId,
+        difficulty: data.diff,
+        endlessCycle: data.cycle,
       },
       stats: Meta.save.stats,
+      hyper: Meta.save.hyper, // recordRun 已写入本局档位，hyperAll 据此判全图
     });
   }
 
@@ -85,16 +90,32 @@ export class ResultScene extends Phaser.Scene {
       });
     }
 
-    const title = this.add.text(cx, h * 0.16, r.win ? t('victory') : t('defeat'), {
-      fontFamily: FONT, fontSize: '46px', fontStyle: 'bold',
-      color: r.win ? '#C8902A' : PAL.inkCss,
+    // M11 无尽：标题「坚守了 N 轮」（金色）；第一轮 Boss 前阵亡仍按普通失败措辞
+    const endless = r.mode === 'endless' && r.cycle > 0;
+    const titleText = endless
+      ? t('endlessTitle').replace('{n}', String(r.cycle))
+      : r.win ? t('victory') : t('defeat');
+    const title = this.add.text(cx, h * 0.16, titleText, {
+      fontFamily: FONT, fontSize: endless ? '40px' : '46px', fontStyle: 'bold',
+      color: r.win || endless ? '#C8902A' : PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 8,
     }).setOrigin(0.5).setDepth(2).setScale(0.4);
     this.tweens.add({ targets: title, scale: 1, duration: 450, ease: 'Back.easeOut' });
 
-    this.add.text(cx, h * 0.16 + 46, r.win ? t('map_' + r.mapId + '_win') : t('defeatSub'), {
+    // 副标题：地图通关词 / 失败词；狂暴局追加档位注记
+    const diffNote = r.diff > 0 ? ' · ' + (r.diff === 2 ? t('diff_hyper2') : t('diff_hyper1')) : '';
+    const subText = r.mode === 'endless'
+      ? t('map_' + r.mapId) + diffNote
+      : (r.win ? t('map_' + r.mapId + '_win') : t('defeatSub')) + (r.win ? diffNote : '');
+    this.add.text(cx, h * 0.16 + 46, subText, {
       fontFamily: FONT, fontSize: '16px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(2);
+    if (this.newEndlessBest) {
+      this.add.text(cx, h * 0.16 + 70, '★ ' + t('newRecord'), {
+        fontFamily: FONT, fontSize: '17px', fontStyle: 'bold', color: '#C8902A',
+        stroke: '#FFFFFF', strokeThickness: 4,
+      }).setOrigin(0.5).setDepth(2);
+    }
 
     // 主角谢幕（本局角色）
     const heroTex = getCharacter(r.charId).tex;
@@ -107,6 +128,8 @@ export class ResultScene extends Phaser.Scene {
     const ss = String(Math.floor(r.time % 60)).padStart(2, '0');
     const rows: Array<[string, string]> = [
       [t('statTime'), mm + ':' + ss],
+      // M11 无尽轮次行（仅无尽局显示）
+      ...(r.mode === 'endless' ? [[t('statCycle'), String(r.cycle)] as [string, string]] : []),
       [t('statKills'), String(r.kills)],
       [t('statLevel'), String(r.level)],
       // M10 复活注记：用过才显示（金币行保持末位金色）
@@ -154,7 +177,8 @@ export class ResultScene extends Phaser.Scene {
 
     const retry = makeButton(this, cx, h * 0.82, THEME.btnW, THEME.btnH, t('retry'), () => {
       this.cleanup();
-      this.scene.start('game', { charId: r.charId, mapId: r.mapId }); // 同角色同图再来一局
+      // 同角色同图再来一局；M11 起沿用模式与狂暴档位
+      this.scene.start('game', { charId: r.charId, mapId: r.mapId, mode: r.mode, diff: r.diff });
     }, { fontSize: THEME.btnFs });
     const menu = makeButton(this, cx, h * 0.82 + 68, THEME.btnW, THEME.btnH, t('quit'), () => {
       this.cleanup();

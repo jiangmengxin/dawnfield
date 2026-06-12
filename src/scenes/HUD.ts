@@ -133,6 +133,8 @@ export class HUDScene extends Phaser.Scene {
       onEvent(this.game, 'hud:arcana', (choices) => this.showArcanaPick(choices)),
       onEvent(this.game, 'hud:boss', (v) => { this.bossVisible = v; this.bossName.setVisible(v); }),
       onEvent(this.game, 'hud:warn', (key) => this.showWarn(key)),
+      // M11 无尽轮次：走金色 toast 队列（轮边界与 Boss 横幅同帧，warnText 会被覆盖）
+      onEvent(this.game, 'hud:cycle', (n) => this.queueToast(t('endlessCycleBanner').replace('{n}', String(n)))),
       onEvent(this.game, 'hud:revive', (n) => this.queueToast(t('reviveBanner').replace('{n}', String(n)))),
       onEvent(this.game, 'hud:achievement', (id) => this.queueAchToast(id)),
       onEvent(this.game, 'hud:refresh', () => this.buildIconRow()),
@@ -231,7 +233,8 @@ export class HUDScene extends Phaser.Scene {
     // 调试信息（设置中开启）：FPS / 实体计数 / 动态上限 + 波次预览 + 武器 DPS（M8）
     const dbg = getSettings();
     if (dbg.debugInfo) {
-      const flags = (dbg.invincible ? ' 无敌' : '') + (dbg.fullPickup ? ' 全拾' : '');
+      const flags = (dbg.invincible ? ' 无敌' : '') + (dbg.fullPickup ? ' 全拾' : '')
+        + (run.diff > 0 ? ' 狂暴' + run.diff : '') + (run.mode === 'endless' ? ' 无尽R' + run.cycle : '');
       const dyn = this.gs.dynCapMul;
       const c = this.gs.debugCounts;
       const p = this.gs.waveDir.preview();

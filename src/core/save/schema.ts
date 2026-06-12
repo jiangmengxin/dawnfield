@@ -1,8 +1,9 @@
-// 版本化存档 schema：SaveV1 + 默认值 + 宽容校验（纯数据层，禁止依赖 Phaser）
+// 版本化存档 schema：SaveV2 + 默认值 + 宽容校验（纯数据层，禁止依赖 Phaser）
 // schema 改动必须递增版本号并在 migrations.ts 登记迁移
-import type { PowerUpId } from '../../content/ids';
+import type { MapId, PowerUpId } from '../../content/ids';
+import { MAPS } from '../../content/maps';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export type CodexCat = 'weapons' | 'passives' | 'enemies' | 'chars' | 'maps' | 'arcana';
 
@@ -36,9 +37,19 @@ export interface SaveStats {
   bestSurvival: number; // 最长单局存活秒数
   playSeconds: number;
   purchases: number; // 商店累计购买次数
+  /** 各角色通关次数（v2 搭车字段，M13 成就消费；M11 仅建立结构） */
+  winsByChar: Record<string, number>;
 }
 
-export interface SaveV1 {
+/** 每图无尽最佳记录（以 sec 判优） */
+export interface EndlessRecord {
+  sec: number;
+  kills: number;
+  cycle: number; // 坚守到第几轮（1-based；Boss 前阵亡为 0）
+  diff: number; // 该记录的狂暴档位 0–2（注记用，不分轨）
+}
+
+export interface SaveV2 {
   v: typeof SAVE_VERSION;
   coins: number;
   powerUps: Partial<Record<PowerUpId, number>>;
@@ -50,13 +61,19 @@ export interface SaveV1 {
   achievements: string[];
   stats: SaveStats;
   settings: SaveSettings;
+  /** 无尽模式每图最佳（M11） */
+  endless: Partial<Record<MapId, EndlessRecord>>;
+  /** 已通关的最高狂暴档位 0–2（M11；0 不落键） */
+  hyper: Partial<Record<MapId, number>>;
+  /** 引导提示节流（v2 搭车字段，M14 消费；全存档生命周期每条一次） */
+  tipsSeen: string[];
 }
 
 function emptyCats(): Record<CodexCat, string[]> {
   return { weapons: [], passives: [], enemies: [], chars: [], maps: [], arcana: [] };
 }
 
-export function defaultSave(): SaveV1 {
+export function defaultSave(): SaveV2 {
   return {
     v: SAVE_VERSION,
     coins: 0,
@@ -64,12 +81,18 @@ export function defaultSave(): SaveV1 {
     unlocked: { chars: ['spark'], maps: ['meadow'] },
     codex: { lit: emptyCats(), seen: emptyCats() },
     achievements: [],
-    stats: { runs: 0, wins: 0, kills: 0, coinsEarned: 0, bestSurvival: 0, playSeconds: 0, purchases: 0 },
+    stats: {
+      runs: 0, wins: 0, kills: 0, coinsEarned: 0, bestSurvival: 0, playSeconds: 0, purchases: 0,
+      winsByChar: {},
+    },
     settings: {
       lang: null, muted: false, volBgm: 1, volSfx: 1, dmgNumbers: true, shake: true, speed: 1,
       debugInfo: false, invincible: false, fullPickup: false, autoPick: false, unlockAll: false,
       arcana: true,
     },
+    endless: {},
+    hyper: {},
+    tipsSeen: [],
   };
 }
 
@@ -96,8 +119,11 @@ function cats(v: unknown): Record<CodexCat, string[]> {
   return out;
 }
 
-/** 解析后的对象 → SaveV1；结构性损坏返回 null（调用方备份原文并重建） */
-export function sanitize(raw: unknown): SaveV1 | null {
+/** MapId 白名单（endless/hyper 键守卫） */
+const MAP_IDS = new Set<string>(MAPS.map((m) => m.id));
+
+/** 解析后的对象 → SaveV2；结构性损坏返回 null（调用方备份原文并重建） */
+export function sanitize(raw: unknown): SaveV2 | null {
   if (typeof raw !== 'object' || raw === null) return null;
   const o = raw as Record<string, unknown>;
   if (typeof o.v !== 'number') return null;
@@ -130,12 +156,43 @@ export function sanitize(raw: unknown): SaveV1 | null {
 
   if (typeof o.stats === 'object' && o.stats !== null) {
     const s = o.stats as Record<string, unknown>;
+    const winsByChar: Record<string, number> = {};
+    if (typeof s.winsByChar === 'object' && s.winsByChar !== null) {
+      for (const [k, v] of Object.entries(s.winsByChar as Record<string, unknown>)) {
+        const n = Math.round(num(v, 0));
+        if (n > 0) winsByChar[k] = n;
+      }
+    }
     out.stats = {
       runs: num(s.runs, 0), wins: num(s.wins, 0), kills: num(s.kills, 0),
       coinsEarned: num(s.coinsEarned, 0), bestSurvival: num(s.bestSurvival, 0),
       playSeconds: num(s.playSeconds, 0), purchases: num(s.purchases, 0),
+      winsByChar,
     };
   }
+
+  // M11 无尽/狂暴：MapId 白名单 + 逐项 num 守卫，损坏条目丢弃不传染
+  if (typeof o.endless === 'object' && o.endless !== null) {
+    for (const [k, v] of Object.entries(o.endless as Record<string, unknown>)) {
+      if (!MAP_IDS.has(k) || typeof v !== 'object' || v === null) continue;
+      const r = v as Record<string, unknown>;
+      const rec = {
+        sec: Math.round(num(r.sec, 0)),
+        kills: Math.round(num(r.kills, 0)),
+        cycle: Math.round(num(r.cycle, 0)),
+        diff: Math.round(num(r.diff, 0, 0, 2)),
+      };
+      if (rec.sec > 0) out.endless[k as MapId] = rec;
+    }
+  }
+  if (typeof o.hyper === 'object' && o.hyper !== null) {
+    for (const [k, v] of Object.entries(o.hyper as Record<string, unknown>)) {
+      if (!MAP_IDS.has(k)) continue;
+      const lv = Math.round(num(v, 0, 0, 2));
+      if (lv > 0) out.hyper[k as MapId] = lv;
+    }
+  }
+  out.tipsSeen = strArr(o.tipsSeen);
 
   if (typeof o.settings === 'object' && o.settings !== null) {
     const s = o.settings as Record<string, unknown>;

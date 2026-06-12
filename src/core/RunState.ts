@@ -2,7 +2,10 @@
 // 纯状态 + 属性重算，无 Phaser 依赖；商店永久强化在 computeStats 汇入基础值
 // M4 起角色差异化：基础 HP/移速/体积来自 CharacterSpec，属性偏移在重算时叠乘
 import type { ArcanaId, PassiveId } from '../content/ids';
+import type { RunMode } from '../systems/context';
 import { CharacterSpec, getCharacter } from '../content/characters';
+import { DIFFICULTY } from '../content/difficulty';
+import { endlessCoinMul } from '../content/endless';
 import { PASSIVE_FX } from '../content/passives';
 import { PLAYER, xpForLevel } from '../content/player';
 import { powerUpBonus, PowerUpBonus } from '../content/shop';
@@ -26,6 +29,11 @@ export interface Stats {
 export class RunState {
   /** 本局角色（基础体格 + 属性偏移来源） */
   readonly char: CharacterSpec;
+  /** 模式与难度（M11）：金币/经验乘区与敌方乘区读此处；普通局恒 'normal'/0 */
+  readonly mode: RunMode;
+  readonly diff: 0 | 1 | 2;
+  /** 无尽当前轮次（1-based，WaveDirector 推进；Boss 前与普通局恒 0） */
+  cycle = 0;
   hp = PLAYER.hp;
   level = 1;
   xp = 0;
@@ -60,8 +68,10 @@ export class RunState {
   /** 商店永久强化加成（开局快照，局中不变） */
   private readonly pu: PowerUpBonus = powerUpBonus(getSave().powerUps);
 
-  constructor(charId = 'spark') {
+  constructor(charId = 'spark', mode: RunMode = 'normal', diff: 0 | 1 | 2 = 0) {
     this.char = getCharacter(charId);
+    this.mode = mode;
+    this.diff = diff;
     const puLv = getSave().powerUps;
     this.rerolls = 1 + (puLv.reroll ?? 0);
     this.banishes = 1 + (puLv.banish ?? 0);
@@ -100,7 +110,7 @@ export class RunState {
   }
 
   addXp(v: number): void {
-    this.xp += v * this.stats.xpGain;
+    this.xp += v * this.stats.xpGain * DIFFICULTY[this.diff].xpMul;
     while (this.xp >= this.xpNeed) {
       this.xp -= this.xpNeed;
       this.level++;
@@ -110,7 +120,9 @@ export class RunState {
   }
 
   addCoins(v: number): void {
-    this.coins += v * this.stats.coinGain;
+    // 狂暴奖励乘区 × 无尽轮衰减（只作用于局内收益，保护商店经济曲线；cycle=0 时衰减恒 1）
+    const decay = this.mode === 'endless' ? endlessCoinMul(this.cycle) : 1;
+    this.coins += v * this.stats.coinGain * DIFFICULTY[this.diff].coinMul * decay;
   }
 
   heal(v: number): void {

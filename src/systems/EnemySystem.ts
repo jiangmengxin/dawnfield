@@ -3,6 +3,8 @@
 import Phaser from 'phaser';
 import { ENEMIES, dmgScale, hpScale } from '../content/enemies';
 import { BOSSES } from '../content/bosses';
+import { DIFFICULTY } from '../content/difficulty';
+import { ENDLESS } from '../content/endless';
 import type { EnemyId } from '../content/ids';
 import { Meta } from '../core/MetaState';
 import { BEHAVIORS, BehaviorMove } from './behaviors';
@@ -69,9 +71,16 @@ export class EnemySystem implements RunSystem {
     e.id = id;
     e.setTexture(spec.tex);
     e.setPosition(x, y);
-    e.hp = e.maxHp = spec.hp * hpScale(min) * (spec.boss || spec.elite ? this.ctx.run.difficultyHp : 1);
-    e.spd = spec.speed * (0.9 + Math.random() * 0.2);
-    e.dmg = spec.dmg * dmgScale(min);
+    // M11 狂暴 × 无尽轮次乘区（正交叠乘；k=0 / diff=0 时恒 1，与 M10 等价）
+    const d = DIFFICULTY[this.ctx.run.diff];
+    const k = this.ctx.run.cycle;
+    const hpMul = d.hpMul * (1 + ENDLESS.hpMulPerCycle * k)
+      * (spec.boss ? 1 + ENDLESS.bossExtraPerCycle * k : 1);
+    const spdMul = d.speedMul * Math.min(ENDLESS.speedCap, 1 + ENDLESS.speedMulPerCycle * k);
+    const dmgMul = d.dmgMul * (1 + ENDLESS.dmgMulPerCycle * k);
+    e.hp = e.maxHp = spec.hp * hpScale(min) * (spec.boss || spec.elite ? this.ctx.run.difficultyHp : 1) * hpMul;
+    e.spd = spec.speed * (0.9 + Math.random() * 0.2) * spdMul;
+    e.dmg = spec.dmg * dmgScale(min) * dmgMul;
     e.xpVal = spec.xp;
     e.radius = spec.radius;
     e.knockMul = spec.knockMul;

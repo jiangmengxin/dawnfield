@@ -46,6 +46,8 @@ export class AchievementTracker implements RunSystem {
         eliteKills: run.eliteKills,
         win: false,
         mapId: this.ctx.map.id,
+        difficulty: run.diff,
+        endlessCycle: run.cycle,
       },
       // 累计类并入当前局进度，避免要再开一局才能解锁
       stats: {
@@ -53,6 +55,7 @@ export class AchievementTracker implements RunSystem {
         kills: st.kills + run.kills,
         coinsEarned: st.coinsEarned + Math.floor(run.coins),
       },
+      hyper: Meta.save.hyper,
     };
     for (const id of evalAchievements(view)) {
       emitEvent(this.ctx.scene.game, 'hud:achievement', id);
