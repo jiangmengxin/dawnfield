@@ -12,6 +12,7 @@ export interface TempSettings {
   invincible: boolean;
   fullPickup: boolean; // 全屏拾取范围
   autoPick: boolean; // 升级时自动选第一张卡
+  unlockAll: boolean; // 解锁全部内容（角色/地图视为全解锁，可逆）
 }
 
 export function getSettings(): TempSettings {

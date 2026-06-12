@@ -464,6 +464,7 @@ const D: Dict = {
   set_invincible: ['无敌', 'Invincible'],
   set_fullPickup: ['全屏拾取', 'Magnet All'],
   set_autoPick: ['自动选卡', 'Auto Pick'],
+  set_unlockAll: ['解锁全部内容', 'Unlock All'],
   set_addCoins: ['金币 +1000', '+1000 Coins'],
   set_timeSkip: ['时间 +60s', '+60s Time'],
   set_giveWeapon: ['获得武器', 'Give Weapon'],

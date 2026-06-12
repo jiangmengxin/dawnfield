@@ -18,6 +18,9 @@ export interface SaveSettings {
   invincible: boolean;
   fullPickup: boolean;
   autoPick: boolean;
+  /** 解锁全部内容（角色/地图视为全解锁，不写入 unlocked 列表，关闭即恢复）
+   *  纯增量带默认值字段：sanitize 双向兼容（旧档缺省 false / 旧构建读新档丢弃），无需迁移 */
+  unlockAll: boolean;
 }
 
 export interface SaveStats {
@@ -59,7 +62,7 @@ export function defaultSave(): SaveV1 {
     stats: { runs: 0, wins: 0, kills: 0, coinsEarned: 0, bestSurvival: 0, playSeconds: 0, purchases: 0 },
     settings: {
       lang: null, muted: false, volume: 1, dmgNumbers: true, shake: true, speed: 1,
-      debugInfo: false, invincible: false, fullPickup: false, autoPick: false,
+      debugInfo: false, invincible: false, fullPickup: false, autoPick: false, unlockAll: false,
     },
   };
 }
@@ -141,6 +144,7 @@ export function sanitize(raw: unknown): SaveV1 | null {
       invincible: bool(s.invincible, false),
       fullPickup: bool(s.fullPickup, false),
       autoPick: bool(s.autoPick, false),
+      unlockAll: bool(s.unlockAll, false),
     };
   }
 

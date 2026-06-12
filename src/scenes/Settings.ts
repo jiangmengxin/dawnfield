@@ -1,5 +1,5 @@
 // 设置页：音量 / 声音 / 伤害数字 / 屏幕震动 / 语言 + 调试区
-// 调试：信息/无敌/全屏拾取/自动选卡 + 加币/时间跳跃/指定武器（后两者仅对进行中的局生效）
+// 调试：信息/无敌/全屏拾取/自动选卡/解锁全部内容 + 加币/时间跳跃/指定武器（后两者仅对进行中的局生效）
 // M3 起设置持久化进版本化存档（core/save）；行高随可用高度自适应，矮屏不溢出
 import { FONT, getLang, Lang, setLang, t } from '../i18n';
 import { PAL } from '../gfx/palette';
@@ -36,10 +36,10 @@ export class SettingsScene extends UIScene {
 
     const maxW = Math.min(content.w, 480);
     const x0 = content.x + (content.w - maxW) / 2;
-    // 5 设置行 + 1 分区标题 + 5 调试行；行高自适应：空间充裕时 ≥44pt 命中区，
+    // 5 设置行 + 1 分区标题 + 6 调试行；行高自适应：空间充裕时 ≥44pt 命中区，
     // 极矮屏（320×480 等）允许压到 34 以保证全部行可见可点
     const sectionH = 34;
-    const fit = (content.h - sectionH - THEME.gapMd * 2) / 10;
+    const fit = (content.h - sectionH - THEME.gapMd * 2) / 11;
     const rowH = fit >= 44 ? Math.max(44, Math.min(vp.s(60), fit)) : Math.max(34, fit);
     let y = content.y + THEME.gapMd;
 
@@ -109,6 +109,7 @@ export class SettingsScene extends UIScene {
     toggleRow('set_invincible', s.invincible, boolSetting('invincible'));
     toggleRow('set_fullPickup', s.fullPickup, boolSetting('fullPickup'));
     toggleRow('set_autoPick', s.autoPick, boolSetting('autoPick'));
+    toggleRow('set_unlockAll', s.unlockAll, boolSetting('unlockAll'));
 
     // 调试操作行：加币 / 时间跳跃 / 指定武器（后两者仅对进行中的局生效）
     const opCy = y + rowH / 2;

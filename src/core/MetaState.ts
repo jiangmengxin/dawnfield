@@ -142,11 +142,14 @@ class MetaStateImpl {
   // ---------- 解锁 ----------
 
   isUnlocked(kind: 'chars' | 'maps', id: string): boolean {
+    // 调试「解锁全部内容」：展示层一律放行（不写入列表，关闭开关即恢复真实解锁状态）
+    if (this.save.settings.unlockAll) return true;
     return this.save.unlocked[kind].includes(id);
   }
 
   unlock(kind: 'chars' | 'maps', id: string): void {
-    if (this.isUnlocked(kind, id)) return;
+    // 去重查原始列表（不走 isUnlocked）：unlockAll 开启期间达成的真实解锁仍须落档
+    if (this.save.unlocked[kind].includes(id)) return;
     this.save.unlocked[kind].push(id);
     persistSave();
   }
