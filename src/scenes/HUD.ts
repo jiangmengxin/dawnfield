@@ -559,13 +559,15 @@ export class HUDScene extends Phaser.Scene {
     this.layoutArcanaGrid(choices, (id) => this.chooseArcana(id));
   }
 
-  /** 全卡池网格（开局选卡与宝箱规则卡件共用）：横屏 5 列 / 竖屏 2 列；末行不满时居中 */
-  private layoutArcanaGrid(choices: ArcanaId[], onPick: (id: ArcanaId) => void): void {
+  /** 全卡池网格（开局选卡与宝箱规则卡件共用）：横屏 5 列 / 竖屏 2 列；末行不满时居中。
+   *  恒排满全部卡（排版稳定不随持有数变化），不在 pickable 内的卡置灰不可选 */
+  private layoutArcanaGrid(pickable: ArcanaId[], onPick: (id: ArcanaId) => void): void {
     const w = this.vp.w;
     const h = this.vp.h;
+    const all = ARCANA_META.map((m) => m.id);
     const portrait = h > w;
     const cols = portrait ? 2 : 5;
-    const rows = Math.ceil(choices.length / cols);
+    const rows = Math.ceil(all.length / cols);
     const gapX = 12;
     const gapY = 12;
     const top = h * 0.2;
@@ -574,18 +576,19 @@ export class HUDScene extends Phaser.Scene {
     const ch = Math.min(portrait ? 136 : 260, (areaH - (rows - 1) * gapY) / rows);
     const gridH = rows * ch + (rows - 1) * gapY;
     const y0 = top + Math.max(0, (areaH - gridH) / 2);
-    choices.forEach((id, i) => {
+    all.forEach((id, i) => {
       const row = Math.floor(i / cols);
       const col = i - row * cols;
-      const inRow = Math.min(cols, choices.length - row * cols);
+      const inRow = Math.min(cols, all.length - row * cols);
       const rowW = inRow * cw + (inRow - 1) * gapX;
       const cx = w / 2 - rowW / 2 + col * (cw + gapX) + cw / 2;
       const cy = y0 + row * (ch + gapY) + ch / 2;
-      this.makeArcanaCard(id, i, cx, cy, cw, ch, () => onPick(id));
+      this.makeArcanaCard(id, i, cx, cy, cw, ch, () => onPick(id), !pickable.includes(id));
     });
   }
 
-  /** 方形规则卡：白卡底 + 主题色描边 + 顶部色带托图标；尺寸自适应（极矮卡省略描述） */
+  /** 方形规则卡：白卡底 + 主题色描边 + 顶部色带托图标；尺寸自适应（极矮卡省略描述）。
+   *  owned = 已持有：整卡置灰不可选 + ✓ 已持有角标（排版与可选卡完全一致） */
   private makeArcanaCard(
     id: ArcanaId,
     idx: number,
@@ -594,22 +597,24 @@ export class HUDScene extends Phaser.Scene {
     cw: number,
     ch: number,
     onPick: () => void,
+    owned = false,
   ): void {
     const meta = ARCANA_META.find((m) => m.id === id)!;
     const big = ch >= 180; // 桌面大卡 / 竖屏小卡
     const showDesc = ch >= 96;
     const bandH = big ? ch * 0.38 : ch * 0.42;
+    const edge = owned ? 0xc8bca4 : meta.color;
     const g = this.add.graphics();
     const draw = (over: boolean) => {
       g.clear();
       g.fillStyle(0x5a5248, 0.08);
       g.fillRoundedRect(-cw / 2 + 2, -ch / 2 + 4, cw, ch, 10);
-      g.fillStyle(over ? 0xfffef8 : PAL.cardBg, 1);
+      g.fillStyle(over ? 0xfffef8 : owned ? 0xf2ece0 : PAL.cardBg, 1);
       g.fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 10);
       // 顶部色带（卡牌感；与升级卡的纯白底区分）
-      g.fillStyle(meta.color, over ? 0.4 : 0.26);
+      g.fillStyle(edge, over ? 0.4 : owned ? 0.18 : 0.26);
       g.fillRoundedRect(-cw / 2, -ch / 2, cw, bandH, { tl: 10, tr: 10, bl: 0, br: 0 });
-      g.lineStyle(2.5, meta.color, 1);
+      g.lineStyle(2.5, edge, owned ? 0.7 : 1);
       g.strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 10);
     };
     draw(false);
@@ -627,13 +632,27 @@ export class HUDScene extends Phaser.Scene {
       }).setOrigin(0.5, 0);
       parts.push(descTxt);
     }
+    if (owned) {
+      // 内容整体减淡 + 底部「✓ 已持有」角标
+      icon.setAlpha(0.45);
+      nameTxt.setAlpha(0.55);
+      parts.forEach((p) => { if (p !== g && p !== icon && p !== nameTxt) (p as Phaser.GameObjects.Text).setAlpha(0.5); });
+      const ownedTag = this.add.text(0, ch / 2 - (big ? 14 : 10), '✓ ' + t('arcOwned'), {
+        fontFamily: FONT, fontSize: (big ? 14 : 11) + 'px', fontStyle: 'bold', color: '#B8924A',
+      }).setOrigin(0.5, 1);
+      parts.push(ownedTag);
+    }
     const c = this.add.container(cx, cy, parts).setDepth(101).setAlpha(0).setScale(0.7);
     c.setSize(cw, ch);
-    c.setInteractive({ useHandCursor: true });
-    c.on('pointerover', () => draw(true));
-    c.on('pointerout', () => draw(false));
-    c.on('pointerup', onPick);
-    this.tweens.add({ targets: c, alpha: 1, scale: 1, duration: 240, delay: 28 * idx, ease: 'Back.easeOut' });
+    if (!owned) {
+      c.setInteractive({ useHandCursor: true });
+      c.on('pointerover', () => draw(true));
+      c.on('pointerout', () => draw(false));
+      c.on('pointerup', onPick);
+    }
+    this.tweens.add({
+      targets: c, alpha: owned ? 0.75 : 1, scale: 1, duration: 240, delay: 28 * idx, ease: 'Back.easeOut',
+    });
     this.overlay.push(c);
   }
 
@@ -809,6 +828,8 @@ export class HUDScene extends Phaser.Scene {
     const zone = this.add.zone(0, 0, w, h).setOrigin(0).setDepth(102).setInteractive();
     this.overlay.push(zone);
     zone.once('pointerup', () => {
+      // 立即销毁：zone 在 depth 102，topOnly 输入下会拦住其下（101）的规则卡选卡（卡死根因）
+      zone.destroy();
       hint.destroy();
       this.tweens.killTweensOf(chest);
       chest.setPosition(cx, cy);
