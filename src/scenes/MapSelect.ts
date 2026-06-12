@@ -9,13 +9,9 @@ import { resetStack } from '../core/router';
 import { UIScene } from '../ui/UIScene';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
+import type { RunLaunchData } from '../systems/context';
 
 const TARGET_MAPS = 8; // 1.0 目标量级
-
-export interface RunLaunchData {
-  charId: string;
-  mapId: string;
-}
 
 export class MapSelectScene extends UIScene {
   private charId = 'spark';

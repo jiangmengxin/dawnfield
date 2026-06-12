@@ -7,13 +7,15 @@
     "dev": "vite",
     "build": "node scripts/check-i18n.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "check:i18n": "node scripts/check-i18n.mjs"
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "phaser": "^4.1.0"
   },
   "devDependencies": {
     "typescript": "^5.8.0",
-    "vite": "^7.0.0"
+    "vite": "^7.0.0",
+    "vitest": "^4.1.8"
   }
 }

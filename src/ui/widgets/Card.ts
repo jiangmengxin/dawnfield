@@ -102,10 +102,17 @@ export class Card extends Phaser.GameObjects.Container {
         nextY += 22 * k;
       }
       if (opts.desc) {
-        this.add(scene.add.text(0, nextY, opts.desc, {
+        const desc = scene.add.text(0, nextY, opts.desc, {
           fontFamily: FONT, fontSize: Math.round(13 * k) + 'px', color: PAL.inkSoft,
           align: 'center', wordWrap: { width: opts.w - 22, useAdvancedWrap: true },
-        }).setOrigin(0.5, 0));
+        }).setOrigin(0.5, 0);
+        // 长描述（如商店三行卡）超出卡底时逐级缩字号兜底，最小 10px
+        let fs = Math.round(13 * k);
+        while (fs > 10 && nextY + desc.height > opts.h / 2 - 8) {
+          fs--;
+          desc.setFontSize(fs);
+        }
+        this.add(desc);
       }
     }
 

@@ -14,7 +14,7 @@ import { TimeController } from '../core/TimeController';
 import { AchievementTracker } from '../systems/AchievementTracker';
 import { createArcanaModifier } from '../systems/arcana';
 import type { ArcanaId } from '../content/ids';
-import type { CombatContext, HitOpts, RunModifier, RunResult, RunSystem } from '../systems/context';
+import type { CombatContext, HitOpts, RunLaunchData, RunMode, RunModifier, RunResult, RunSystem } from '../systems/context';
 import { DecorSystem } from '../systems/DecorSystem';
 import { DpsTracker } from '../systems/DpsTracker';
 import { Effects } from '../systems/effects';
@@ -61,16 +61,21 @@ export class GameScene extends Phaser.Scene {
   private pickupsRef!: PickupSystem;
   private projectilesRef!: ProjectileSystem;
   private lastKillSfx = 0;
+  /** 模式与难度（公共契约：M10 预留，M11 实装无尽与狂暴） */
+  private mode: RunMode = 'normal';
+  private diff: 0 | 1 | 2 = 0;
 
   constructor() {
     super('game');
   }
 
-  init(data?: { charId?: string; mapId?: string }): void {
+  init(data?: RunLaunchData): void {
     this.charId = data?.charId ?? 'spark';
     this.mapId = data?.mapId ?? 'meadow';
     this.map = getMap(this.mapId);
     this.mapId = this.map.id; // 未知 id 兜底草甸后回写
+    this.mode = data?.mode ?? 'normal';
+    this.diff = data?.diff ?? 0;
   }
 
   get speed(): 1 | 2 {
@@ -341,17 +346,23 @@ export class GameScene extends Phaser.Scene {
     run.iframeT = 2.0;
     const px = this.player.x;
     const py = this.player.y;
-    // 清屏脉冲：分裂球死亡会原地补刷迷你球，多过几轮直到半径内无杂兵
-    for (let pass = 0; pass < 4; pass++) {
-      let killed = false;
-      for (const e of [...this.enemies.actives]) {
-        if (!e.active || e.dying || e.isBoss) continue;
-        if (Math.hypot(e.x - px, e.y - py) < 360) {
-          this.enemies.kill(e);
-          killed = true;
+    // 清屏脉冲：分裂球死亡会原地补刷迷你球，多过几轮直到半径内无杂兵；
+    // 计入击杀但不掉落（含精英宝箱与规则卡钩子产币），堵死"贴怪送死换收益"
+    this.pickupsRef.suppressDrops = true;
+    try {
+      for (let pass = 0; pass < 4; pass++) {
+        let killed = false;
+        for (const e of [...this.enemies.actives]) {
+          if (!e.active || e.dying || e.isBoss) continue;
+          if (Math.hypot(e.x - px, e.y - py) < 360) {
+            this.enemies.kill(e);
+            killed = true;
+          }
         }
+        if (!killed) break;
       }
-      if (!killed) break;
+    } finally {
+      this.pickupsRef.suppressDrops = false;
     }
     const boss = this.enemies.boss;
     if (boss && boss.active) {
@@ -398,6 +409,9 @@ export class GameScene extends Phaser.Scene {
       coins: Math.round(this.run.coins),
       charId: this.charId,
       mapId: this.mapId,
+      mode: this.mode,
+      diff: this.diff,
+      cycle: 0, // M11 无尽实装后写入轮次
       revivesUsed: this.run.revivesUsed,
       build: this.weapons.list.map((w) => ({ id: w.id, level: w.level, evolved: w.evolved })),
     };

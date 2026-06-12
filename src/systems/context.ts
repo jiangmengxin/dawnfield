@@ -57,6 +57,17 @@ export type ChestReward =
   | { kind: 'upgrade'; items: Offer[] }
   | { kind: 'gold'; coins: number; heal: number };
 
+/** 运行模式（公共契约：M11 实装无尽） */
+export type RunMode = 'normal' | 'endless';
+
+/** 场景启动参数（公共契约：M10 预留 mode/diff，M11 实装无尽与狂暴档位） */
+export interface RunLaunchData {
+  charId: string;
+  mapId: string;
+  mode?: RunMode; // 缺省 'normal'
+  diff?: 0 | 1 | 2; // 狂暴档位，缺省 0
+}
+
 export interface RunResult {
   win: boolean;
   // time/kills/level/coins 为单局快照；charId/mapId 供谢幕与重开沿用
@@ -66,6 +77,9 @@ export interface RunResult {
   coins: number; // 局内获得金币（结算页入账 MetaState）
   charId: string; // 本局角色/地图（结算页谢幕 + 「再来一局」沿用）
   mapId: string;
+  mode: RunMode; // M10 预留；M11 起结算/记录按模式分流
+  diff: 0 | 1 | 2; // 狂暴档位（M11 实装）
+  cycle: number; // 无尽轮次（M11 实装，普通局恒 0）
   revivesUsed: number; // 本局已用复活次数（M10；M11 无尽记录行旁标注）
   build: Array<{ id: WeaponId; level: number; evolved: boolean }>;
 }

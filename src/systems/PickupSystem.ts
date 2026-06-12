@@ -15,6 +15,8 @@ export class PickupSystem implements RunSystem {
   private pickups: Pickup[] = [];
   private pickCombo = 0;
   private pickComboT = 0;
+  /** 掉落总闸（复活清屏期间置 true）：统一拦截一切生成来源，含规则卡钩子（如金铃抖币） */
+  suppressDrops = false;
 
   /** onChest：踩到宝箱时回调（GameScene 接 LevelUpSystem.openChest） */
   constructor(private ctx: CombatContext, private onChest: () => void) {}
@@ -63,10 +65,12 @@ export class PickupSystem implements RunSystem {
   }
 
   spawnGem(x: number, y: number, value: number): void {
+    if (this.suppressDrops) return;
     this.spawnOrb(this.gems, 'gem', DROPS.gemMergeCap, x, y, value);
   }
 
   spawnCoin(x: number, y: number, value: number): void {
+    if (this.suppressDrops) return;
     this.spawnOrb(this.coins, 'coin', DROPS.coinMergeCap, x, y, value);
   }
 
@@ -81,6 +85,7 @@ export class PickupSystem implements RunSystem {
   }
 
   spawnPickup(kind: 'heart' | 'chest', x: number, y: number): void {
+    if (this.suppressDrops) return;
     let p = this.pickups.find((i) => !i.active);
     if (!p) {
       p = { img: this.ctx.scene.add.image(0, 0, kind).setDepth(600), kind, active: false };
