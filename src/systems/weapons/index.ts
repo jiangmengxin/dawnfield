@@ -1,4 +1,4 @@
-// 武器系统：8 种机制完全不同的武器 + 各自的进化形态
+// 武器系统：16 种机制完全不同的武器 + 各自的进化形态
 // 行为代码按武器分文件；平衡数值在 content/weapons.ts
 import { PASSIVE_MAX_LEVEL } from '../../content/passives';
 import { WEAPON_MAX_LEVEL, WEAPON_META } from '../../content/weapons';
@@ -18,6 +18,10 @@ import { LanternWeapon } from './lantern';
 import { StarWeapon } from './star';
 import { MalletWeapon } from './mallet';
 import { ChimeWeapon } from './chime';
+import { VineWeapon } from './vine';
+import { SlingWeapon } from './sling';
+import { WispWeapon } from './wisp';
+import { BugleWeapon } from './bugle';
 
 export { Weapon } from './base';
 
@@ -34,6 +38,10 @@ const FACTORY: Record<WeaponId, new (ctx: CombatContext, id: WeaponId) => Weapon
   star: StarWeapon,
   mallet: MalletWeapon,
   chime: ChimeWeapon,
+  vine: VineWeapon,
+  sling: SlingWeapon,
+  wisp: WispWeapon,
+  bugle: BugleWeapon,
 };
 
 export class WeaponManager implements RunSystem {

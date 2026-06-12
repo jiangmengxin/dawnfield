@@ -38,7 +38,13 @@ export type MechanicSpec =
   // M6：治愈泉（周期在四周涌出治愈泉眼，站进去回血——为了回血要冒险走位）
   | { kind: 'springs'; first: number; interval: number; count: number; r: number; dur: number; hps: number }
   // M6：花浪阵风（周期铺开顺风带，敌我踩上同加速——借风跑路或被风追身）
-  | { kind: 'gusts'; first: number; interval: number; count: number; r: number; dur: number; mul: number };
+  | { kind: 'gusts'; first: number; interval: number; count: number; r: number; dur: number; mul: number }
+  // M7：荆棘地皮（周期长出刺丛，玩家踩上扎脚——敌人毫不在意，挤压走位空间）
+  | { kind: 'brambles'; first: number; interval: number; count: number; r: number; dur: number; dmg: number }
+  // M7：流星雨（预警光圈→流星砸落，敌我同伤——躲开它或借它清群）
+  | { kind: 'starfall'; first: number; interval: number; count: number; r: number; warnT: number; dmg: number; edmg: number }
+  // M7：晨光柱（周期落下破晓光柱，站入回血且灼烧柱中敌人——黎明站桩点）
+  | { kind: 'dawnpillar'; first: number; interval: number; count: number; r: number; dur: number; hps: number; dps: number };
 
 // ---------- BGM 主题（WebAudio 生成式，audio/sound.ts 消费） ----------
 
@@ -143,6 +149,48 @@ const LAVENDER_BGM: BgmSpec = {
   densityK: 0.3,
   perc: 'shaker',
   echo: 0.25,
+};
+
+// F 大调五声中板：莓香丰收感，三角波拨弦 + 沙锤
+const BRAMBLE_BGM: BgmSpec = {
+  bpm: 92,
+  scale: [349.2, 392.0, 440.0, 523.3, 587.3, 698.5],
+  bass: [87.3, 98.0, 116.5, 110.0],
+  chords: [[174.6, 220.0, 261.6], [146.8, 174.6, 220.0], [196.0, 233.1, 293.7], [174.6, 233.1, 261.6]],
+  pluckType: 'triangle',
+  pluckVol: 0.05,
+  density: 0.34,
+  densityK: 0.3,
+  perc: 'shaker',
+  echo: 0.3,
+};
+
+// B 小调五声高八度疏点：午夜星光，正弦拨弦 + 极重回声 + 水滴星点
+const NOCTURNE_BGM: BgmSpec = {
+  bpm: 72,
+  scale: [493.9, 554.4, 659.3, 740.0, 880.0, 987.8],
+  bass: [61.7, 73.4, 82.4, 55.0],
+  chords: [[246.9, 293.7, 370.0], [196.0, 246.9, 293.7], [220.0, 277.2, 329.6], [185.0, 246.9, 277.2]],
+  pluckType: 'sine',
+  pluckVol: 0.055,
+  density: 0.2,
+  densityK: 0.26,
+  perc: 'drip',
+  echo: 0.65,
+};
+
+// C 大调五声跨两个八度：破晓昂扬，三角波拨弦 + 沙锤推进
+const SUMMIT_BGM: BgmSpec = {
+  bpm: 100,
+  scale: [261.6, 329.6, 392.0, 523.3, 659.3, 784.0, 1046.5],
+  bass: [65.4, 98.0, 87.3, 130.8],
+  chords: [[261.6, 329.6, 392.0], [220.0, 261.6, 329.6], [174.6, 220.0, 261.6], [196.0, 261.6, 293.7]],
+  pluckType: 'triangle',
+  pluckVol: 0.05,
+  density: 0.38,
+  densityK: 0.34,
+  perc: 'shaker',
+  echo: 0.4,
 };
 
 export const MAPS: MapSpec[] = [
@@ -395,6 +443,181 @@ export const MAPS: MapSpec[] = [
     mechanic: { kind: 'gusts', first: 40, interval: 30, count: 3, r: 105, dur: 9, mul: 1.4 },
     bgm: LAVENDER_BGM,
     unlockAch: 'groveClear',
+  },
+
+  // ---------- 6. 莓果灌丛：中坚黏人 + 荆棘地皮，26 分钟 ----------
+  // 敌人结实缠斗（钻钻鼠地下突进、莓爪崽扑袭、浆果炮手压制），刺丛挤压走位空间
+  {
+    id: 'bramble',
+    minutes: 26,
+    timeK: 12 / 26,
+    icon: 'bd_berry',
+    iconScale: 2.2,
+    color: 0xc07888,
+    paperCss: '#F1EFE0',
+    bossId: 'bramblebear',
+    eliteId: 'bigberry',
+    waves: [
+      { from: 0,    interval: 1.0,  burst: 2, maxAlive: 30,  types: [['berryling', 1]] },
+      { from: 50,   interval: 0.9,  burst: 2, maxAlive: 52,  types: [['berryling', 3], ['bristle', 1.5]] },
+      { from: 110,  interval: 0.85, burst: 3, maxAlive: 75,  types: [['berryling', 3], ['bristle', 2], ['magpie', 1.2]] },
+      { from: 180,  interval: 0.8,  burst: 3, maxAlive: 98,  types: [['berryling', 2.5], ['bristle', 2], ['magpie', 1.5], ['mole', 1.2]] },
+      { from: 260,  interval: 0.75, burst: 3, maxAlive: 120, types: [['bristle', 2], ['magpie', 1.7], ['mole', 1.5], ['cubby', 1.2], ['berryling', 1.6]] },
+      { from: 350,  interval: 0.7,  burst: 4, maxAlive: 145, types: [['magpie', 1.8], ['mole', 1.6], ['cubby', 1.5], ['gourd', 1.1], ['berryling', 1.5]] },
+      { from: 450,  interval: 0.62, burst: 4, maxAlive: 170, types: [['mole', 1.7], ['cubby', 1.7], ['gourd', 1.3], ['bristle', 1.8], ['magpie', 1.8]] },
+      { from: 570,  interval: 0.58, burst: 4, maxAlive: 195, types: [['cubby', 1.9], ['gourd', 1.5], ['mole', 1.9], ['bristle', 2], ['magpie', 2]] },
+      { from: 700,  interval: 0.54, burst: 5, maxAlive: 220, types: [['gourd', 1.7], ['cubby', 2.1], ['mole', 2.1], ['bristle', 2.2]] },
+      { from: 850,  interval: 0.5,  burst: 5, maxAlive: 245, types: [['cubby', 2.3], ['gourd', 1.9], ['mole', 2.3], ['magpie', 2.4], ['berryling', 2]] },
+      { from: 1020, interval: 0.46, burst: 6, maxAlive: 268, types: [['gourd', 2.1], ['cubby', 2.5], ['bristle', 2.6], ['mole', 2.5]] },
+      { from: 1200, interval: 0.44, burst: 6, maxAlive: 288, types: [['cubby', 2.7], ['gourd', 2.3], ['magpie', 2.8], ['mole', 2.7], ['berryling', 2.2]] },
+      { from: 1380, interval: 0.42, burst: 6, maxAlive: 300, types: [['gourd', 2.5], ['cubby', 2.9], ['bristle', 3], ['mole', 2.9]] },
+      { from: 1560, interval: 0.95, burst: 3, maxAlive: 85,  types: [['berryling', 2], ['magpie', 1.5], ['bristle', 1]] }, // Boss 阶段轻刷
+    ],
+    events: [
+      { t: 130,  kind: 'ring', enemy: 'berryling', n: 18 },
+      { t: 210,  kind: 'elite' },
+      { t: 300,  kind: 'ring', enemy: 'magpie', n: 20 },
+      { t: 390,  kind: 'ring', enemy: 'bristle', n: 16 },
+      { t: 480,  kind: 'elite' },
+      { t: 580,  kind: 'ring', enemy: 'mole', n: 14 },
+      { t: 680,  kind: 'elite' },
+      { t: 780,  kind: 'ring', enemy: 'cubby', n: 12 },
+      { t: 880,  kind: 'elite' },
+      { t: 990,  kind: 'ring', enemy: 'gourd', n: 12 },
+      { t: 1100, kind: 'elite' },
+      { t: 1210, kind: 'ring', enemy: 'magpie', n: 26 },
+      { t: 1320, kind: 'elite' },
+      { t: 1430, kind: 'ring', enemy: 'berryling', n: 30 },
+      { t: 1560, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['bd_bush0', 'bd_bush1'], nMin: 3, nMax: 5, chance: 1 },
+      { keys: ['bd_berry'], nMin: 1, nMax: 3, chance: 0.65 },
+      { keys: ['bd_thorn'], nMin: 1, nMax: 2, chance: 0.55 },
+      { keys: ['bd_clover'], nMin: 1, nMax: 2, chance: 0.5 },
+      { keys: ['bd_stump'], nMin: 1, nMax: 1, chance: 0.3 },
+    ],
+    mechanic: { kind: 'brambles', first: 22, interval: 17, count: 2, r: 62, dur: 12, dmg: 9 },
+    bgm: BRAMBLE_BGM,
+    unlockAch: 'lavenderClear',
+  },
+
+  // ---------- 7. 星语夜原：夜行游击 + 流星雨，28 分钟 ----------
+  // 敌人忽明忽暗（星闪闪闪现、月相灵变速、小枭枭绕飞），流星敌我同伤可借力清群
+  {
+    id: 'nocturne',
+    minutes: 28,
+    timeK: 12 / 28,
+    icon: 'nd_bell',
+    iconScale: 2.2,
+    color: 0x8890c8,
+    paperCss: '#E9EAF5',
+    bossId: 'starelk',
+    eliteId: 'cometlord',
+    waves: [
+      { from: 0,    interval: 0.95, burst: 2, maxAlive: 32,  types: [['moonmote', 1]] },
+      { from: 50,   interval: 0.85, burst: 2, maxAlive: 54,  types: [['moonmote', 3], ['nightmoth', 1.5]] },
+      { from: 110,  interval: 0.8,  burst: 3, maxAlive: 78,  types: [['moonmote', 3], ['nightmoth', 2], ['owlet', 1.2]] },
+      { from: 180,  interval: 0.75, burst: 3, maxAlive: 100, types: [['moonmote', 2.5], ['nightmoth', 2], ['owlet', 1.5], ['twinkle', 1.2]] },
+      { from: 260,  interval: 0.7,  burst: 3, maxAlive: 124, types: [['nightmoth', 2], ['owlet', 1.7], ['twinkle', 1.5], ['lunaling', 1.2], ['moonmote', 1.6]] },
+      { from: 350,  interval: 0.65, burst: 4, maxAlive: 148, types: [['owlet', 1.8], ['twinkle', 1.6], ['lunaling', 1.5], ['sparkler', 1.1], ['moonmote', 1.5]] },
+      { from: 460,  interval: 0.6,  burst: 4, maxAlive: 172, types: [['twinkle', 1.7], ['lunaling', 1.7], ['sparkler', 1.3], ['nightmoth', 1.9], ['owlet', 1.9]] },
+      { from: 580,  interval: 0.56, burst: 4, maxAlive: 196, types: [['lunaling', 1.9], ['sparkler', 1.5], ['twinkle', 1.9], ['owlet', 2.1], ['nightmoth', 2]] },
+      { from: 720,  interval: 0.52, burst: 5, maxAlive: 220, types: [['sparkler', 1.7], ['lunaling', 2.1], ['twinkle', 2.1], ['owlet', 2.2]] },
+      { from: 880,  interval: 0.48, burst: 5, maxAlive: 245, types: [['lunaling', 2.3], ['sparkler', 1.9], ['nightmoth', 2.5], ['twinkle', 2.3], ['moonmote', 2]] },
+      { from: 1060, interval: 0.45, burst: 6, maxAlive: 268, types: [['sparkler', 2.1], ['lunaling', 2.5], ['owlet', 2.6], ['twinkle', 2.5]] },
+      { from: 1250, interval: 0.43, burst: 6, maxAlive: 288, types: [['lunaling', 2.7], ['sparkler', 2.3], ['nightmoth', 2.9], ['owlet', 2.8], ['moonmote', 2.2]] },
+      { from: 1460, interval: 0.41, burst: 6, maxAlive: 305, types: [['sparkler', 2.5], ['lunaling', 2.9], ['twinkle', 2.9], ['owlet', 3]] },
+      { from: 1680, interval: 0.9,  burst: 3, maxAlive: 90,  types: [['moonmote', 2], ['nightmoth', 1.5], ['owlet', 1]] }, // Boss 阶段轻刷
+    ],
+    events: [
+      { t: 130,  kind: 'ring', enemy: 'moonmote', n: 20 },
+      { t: 220,  kind: 'elite' },
+      { t: 310,  kind: 'ring', enemy: 'nightmoth', n: 20 },
+      { t: 400,  kind: 'ring', enemy: 'owlet', n: 16 },
+      { t: 490,  kind: 'elite' },
+      { t: 600,  kind: 'ring', enemy: 'twinkle', n: 14 },
+      { t: 710,  kind: 'elite' },
+      { t: 820,  kind: 'ring', enemy: 'lunaling', n: 14 },
+      { t: 930,  kind: 'elite' },
+      { t: 1040, kind: 'ring', enemy: 'sparkler', n: 12 },
+      { t: 1150, kind: 'elite' },
+      { t: 1260, kind: 'ring', enemy: 'nightmoth', n: 28 },
+      { t: 1380, kind: 'elite' },
+      { t: 1500, kind: 'ring', enemy: 'moonmote', n: 32 },
+      { t: 1600, kind: 'elite' },
+      { t: 1680, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['nd_grass0', 'nd_grass1'], nMin: 3, nMax: 6, chance: 1 },
+      { keys: ['nd_star'], nMin: 1, nMax: 3, chance: 0.6 },
+      { keys: ['nd_bell'], nMin: 1, nMax: 2, chance: 0.45 },
+      { keys: ['nd_crystal'], nMin: 1, nMax: 1, chance: 0.4 },
+      { keys: ['nd_pebble'], nMin: 1, nMax: 1, chance: 0.4 },
+    ],
+    mechanic: { kind: 'starfall', first: 30, interval: 24, count: 3, r: 82, warnT: 1.25, dmg: 12, edmg: 80 },
+    bgm: NOCTURNE_BGM,
+    unlockAch: 'brambleClear',
+  },
+
+  // ---------- 8. 破晓之巅：终局长夜 + 晨光柱，30 分钟 ----------
+  // 影群海量缠斗（影伏伏伏击、蚀月轮滚撞、夜昙昙压制），晨光柱是黎明前的安全岛
+  {
+    id: 'summit',
+    minutes: 30,
+    timeK: 12 / 30,
+    icon: 'sd_bloom',
+    iconScale: 2.2,
+    color: 0xc8a050,
+    paperCss: '#FBF2E2',
+    bossId: 'nightowl',
+    eliteId: 'shadelord',
+    waves: [
+      { from: 0,    interval: 0.9,  burst: 2, maxAlive: 34,  types: [['shade', 1]] },
+      { from: 45,   interval: 0.8,  burst: 2, maxAlive: 56,  types: [['shade', 3], ['glint', 1.5]] },
+      { from: 100,  interval: 0.75, burst: 3, maxAlive: 80,  types: [['shade', 3], ['glint', 2], ['gloom', 1.2]] },
+      { from: 170,  interval: 0.7,  burst: 3, maxAlive: 104, types: [['shade', 2.5], ['glint', 2], ['gloom', 1.5], ['umbra', 1.2]] },
+      { from: 250,  interval: 0.65, burst: 3, maxAlive: 128, types: [['glint', 2], ['gloom', 1.7], ['umbra', 1.5], ['lurker', 1.2], ['shade', 1.6]] },
+      { from: 340,  interval: 0.6,  burst: 4, maxAlive: 152, types: [['gloom', 1.8], ['umbra', 1.6], ['lurker', 1.5], ['nightbloom', 1.1], ['shade', 1.5]] },
+      { from: 450,  interval: 0.56, burst: 4, maxAlive: 178, types: [['umbra', 1.8], ['lurker', 1.7], ['nightbloom', 1.3], ['eclipse', 1.1], ['gloom', 1.7]] },
+      { from: 570,  interval: 0.52, burst: 4, maxAlive: 202, types: [['lurker', 1.9], ['nightbloom', 1.5], ['eclipse', 1.3], ['umbra', 2], ['glint', 1.8]] },
+      { from: 700,  interval: 0.5,  burst: 5, maxAlive: 226, types: [['nightbloom', 1.7], ['eclipse', 1.5], ['lurker', 2.1], ['umbra', 2.2]] },
+      { from: 860,  interval: 0.47, burst: 5, maxAlive: 250, types: [['eclipse', 1.7], ['nightbloom', 1.9], ['lurker', 2.3], ['gloom', 2.2], ['shade', 2]] },
+      { from: 1040, interval: 0.44, burst: 6, maxAlive: 272, types: [['nightbloom', 2.1], ['eclipse', 1.9], ['umbra', 2.6], ['lurker', 2.5]] },
+      { from: 1230, interval: 0.42, burst: 6, maxAlive: 292, types: [['eclipse', 2.1], ['nightbloom', 2.3], ['lurker', 2.7], ['glint', 2.6], ['shade', 2.2]] },
+      { from: 1430, interval: 0.4,  burst: 7, maxAlive: 308, types: [['nightbloom', 2.5], ['eclipse', 2.3], ['umbra', 3], ['lurker', 2.9]] },
+      { from: 1620, interval: 0.38, burst: 7, maxAlive: 320, types: [['eclipse', 2.5], ['lurker', 3.1], ['nightbloom', 2.7], ['gloom', 2.6], ['glint', 2.8]] },
+      { from: 1800, interval: 0.85, burst: 3, maxAlive: 95,  types: [['shade', 2], ['glint', 1.5], ['gloom', 1]] }, // Boss 阶段轻刷
+    ],
+    events: [
+      { t: 120,  kind: 'ring', enemy: 'shade', n: 20 },
+      { t: 200,  kind: 'elite' },
+      { t: 290,  kind: 'ring', enemy: 'glint', n: 24 },
+      { t: 380,  kind: 'ring', enemy: 'umbra', n: 18 },
+      { t: 470,  kind: 'elite' },
+      { t: 580,  kind: 'ring', enemy: 'gloom', n: 16 },
+      { t: 690,  kind: 'elite' },
+      { t: 800,  kind: 'ring', enemy: 'lurker', n: 12 },
+      { t: 910,  kind: 'elite' },
+      { t: 1020, kind: 'ring', enemy: 'eclipse', n: 12 },
+      { t: 1130, kind: 'elite' },
+      { t: 1240, kind: 'ring', enemy: 'nightbloom', n: 12 },
+      { t: 1350, kind: 'elite' },
+      { t: 1460, kind: 'ring', enemy: 'umbra', n: 28 },
+      { t: 1570, kind: 'elite' },
+      { t: 1680, kind: 'ring', enemy: 'shade', n: 34 },
+      { t: 1800, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['sd_tuft0', 'sd_tuft1'], nMin: 3, nMax: 6, chance: 1 },
+      { keys: ['sd_bloom'], nMin: 1, nMax: 2, chance: 0.55 },
+      { keys: ['sd_ray'], nMin: 1, nMax: 2, chance: 0.45 },
+      { keys: ['sd_rock'], nMin: 1, nMax: 1, chance: 0.45 },
+      { keys: ['sd_glow'], nMin: 1, nMax: 1, chance: 0.35 },
+    ],
+    mechanic: { kind: 'dawnpillar', first: 25, interval: 21, count: 1, r: 72, dur: 8, hps: 7, dps: 30 },
+    bgm: SUMMIT_BGM,
+    unlockAch: 'nocturneClear',
   },
 ];
 

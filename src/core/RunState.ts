@@ -67,15 +67,15 @@ export class RunState {
     return {
       dmg: (1 + PASSIVE_FX.power * p('power')) * (1 + pu.dmg) * (m.dmg ?? 1),
       cd: Math.max(0.4, (1 - PASSIVE_FX.lens * p('lens')) * pu.cdMul * (m.cd ?? 1)),
-      area: (1 + PASSIVE_FX.cloud * p('cloud')) * (1 + pu.area) * (m.area ?? 1),
-      magnet: PLAYER.pickup * (1 + PASSIVE_FX.battery * p('battery') + pu.magnet) * (m.magnet ?? 1),
-      moveSpeed: c.speed * (1 + PASSIVE_FX.windMove * p('wind') + pu.speed),
-      projSpeed: (1 + PASSIVE_FX.windProj * p('wind') + PASSIVE_FX.stardustProj * p('stardust')) * (m.projSpeed ?? 1),
-      maxHp: c.hp + PASSIVE_FX.bloomHp * p('bloom') + pu.hp,
-      xpGain: (1 + pu.xpGain + PASSIVE_FX.sproutXp * p('sprout')) * (m.xpGain ?? 1),
+      area: (1 + PASSIVE_FX.cloud * p('cloud') + PASSIVE_FX.whistleArea * p('whistle')) * (1 + pu.area) * (m.area ?? 1),
+      magnet: PLAYER.pickup * (1 + PASSIVE_FX.battery * p('battery') + PASSIVE_FX.trellisMagnet * p('trellis') + pu.magnet) * (m.magnet ?? 1),
+      moveSpeed: c.speed * (1 + PASSIVE_FX.windMove * p('wind') + PASSIVE_FX.featherMove * p('feather') + pu.speed),
+      projSpeed: (1 + PASSIVE_FX.windProj * p('wind') + PASSIVE_FX.stardustProj * p('stardust') + PASSIVE_FX.whistleProj * p('whistle')) * (m.projSpeed ?? 1),
+      maxHp: c.hp + PASSIVE_FX.bloomHp * p('bloom') + PASSIVE_FX.snackHp * p('snack') + pu.hp,
+      xpGain: (1 + pu.xpGain + PASSIVE_FX.sproutXp * p('sprout') + PASSIVE_FX.trellisXp * p('trellis')) * (m.xpGain ?? 1),
       coinGain: (1 + pu.coinGain + PASSIVE_FX.pouchCoin * p('pouch')) * (m.coinGain ?? 1),
       armor: pu.armor + (m.armor ?? 0) + PASSIVE_FX.acornArmor * p('acorn'),
-      regen: pu.regen + (m.regen ?? 0) + PASSIVE_FX.honeyRegen * p('honey'),
+      regen: pu.regen + (m.regen ?? 0) + PASSIVE_FX.honeyRegen * p('honey') + PASSIVE_FX.snackRegen * p('snack'),
       crit: pu.crit + (m.crit ?? 0) + PASSIVE_FX.ladybugCrit * p('ladybug'),
     };
   }

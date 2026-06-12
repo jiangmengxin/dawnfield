@@ -25,6 +25,11 @@ export const WEAPON_META: WeaponMeta[] = [
   { id: 'star',      color: 0xb0bce8, icon: 'icon_star',      evolvesWith: 'stardust' },
   { id: 'mallet',    color: 0xc89058, icon: 'icon_mallet',    evolvesWith: 'acorn' },
   { id: 'chime',     color: 0x90ccc0, icon: 'icon_chime',     evolvesWith: 'sprout' },
+  // M7 批次 C：whip / 炮射 / 追踪 / 哨塔
+  { id: 'vine',      color: 0x88b868, icon: 'icon_vine',      evolvesWith: 'trellis' },
+  { id: 'sling',     color: 0xd87888, icon: 'icon_sling',     evolvesWith: 'snack' },
+  { id: 'wisp',      color: 0x88ccaa, icon: 'icon_wisp',      evolvesWith: 'feather' },
+  { id: 'bugle',     color: 0x8898d8, icon: 'icon_bugle',     evolvesWith: 'whistle' },
 ];
 
 // ---------- 平衡数值（每武器一表） ----------
@@ -164,6 +169,69 @@ export const W_CHIME = {
   evoMaxR: 205,
   evoKb: 300,
   evoSecondDelay: 0.35, // 进化第二记钟声延迟（秒）
+};
+
+/** 卷卷藤 / 荆棘华尔兹（whip：朝身前甩出横扫长鞭，进化加打身后第二鞭） */
+export const W_VINE = {
+  dmg: [18, 23, 29, 37, 47],
+  cd: [1.6, 1.5, 1.42, 1.32, 1.2],
+  len: 150, // 鞭长（受 area 缩放）
+  wid: 36, // 判定半宽
+  kb: 200,
+  evoCd: 1.1,
+  evoDmgMul: 1.25,
+  evoLenMul: 1.25,
+  evoBackDelay: 0.16, // 进化身后第二鞭延迟（秒）
+};
+
+/** 莓果弹弓 / 果酱风暴（炮射：抛物线弹出莓果，落地范围爆炸；进化留黏滞果酱） */
+export const W_SLING = {
+  dmg: [26, 33, 41, 52, 66],
+  cd: [2.5, 2.4, 2.25, 2.1, 1.9],
+  n: [1, 1, 2, 2, 3], // 每轮抛射莓果数（瞄准最近的 n 个敌人）
+  blastR: 78, // 爆炸半径（受 area 缩放）
+  range: 380, // 索敌距离
+  flyT: 0.55, // 抛物飞行时长（秒）
+  arcH: 70, // 抛物线最高点抬升（视觉）
+  kb: 170,
+  evoCd: 1.7,
+  evoDmgMul: 1.3,
+  evoBlastMul: 1.25,
+  jamR: 62, // 进化果酱减速区半径
+  jamDur: 4,
+};
+
+/** 流萤珠 / 萤光长河（追踪：放出转向追敌的小萤光，命中即灭；进化更多更快可穿透） */
+export const W_WISP = {
+  dmg: [13, 16, 20, 25, 32],
+  cd: [2.1, 2.0, 1.9, 1.75, 1.6],
+  n: [2, 3, 3, 4, 5],
+  speed: 240,
+  turn: 380, // 追踪转向力
+  life: 2.4, // 飞行寿命（秒，受 area 缩放）
+  seek: 420, // 索敌半径
+  evoCd: 1.45,
+  evoN: 7,
+  evoDmgMul: 1.25,
+  evoTurn: 540,
+  evoPierce: 2, // 进化单粒可穿透敌人数（未进化 1）
+};
+
+/** 喇叭花号手 / 晨光号角（哨塔：种下喇叭花朝最近敌人连射种子；进化双株齐奏） */
+export const W_BUGLE = {
+  dmg: [11, 14, 17, 21, 27], // 单发种子伤害
+  cd: [5.0, 4.8, 4.6, 4.3, 4.0], // 种植间隔
+  dur: 6, // 哨塔在场时长（秒）
+  fireCd: 0.55, // 哨塔射击间隔
+  range: 250, // 哨塔索敌半径（受 area 缩放）
+  bulletSpeed: 320,
+  kb: 110,
+  evoCd: 3.6,
+  evoDmgMul: 1.3,
+  evoDur: 7,
+  evoFireCd: 0.4,
+  evoCount: 2, // 进化同时种两株
+  plantGap: 56, // 进化双株间距
 };
 
 // ---------- 宝箱分层 ----------

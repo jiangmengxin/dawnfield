@@ -99,6 +99,27 @@ export const CHARACTERS: CharacterSpec[] = [
     hp: 80, speed: 192, radius: 12,
     trail: { tex: 'p_dot', color: 0xd8f0e8, every: 0.09 },
     mods: { area: 1.12, cd: 0.94 }, unlockAch: 'evolve3' },
+  // ---------- M7 批次 C ----------
+  // 藤藤：爱收集的小藤灵 — 捡得远长得快
+  { id: 'ivy', weapon: 'vine', tex: 'char_ivy', texScale: 1.4, color: 0x74a858,
+    hp: 115, speed: 166, radius: 14,
+    trail: { tex: 'p_dot', color: 0xb0d890, every: 0.13 },
+    mods: { magnet: 1.2, xpGain: 1.1 }, unlockAch: 'survive20' },
+  // 莓莓：甜甜的小莓果 — 运气和零钱都不少
+  { id: 'berry', weapon: 'sling', tex: 'char_berry', texScale: 1.5, color: 0xc86878,
+    hp: 100, speed: 176, radius: 13,
+    trail: { tex: 'p_dot', color: 0xf8b8c0, every: 0.11 },
+    mods: { crit: 0.06, coinGain: 1.1 }, unlockAch: 'coins2000' },
+  // 悠悠：轻飘飘的小幽光 — 施法飞快身子轻，全场最小
+  { id: 'wisp', weapon: 'wisp', tex: 'char_wisp', texScale: 1.5, color: 0x76b896,
+    hp: 75, speed: 196, radius: 11,
+    trail: { tex: 'p_star', color: 0xc6ecd8, every: 0.08 },
+    mods: { cd: 0.88, dmg: 0.95 }, unlockAch: 'wins5' },
+  // 嘟嘟：吹号的小乐手 — 嗓门大皮也厚
+  { id: 'toot', weapon: 'bugle', tex: 'char_toot', texScale: 1.35, color: 0x7088c8,
+    hp: 130, speed: 158, radius: 16,
+    trail: { tex: 'p_dot', color: 0xb8c8f0, every: 0.14 },
+    mods: { area: 1.18, armor: 1 }, unlockAch: 'kills500' },
 ];
 
 /** 按 id 取角色；未知 id 兜底为小萤（防坏档/旧链接） */

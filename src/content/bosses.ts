@@ -90,4 +90,28 @@ export const BOSSES: Record<MapId, BossSpec> = {
     summon: { firstCd: 13, cd: 14, id: 'flutter', n: 4, radius: 105, p2Only: true },
     dash: { firstCd: 5, cd: 6.5, cdP2: 4.5, speed: 460, minDist: 140 },
   },
+  // 莓刺熊王：贴身蛮力型 — 凶猛扑撞 + 喷吐莓果扇射 + 二阶段莓果环/召唤莓果果
+  bramble: {
+    phase2HpK: 0.5,
+    spread: { firstCd: 2.4, cd: 3.6, cdP2: 2.5, n: 5, arc: 0.7, speed: 230, dmg: 11, tex: 'bz_berry' },
+    dash: { firstCd: 4, cd: 6, cdP2: 4.5, speed: 480, minDist: 130 },
+    ring: { firstCd: 8, cd: 7, cdP2: 5.5, n: 14, nP2: 16, speed: 160, dmg: 11, tex: 'bz_berry', p2Only: true },
+    summon: { firstCd: 12, cd: 13, id: 'berryling', n: 5, radius: 100, p2Only: true },
+  },
+  // 星角鹿王：星辉游走型 — 星屑弹幕环 + 轻盈疾掠 + 二阶段瞄准星屑/召唤月尘
+  nocturne: {
+    phase2HpK: 0.5,
+    ring: { firstCd: 2.8, cd: 5, cdP2: 3.4, n: 12, nP2: 18, speed: 175, dmg: 11, tex: 'nz_star' },
+    dash: { firstCd: 5, cd: 6, cdP2: 4.2, speed: 540, minDist: 140 },
+    spread: { firstCd: 6, cd: 5.5, cdP2: 3.8, n: 6, arc: 0.75, speed: 250, dmg: 11, tex: 'nz_star', p2Only: true },
+    summon: { firstCd: 14, cd: 15, id: 'moonmote', n: 6, radius: 105, p2Only: true },
+  },
+  // 永夜枭：终局全能型 — 夜瓣弹幕环 + 瞄准扇射 + 全程召唤影群 + 俯冲扑掠
+  summit: {
+    phase2HpK: 0.5,
+    ring: { firstCd: 2.5, cd: 4.8, cdP2: 3.2, n: 13, nP2: 19, speed: 165, dmg: 11, tex: 'sz_petal' },
+    spread: { firstCd: 4.5, cd: 4.2, cdP2: 3.0, n: 6, arc: 0.8, speed: 245, dmg: 11, tex: 'sz_petal' },
+    summon: { firstCd: 9, cd: 10, id: 'shade', n: 5, radius: 100 },
+    dash: { firstCd: 6, cd: 6.5, cdP2: 4.8, speed: 500, minDist: 140 },
+  },
 };

@@ -1,7 +1,7 @@
 // 敌人移动行为模板表（12 种）：content/enemies.ts 按 behavior 字段指派
 // 每帧产出移动向量；行为内可触发攻击（吐弹）等副作用；调参常量在 content/enemies.ts
 import {
-  AMBUSH, BLINK, DASHER, DRIFT, ENEMIES, HOP, ORBIT, PULSE, SPIRAL, SWOOP, TURRET, ZIGZAG,
+  AMBUSH, BLINK, BURROW, DASHER, DRIFT, ENEMIES, HOP, ORBIT, PHASE, PULSE, SPIRAL, SWOOP, TURRET, ZIGZAG,
 } from '../content/enemies';
 import type { BehaviorId } from '../content/ids';
 import { DEATH_COLOR } from '../gfx/palette';
@@ -286,6 +286,62 @@ const ambush: BehaviorFn = (e, ctx, dt, nx, ny, dist, out) => {
   }
 };
 
+/** 钻钻鼠：地表慢走—钻地疾掘（半透+土屑）—破土小僵直 循环 */
+const burrow: BehaviorFn = (e, ctx, dt, nx, ny, _dist, out) => {
+  e.stateT -= dt;
+  if (e.dashState === 'dash') {
+    // 地下疾掘：半透明 + 沿途拱土
+    out.mvx = nx * e.spd * BURROW.mulDig;
+    out.mvy = ny * e.spd * BURROW.mulDig;
+    if (Math.random() < dt * 14) {
+      ctx.fx.burst(e.x, e.y + e.radius * 0.5, { tex: 'p_dot', color: 0xb09478, count: 1, speed: 36, life: 0.3, scale: 0.6, alpha: 0.7 });
+    }
+    if (e.stateT <= 0) {
+      // 破土：恢复实体 + 土圈
+      e.dashState = 'recover';
+      e.stateT = BURROW.pop;
+      e.setAlpha(1);
+      ctx.fx.ring(e.x, e.y, DEATH_COLOR[e.id], 1.6, 0.35);
+    }
+  } else if (e.dashState === 'recover') {
+    if (e.stateT <= 0) {
+      e.dashState = 'walk';
+      e.stateT = BURROW.surface * (0.8 + Math.random() * 0.4);
+    }
+  } else {
+    out.mvx = nx * e.spd;
+    out.mvy = ny * e.spd;
+    if (e.stateT <= 0) {
+      e.dashState = 'dash';
+      e.stateT = BURROW.dig * (0.85 + Math.random() * 0.3);
+      e.setAlpha(BURROW.digAlpha);
+    }
+  }
+};
+
+/** 月相灵：明相缓行（实体）/ 暗相疾行（半透）交替，变速压迫走位 */
+const phase: BehaviorFn = (e, _ctx, dt, nx, ny, _dist, out) => {
+  e.stateT -= dt;
+  if (e.dashState === 'dash') {
+    // 暗相：疾行
+    out.mvx = nx * e.spd * PHASE.mulDark;
+    out.mvy = ny * e.spd * PHASE.mulDark;
+    if (e.stateT <= 0) {
+      e.dashState = 'walk';
+      e.stateT = PHASE.bright * (0.85 + Math.random() * 0.3);
+      e.setAlpha(1);
+    }
+  } else {
+    out.mvx = nx * e.spd * PHASE.mulBright;
+    out.mvy = ny * e.spd * PHASE.mulBright;
+    if (e.stateT <= 0) {
+      e.dashState = 'dash';
+      e.stateT = PHASE.dark * (0.85 + Math.random() * 0.3);
+      e.setAlpha(PHASE.darkAlpha);
+    }
+  }
+};
+
 export const BEHAVIORS: Record<BehaviorId, BehaviorFn> = {
   chase,
   wobble,
@@ -301,4 +357,6 @@ export const BEHAVIORS: Record<BehaviorId, BehaviorFn> = {
   zigzag,
   spiral,
   ambush,
+  burrow,
+  phase,
 };

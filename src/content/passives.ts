@@ -23,6 +23,11 @@ export const PASSIVE_META: PassiveMeta[] = [
   { id: 'stardust', color: 0xa8b4e8, icon: 'icon_stardust' },
   { id: 'sprout',   color: 0xa8d890, icon: 'icon_sprout' },
   { id: 'pouch',    color: 0xd8b060, icon: 'icon_pouch' },
+  // M7
+  { id: 'feather',  color: 0xc8dce8, icon: 'icon_feather' },
+  { id: 'snack',    color: 0xe89098, icon: 'icon_snack' },
+  { id: 'whistle',  color: 0x98c878, icon: 'icon_whistle' },
+  { id: 'trellis',  color: 0xb898d0, icon: 'icon_trellis' },
 ];
 
 // 被动数值（每级）
@@ -40,4 +45,11 @@ export const PASSIVE_FX = {
   stardustProj: 0.1, // 弹速 +10%/级
   sproutXp: 0.08,    // 经验获取 +8%/级
   pouchCoin: 0.1,    // 金币获取 +10%/级
+  featherMove: 0.06,   // 移速 +6%/级
+  snackHp: 10,         // 生命上限 +10/级（获得时同时回复）
+  snackRegen: 0.2,     // 每秒回复 +0.2/级
+  whistleArea: 0.06,   // 范围 +6%/级
+  whistleProj: 0.06,   // 弹速 +6%/级
+  trellisMagnet: 0.15, // 磁吸 +15%/级
+  trellisXp: 0.04,     // 经验获取 +4%/级
 };

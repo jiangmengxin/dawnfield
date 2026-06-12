@@ -150,6 +150,70 @@ export const LAVENDER = {
   dust: 0xd8c0f0, thorn: 0xc090a8, thornDeep: 0x906070,
 } as const;
 
+// ---------- 莓果灌丛（图 6）：莓红橄榄，丰收灌木 ----------
+export const BRAMBLE = {
+  paper: 0xf1efe0, paperCss: '#F1EFE0',
+  bush: 0x9cb878, bushEdge: 0x74905a,
+  berryDecor: 0xd87888, berryDeep: 0xa85060,
+  thornDecor: 0xa08868, thornDecorEdge: 0x6f5c44,
+  clover: 0xa8c890, cloverEdge: 0x7aa066,
+  stump: 0xc0a078, stumpEdge: 0x8a6e4e,
+
+  // 敌人池
+  berryling: 0xd89098, berrylingEdge: 0xa86070, berrylingLeaf: 0x8cb068,
+  bristle: 0xb0a070, bristleEdge: 0x807048,
+  mole: 0xb09478, moleEdge: 0x80684e, moleNose: 0xe0a8a8,
+  magpie: 0x88a0b8, magpieEdge: 0x5c7490, magpieBeak: 0xf0c060,
+  cubby: 0xc09868, cubbyEdge: 0x8e6c42, cubbyMuzzle: 0xe8d0b0,
+  gourd: 0xc8b470, gourdEdge: 0x968444,
+  bigberry: 0xc87888, bigberryEdge: 0x945062,
+  bramblebear: 0xa88058, bramblebearEdge: 0x77573a,
+  berryShot: 0xd87890, berryShotDeep: 0xa05068,
+} as const;
+
+// ---------- 星语夜原（图 7）：淡夜蓝紫，星光与月尘 ----------
+export const NOCTURNE = {
+  paper: 0xe9eaf5, paperCss: '#E9EAF5',
+  grass: 0xaab2cc, grassEdge: 0x7e88ac,
+  starGlow: 0xfff0b8,
+  crystal: 0xc0c8e8, crystalEdge: 0x8e98c4,
+  bell: 0xd8d0f0, bellDeep: 0xa89ad0, bellCore: 0xf7e9a0,
+  pebble: 0xdcdeea,
+
+  // 敌人池
+  moonmote: 0xd8d4ec, moonmoteEdge: 0xa6a0cc,
+  twinkle: 0xf0e0a0, twinkleEdge: 0xc0a858,
+  nightmoth: 0x9aa4cc, nightmothEdge: 0x6c76a4, nightmothSpot: 0xf0e8c0,
+  lunaling: 0xb8c4e0, lunalingEdge: 0x8490bc, lunalingMoon: 0xfff0c0,
+  owlet: 0xa898c0, owletEdge: 0x786894, owletBeak: 0xf0c060,
+  sparkler: 0xe8cc88, sparklerEdge: 0xb89c50,
+  cometlord: 0xc0b0e0, cometlordEdge: 0x8c7ab4,
+  starelk: 0x9eaad4, starelkEdge: 0x6e7aaa, starelkAntler: 0xe8d8a0,
+  starShot: 0xf6e6a8, starShotDeep: 0xc8a858,
+} as const;
+
+// ---------- 破晓之巅（图 8 终局）：暖金纸底，长夜余影与晨光 ----------
+export const SUMMIT = {
+  paper: 0xfbf2e2, paperCss: '#FBF2E2',
+  tuft: 0xd8c898, tuftEdge: 0xac9c68,
+  rock: 0xe0d6c4,
+  dawnbloom: 0xf8da7a, dawnbloomDeep: 0xd0a848, dawnbloomCore: 0xa87830,
+  ray: 0xf8e2a8,
+  pillar: 0xf6dd96, pillarDeep: 0xd8b25c,
+
+  // 敌人池（暮影灰紫 + 暖金点缀）
+  shade: 0x9890b0, shadeEdge: 0x6c6488,
+  gloom: 0xb0a8c4, gloomEdge: 0x80789c,
+  umbra: 0x8a84a8, umbraEdge: 0x5e587e, umbraEar: 0xc0b8d4,
+  glint: 0xf4e0a0, glintEdge: 0xc4a858,
+  nightbloom: 0xb088a8, nightbloomEdge: 0x806078, nightbloomCap: 0x9c7090,
+  eclipse: 0x9088a0, eclipseEdge: 0x645c78, eclipseRim: 0xf2d088,
+  lurker: 0x847e9e, lurkerEdge: 0x585272,
+  shadelord: 0x786f96, shadelordEdge: 0x4e4668,
+  nightowl: 0x6e6890, nightowlEdge: 0x464062, nightowlBelly: 0xb8b0cc, nightowlBeak: 0xf0c060,
+  petalShot: 0xa890c0, petalShotDeep: 0x786098,
+} as const;
+
 // 敌人死亡纸屑颜色（与本体同色）
 import type { EnemyId } from '../content/ids';
 export const DEATH_COLOR: Record<EnemyId, number> = {
@@ -164,6 +228,13 @@ export const DEATH_COLOR: Record<EnemyId, number> = {
   puffcap: GROVE.puffcap, roller: GROVE.roller, eldercap: GROVE.eldercap, sporeking: GROVE.sporeking,
   budling: LAVENDER.budling, bumble: LAVENDER.bumble, flutter: LAVENDER.flutter, snippy: LAVENDER.snippy,
   pompon: LAVENDER.pompon, briar: LAVENDER.briar, queenbee: LAVENDER.queenbee, flutterqueen: LAVENDER.flutterqueen,
+  berryling: BRAMBLE.berryling, bristle: BRAMBLE.bristle, mole: BRAMBLE.mole, magpie: BRAMBLE.magpie,
+  cubby: BRAMBLE.cubby, gourd: BRAMBLE.gourd, bigberry: BRAMBLE.bigberry, bramblebear: BRAMBLE.bramblebear,
+  moonmote: NOCTURNE.moonmote, twinkle: NOCTURNE.twinkle, nightmoth: NOCTURNE.nightmoth, lunaling: NOCTURNE.lunaling,
+  owlet: NOCTURNE.owlet, sparkler: NOCTURNE.sparkler, cometlord: NOCTURNE.cometlord, starelk: NOCTURNE.starelk,
+  shade: SUMMIT.shade, gloom: SUMMIT.gloom, umbra: SUMMIT.umbra, glint: SUMMIT.glint,
+  nightbloom: SUMMIT.nightbloom, eclipse: SUMMIT.eclipse, lurker: SUMMIT.lurker,
+  shadelord: SUMMIT.shadelord, nightowl: SUMMIT.nightowl,
 };
 
 // 角色配色（makeCharacter 配方用；body 主体 / edge 描边）
@@ -180,6 +251,10 @@ export const CHAR_PAL: Record<Exclude<CharacterId, 'spark'>, { body: number; edg
   luna:   { body: 0xc8ccf0, edge: 0x8a90c8 },
   conker: { body: 0xd8a878, edge: 0xa07048 },
   jingle: { body: 0xc8e8e0, edge: 0x80b8a8 },
+  ivy:    { body: 0xb0d890, edge: 0x74a858 },
+  berry:  { body: 0xf4a8b0, edge: 0xc86878 },
+  wisp:   { body: 0xc6ecd8, edge: 0x76b896 }, // 幽光淡青：浅色身体走弱渐变
+  toot:   { body: 0xa8bce8, edge: 0x7088c8 },
 };
 
 export function cssOf(c: number): string {

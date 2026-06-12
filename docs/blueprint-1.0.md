@@ -51,9 +51,9 @@ src/
     registry.ts                # ✅ defineTable<Id,Spec> 通用注册表
   content/                     # ✅ 纯数据层，无 Phaser 依赖（含武器平衡表）
     ids.ts weapons.ts passives.ts enemies.ts player.ts
-    shop.ts achievements.ts    # ✅ M3：11 项永久强化；成就 M6 起 28 个（含地图解锁链）
-    characters.ts              # ✅ M4/M6：12 角色 Spec
-    maps.ts bosses.ts          # ✅ M5/M6：MapSpec 全链路 ×5 + BossSpec 配装表
+    shop.ts achievements.ts    # ✅ M3：11 项永久强化；成就 M7 起 40 个全量（含地图解锁链）
+    characters.ts              # ✅ M4/M6/M7：16 角色 Spec 全量
+    maps.ts bosses.ts          # ✅ M5/M6/M7：MapSpec 全链路 ×8 + BossSpec 配装表 ×8
     arcana.ts                  # M9
   scenes/                      # ✅ 全部 11 个场景已建
     Boot Title Game HUD Result
@@ -64,15 +64,15 @@ src/
     weapons/ PlayerSystem PickupSystem ProjectileSystem ZoneSystem  # ✅
     LevelUpSystem DecorSystem  # ✅
     AchievementTracker         # ✅ M3 成就引擎
-    MapMechanicSystem          # ✅ M5/M6：减速水皮 / 定时大风 / 治愈泉 / 花浪顺风带
+    MapMechanicSystem          # ✅ M5/M6/M7：水皮/大风/治愈泉/顺风带/荆棘地皮/流星雨/晨光柱
     grid.ts effects.ts joystick.ts   # 保留
   ui/                          # ✅ M1 完成
     Viewport.ts                # 安全区/断点(compact|medium|wide)/缩放/防抖重建
     UIScene.ts layout.ts theme.ts
     widgets/                   # Button/Card/CardGrid/ScrollPanel/Modal/Tabs/Toggle/Slider
   gfx/
-    palette.ts                 # ✅ M5/M6：每图主题色组（POND/HILLS/GROVE/LAVENDER）+ DEATH_COLOR 全敌覆盖
-    textures/                  # ✅ M4 按域拆分；M5 增 mapassets.ts（makeEnemy 换皮管线 + ensureMapAssets 懒生成）
+    palette.ts                 # ✅ M5-M7：每图主题色组（POND/HILLS/GROVE/LAVENDER/BRAMBLE/NOCTURNE/SUMMIT）+ DEATH_COLOR 全敌覆盖
+    textures/                  # ✅ M4 按域拆分；M5 增 mapassets.ts（makeEnemy 换皮管线 18 形体 + ensureMapAssets 懒生成）
   audio/sound.ts               # ✅ M5：BgmSpec 每图主题（调式/速度/音色/打击乐/回声）
   i18n/                        # M6+ 视体量按域拆 dict/
 scripts/check-i18n.mjs         # ✅ M5：content ids ↔ 字典 diff，缺键即 build 失败（已挂 build 链）
@@ -150,9 +150,9 @@ interface CombatContext {
 - 武器 9-12 补 zone/orbit/melee/burst 机制空缺：暖灯笼/小太阳（贴身暖光圈周期灼噬，进化加推力）、星星环/小银河（远轨呼吸公转 + 在场/休息占空循环，进化常驻 +2 星）、松果锤/山摇撼（瞄向砸点抡锤前摇→重击 + hitstop，进化二段震波）、风铃环/晨钟（自心扩张波前每敌一击，进化连响两记强击退）；被动 8→12（橡果壳护甲/星砂瓶弹速/新芽铃经验/小钱袋金币，RunState 汇入）；角色 9-12 一一配对（暖暖厚血自愈大光圈/月月弹速冷却磁吸/栗栗高伤护甲/铃铃轻快大范围）+ 4 新饰件（提灯果/绕头星月/松果鳞帽/铃铛领结）；地图 4「萤暮林地」21 分钟（中速韧性：害羞菇潜伏惊醒/孢孢菇炮台/滚滚甲冲滚，苔绿纸底+蕨叶蘑菇萤光，84BPM D 小调五声重回声）与地图 5「紫露花田」24 分钟（轻快缠绕：紫蝶螺旋盘入/嗡嗡蜂俯冲/绒球弹跳/刺莓莓射刺，淡紫纸底+薰衣草株蝶影，108BPM E 大调五声沙锤）；机制 springs 治愈泉（周期泉眼站入回血，ZoneSystem heal 接贴图地皮）与 gusts 花浪顺风带（haste 效果落地：hasteMulAt 敌我同加速 ×1.4）；行为模板 12→14（spiral 螺旋盘入 / ambush 原地潜伏-惊醒爆发循环）；Boss 4「蘑菇长老」（区域召唤型：慢速孢子环+全程召唤+二阶段瞄准孢子柱，不冲撞）/Boss 5「紫蝶女王」（优雅游击型：鳞粉扇射+翩跹冲掠+二阶段鳞粉环/蝶群）；makeEnemy 形体 12→15（cap 蘑菇盖/moth 蝶蛾翅/bee 条纹蜂）；成就 14→28（4 新角色解锁挂 survive15/level30/kills300/evolve3，地图解锁链 hillsClear→grove、groveClear→lavender；AchRunView 增 maxPassive 字段）
 - **验收记录**：`npm run build` 通过（check-i18n 321 键/必需 304 全覆盖 + tsc 零错误）；选人页 12 真卡 +4 锁定、选图页 5 真卡（12·15·18·21·24 分钟标签）+3 锁定；暖暖×萤暮林地实测（HP125/光圈持续灼噬 60+ 杀、治愈泉 97s 涌出站入 60→92 回血、害羞菇潜伏 α0.78 不动→近身惊醒冲刺、蘑菇长老 hpScale 精确 5615 孢子环 12 弹 gz_spore + 召唤菇群、击杀→groveClear 落档并解锁紫露花田）；月月×紫露花田实测（星星环 2 星公转击杀、顺风带 lz_breeze mul1.4 玩家实测加速、紫蝶螺旋盘入、刺莓莓射 lz_thorn）；栗栗松果锤 / 铃铃风铃环均正常击杀且 4 帧动效轮换；图鉴敌人页 42 项新怪点亮带「新!」；成就页 28 项；402×874 竖屏选图/HUD 无遮挡溢出，桌面 1280×800 全页正常；运行全程 __errs 零错误
 
-### ⬜ M7 — 内容批次 C（13-16、地图 6-8）补完
-- 武器/角色 13-16；被动→16；地图 6-8+Boss 6-8（图 8 为 30 分钟终局图）；成就→40；图鉴五类全覆盖
-- **验收**：16/16/16/8/8 全量；任一角色×任一图可通局；存档迁移通过
+### ✅ M7 — 内容批次 C（13-16、地图 6-8）补完（已完成并验收）
+- 武器 13-16 补 whip/炮射/追踪/哨塔 机制空缺：卷卷藤/荆棘华尔兹（藤鞭长条判定横扫，进化加打身后第二鞭更长）、莓果弹弓/果酱风暴（瞄准最近 n 敌抛物线炮射落地爆炸，进化加爆炸并留黏滞果酱减速区）、流萤珠/萤光长河（全周放出转向追敌的萤光，进化更多更快可穿透 2）、喇叭花号手/晨光号角（种植哨塔朝最近敌连射种子，进化双株齐奏更快可穿透）；被动 12→16（飘飘羽移速/莓果蜜饯生命+回复/草叶哨范围+弹速/小花架磁吸+经验，RunState 汇入 + snack 获得时回复）；角色 13-16 一一配对（藤藤磁吸经验收集者/莓莓暴击金币甜莓/悠悠极速施法最小体格 r11/嘟嘟大范围护甲号手）+ 4 新饰件（卷须呆毛+肩叶/草莓小帽/幽光苗+飘浮光点/头顶喇叭花+音符）；地图 6「莓果灌丛」26 分钟（中坚黏人：钻钻鼠 burrow 地下突进/莓爪崽 hop 扑袭/浆果炮 turret，莓红橄榄纸底，92BPM F 大调五声沙锤）与地图 7「星语夜原」28 分钟（夜行游击：星闪闪 blink/月相灵 phase 明暗变速/小枭枭 orbit/星火花 strafeShoot，淡夜蓝纸底，72BPM B 小调五声重回声水滴）与地图 8「破晓之巅」30 分钟终局图（影群海量：影伏伏 ambush/蚀月轮 pulse/夜昙昙 turret，暖金纸底，100BPM C 大调五声跨两八度）；机制三新增（brambles 荆棘地皮扎玩家不伤敌、starfall 流星雨预警圈→敌我同伤可借力清群、dawnpillar 晨光柱站入回血+灼烧柱中敌人）；行为模板 14→16（burrow 地表慢走-钻地疾掘-破土僵直 / phase 明相缓行-暗相疾行）；makeEnemy 形体 15→18（eared 圆耳团/starlet 星形身/crescent 月相轮）；Boss 6「莓刺熊王」（贴身蛮力：扑撞+莓果扇射+二阶段莓果环/召唤）/Boss 7「星角鹿王」（星辉游走：星屑环+疾掠+二阶段瞄准星屑/召唤月尘）/Boss 8「永夜枭」（终局全能：夜瓣环+扇射+全程召唤影群+俯冲）；成就 28→40（地图解锁链 lavenderClear→bramble→nocturne→summit；4 新角色挂 survive20/coins2000/wins5/kills500，coins2000/wins5 为既有成就 Boot 回填）；图鉴五类全覆盖（16/16/67/16/8）
+- **验收记录**：`npm run build` 通过（check-i18n 414 键/必需 396 全覆盖 + tsc 零错误）；选人页 16 真卡（4 新角色纹理/饰件各异）、选图页 8 真卡（12-30 分钟标签）；写入全成就存档 → Boot 回填 16 角色 + 8 地图全解锁；藤藤×莓果灌丛通局实测（HP115/磁吸 78=65×1.2/经验×1.1、卷卷藤横扫、22s 荆棘地皮可见且扎脚、钻钻鼠/莓爪崽/浆果炮全运行、Boss 1560s 准时 HP23496=hpScale 精确、莓果扇射+二阶段环射、胜利副标题「莓果又能安心采摘了」）；莓莓×星语夜原通局（暴击+0.06/金币×1.1、流星雨预警圈→落星敌我同伤实测玩家被砸 12、星角鹿王星屑弹幕环）；嘟嘟×破晓之巅 30 分钟终局通局（HP130/范围×1.18/护甲 1、晨光柱站入回血、永夜枭全技能、胜利副标题「黎明回到了晨野」）；悠悠冒烟（HP75/cd0.88/4 帧动效轮换）；四新武器满级+配对被动 → evolvable 全过 → 进化运行零错误；新被动数值逐项精确（蜜饯+20HP+0.4 回复、飘羽×1.18、草叶哨×1.12、花架×1.15 磁吸）；结算入账 3 胜 4 局/1260 杀/bestSurvival 1813s；图鉴 67 敌 8 图懒生成全渲染、新条目带「新!」；成就页 40 项；402×874 竖屏选图/HUD 无遮挡溢出；运行全程 __errs 零错误
 
 ### ⬜ M8 — 设置/调试完善 + 性能与平衡 pass
 - 调试面板补齐（武器 DPS 统计/波次预览）；FPS 采样动态敌人上限；纹理生命周期；全比例回归；数值平衡巡检；BGM/SFX 分轨音量

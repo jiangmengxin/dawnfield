@@ -59,7 +59,7 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
   // ---------- M6 ----------
   { id: 'groveClear',    icon: 'e_sporeking', unlockMap: 'lavender',
     check: (v) => v.run?.win === true && v.run.mapId === 'grove' },
-  { id: 'lavenderClear', icon: 'e_flutterqueen', // 奖励地图 6（M7 实装时挂 unlockMap）
+  { id: 'lavenderClear', icon: 'e_flutterqueen', unlockMap: 'bramble',
     check: (v) => v.run?.win === true && v.run.mapId === 'lavender' },
   { id: 'survive15',   icon: 'icon_lantern', unlockChar: 'ember',
     check: (v) => (v.run?.time ?? 0) >= 900 },
@@ -71,11 +71,31 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
     check: (v) => (v.run?.evolves ?? 0) >= 3 },
   { id: 'eliteHunter', icon: 'e_bigbubble',  check: (v) => (v.run?.eliteKills ?? 0) >= 5 },
   { id: 'kills5000',   icon: 'e_dasher',     check: (v) => v.stats.kills >= 5000 },
-  { id: 'coins2000',   icon: 'coin',         check: (v) => v.stats.coinsEarned >= 2000 },
-  { id: 'wins5',       icon: 'chest',        check: (v) => v.stats.wins >= 5 },
+  { id: 'coins2000',   icon: 'coin',         unlockChar: 'berry', // M7：莓莓挂既有成就（Boot 回填旧档）
+    check: (v) => v.stats.coinsEarned >= 2000 },
+  { id: 'wins5',       icon: 'chest',        unlockChar: 'wisp', // M7：悠悠挂既有成就
+    check: (v) => v.stats.wins >= 5 },
   { id: 'runs20',      icon: 'd_flower0',    check: (v) => v.stats.runs >= 20 },
   { id: 'buy10',       icon: 'icon_luck',    check: (v) => v.stats.purchases >= 10 },
   { id: 'fullHouse',   icon: 'icon_gold',
     check: (v) => (v.run?.weapons ?? 0) >= 6 && (v.run?.passives ?? 0) >= 6 },
   { id: 'maxPassive',  icon: 'icon_honey',   check: (v) => v.run?.maxPassive === true },
+  // ---------- M7 ----------
+  { id: 'brambleClear',  icon: 'e_bramblebear', unlockMap: 'nocturne',
+    check: (v) => v.run?.win === true && v.run.mapId === 'bramble' },
+  { id: 'nocturneClear', icon: 'e_starelk',     unlockMap: 'summit',
+    check: (v) => v.run?.win === true && v.run.mapId === 'nocturne' },
+  { id: 'summitClear',   icon: 'e_nightowl',
+    check: (v) => v.run?.win === true && v.run.mapId === 'summit' },
+  { id: 'survive20',   icon: 'icon_vine',    unlockChar: 'ivy',
+    check: (v) => (v.run?.time ?? 0) >= 1200 },
+  { id: 'kills500',    icon: 'e_leafy',      unlockChar: 'toot',
+    check: (v) => (v.run?.kills ?? 0) >= 500 },
+  { id: 'level40',     icon: 'gem',          check: (v) => (v.run?.level ?? 0) >= 40 },
+  { id: 'evolve6',     icon: 'icon_wisp',    check: (v) => (v.run?.evolves ?? 0) >= 6 },
+  { id: 'coins5000',   icon: 'coin',         check: (v) => v.stats.coinsEarned >= 5000 },
+  { id: 'kills10000',  icon: 'e_crow',       check: (v) => v.stats.kills >= 10000 },
+  { id: 'wins10',      icon: 'chest',        check: (v) => v.stats.wins >= 10 },
+  { id: 'runs50',      icon: 'd_flower2',    check: (v) => v.stats.runs >= 50 },
+  { id: 'buy25',       icon: 'icon_pouch',   check: (v) => v.stats.purchases >= 25 },
 ];

@@ -101,6 +101,41 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
                shoot: { range: 270, cd: 3.2, speed: 170, dmg: 10, tex: 'lz_thorn' } },
   queenbee:  { hp: 950,  speed: 46,  dmg: 18, xp: 30, radius: 40, tex: 'e_queenbee',  knockMul: 0.05, behavior: 'chase', elite: true },
   flutterqueen: { hp: 5000, speed: 66, dmg: 25, xp: 0, radius: 62, tex: 'e_flutterqueen', knockMul: 0, behavior: 'chase', boss: true },
+
+  // ---------- 莓果灌丛（中坚黏人节奏：钻地鼠/扑袭熊崽/浆果炮手） ----------
+  berryling: { hp: 16,   speed: 72,  dmg: 8,  xp: 1,  radius: 12, tex: 'e_berryling', knockMul: 1.1,  behavior: 'chase' },
+  bristle:   { hp: 26,   speed: 68,  dmg: 12, xp: 2,  radius: 12, tex: 'e_bristle',   knockMul: 0.9,  behavior: 'zigzag' },
+  mole:      { hp: 32,   speed: 58,  dmg: 13, xp: 2,  radius: 13, tex: 'e_mole',      knockMul: 0.8,  behavior: 'burrow' },
+  magpie:    { hp: 20,   speed: 92,  dmg: 10, xp: 1,  radius: 11, tex: 'e_magpie',    knockMul: 0.9,  behavior: 'swoop' },
+  cubby:     { hp: 46,   speed: 56,  dmg: 14, xp: 2,  radius: 15, tex: 'e_cubby',     knockMul: 0.6,  behavior: 'hop' },
+  gourd:     { hp: 34,   speed: 46,  dmg: 8,  xp: 2,  radius: 14, tex: 'e_gourd',     knockMul: 0.8,  behavior: 'turret',
+               shoot: { range: 260, cd: 2.9, speed: 165, dmg: 10, tex: 'bz_berry' } },
+  bigberry:  { hp: 1150, speed: 42,  dmg: 19, xp: 30, radius: 42, tex: 'e_bigberry',  knockMul: 0.05, behavior: 'chase', elite: true },
+  bramblebear: { hp: 5300, speed: 58, dmg: 26, xp: 0, radius: 64, tex: 'e_bramblebear', knockMul: 0,  behavior: 'chase', boss: true },
+
+  // ---------- 星语夜原（夜行游击节奏：闪现星精/月相变速/绕飞小枭） ----------
+  moonmote:  { hp: 9,    speed: 100, dmg: 6,  xp: 1,  radius: 9,  tex: 'e_moonmote',  knockMul: 1.3,  behavior: 'wobble' },
+  twinkle:   { hp: 22,   speed: 62,  dmg: 11, xp: 2,  radius: 11, tex: 'e_twinkle',   knockMul: 1,    behavior: 'blink' },
+  nightmoth: { hp: 20,   speed: 82,  dmg: 9,  xp: 1,  radius: 12, tex: 'e_nightmoth', knockMul: 1,    behavior: 'spiral' },
+  lunaling:  { hp: 28,   speed: 64,  dmg: 12, xp: 2,  radius: 12, tex: 'e_lunaling',  knockMul: 0.9,  behavior: 'phase' },
+  owlet:     { hp: 26,   speed: 76,  dmg: 11, xp: 2,  radius: 12, tex: 'e_owlet',     knockMul: 0.7,  behavior: 'orbit' },
+  sparkler:  { hp: 30,   speed: 52,  dmg: 9,  xp: 2,  radius: 13, tex: 'e_sparkler',  knockMul: 0.8,  behavior: 'strafeShoot',
+               shoot: { range: 270, cd: 3.1, speed: 175, dmg: 10, tex: 'nz_star' } },
+  cometlord: { hp: 1050, speed: 46,  dmg: 19, xp: 30, radius: 40, tex: 'e_cometlord', knockMul: 0.05, behavior: 'dash', elite: true,
+               dash: { triggerDist: 340, telegraph: 0.85, dashSpeed: 320, dashTime: 0.65, recover: 1.5 } },
+  starelk:   { hp: 5600, speed: 64,  dmg: 26, xp: 0,  radius: 62, tex: 'e_starelk',   knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 破晓之巅（终局长夜节奏：影群海量/伏击影守/滚动蚀轮） ----------
+  shade:     { hp: 18,   speed: 76,  dmg: 9,  xp: 1,  radius: 12, tex: 'e_shade',     knockMul: 1.1,  behavior: 'chase' },
+  gloom:     { hp: 24,   speed: 50,  dmg: 10, xp: 1,  radius: 13, tex: 'e_gloom',     knockMul: 1.2,  behavior: 'drift' },
+  umbra:     { hp: 22,   speed: 94,  dmg: 10, xp: 1,  radius: 11, tex: 'e_umbra',     knockMul: 0.9,  behavior: 'swoop' },
+  glint:     { hp: 8,    speed: 104, dmg: 6,  xp: 1,  radius: 8,  tex: 'e_glint',     knockMul: 1.3,  behavior: 'wobble' },
+  nightbloom:{ hp: 36,   speed: 44,  dmg: 9,  xp: 2,  radius: 14, tex: 'e_nightbloom',knockMul: 0.8,  behavior: 'turret',
+               shoot: { range: 265, cd: 2.8, speed: 170, dmg: 11, tex: 'sz_petal' } },
+  eclipse:   { hp: 62,   speed: 54,  dmg: 15, xp: 2,  radius: 14, tex: 'e_eclipse',   knockMul: 0.5,  behavior: 'pulse' },
+  lurker:    { hp: 46,   speed: 62,  dmg: 14, xp: 2,  radius: 14, tex: 'e_lurker',    knockMul: 0.7,  behavior: 'ambush' },
+  shadelord: { hp: 1250, speed: 42,  dmg: 20, xp: 30, radius: 42, tex: 'e_shadelord', knockMul: 0.05, behavior: 'chase', elite: true },
+  nightowl:  { hp: 6200, speed: 60,  dmg: 27, xp: 0,  radius: 64, tex: 'e_nightowl',  knockMul: 0,    behavior: 'chase', boss: true },
 });
 
 // 随时间成长（min 为「有效分钟」：elapsed/60 × MapSpec.timeK，长图成长更慢）
@@ -134,3 +169,7 @@ export const ZIGZAG = { period: 0.55, angle: 0.65 };
 export const SPIRAL = { far: 280, tan: 1.0, inMin: 0.3, flutter: 0.3 };
 /** 害羞菇：原地潜伏装蘑菇，玩家靠近即惊醒 → 爆发/喘息循环追击 */
 export const AMBUSH = { trigger: 200, burst: 1.3, tire: 0.7, mulBurst: 2.3, mulTire: 0.45, idleAlpha: 0.78 };
+/** 钻钻鼠：地表慢走—钻地疾掘—破土小僵直 循环（M7） */
+export const BURROW = { surface: 1.6, dig: 1.3, pop: 0.35, mulDig: 2.2, digAlpha: 0.45 };
+/** 月相灵：明相缓行 / 暗相疾行 交替（M7，亮暗随月相变速） */
+export const PHASE = { bright: 1.5, dark: 1.1, mulBright: 0.45, mulDark: 2.1, darkAlpha: 0.5 };

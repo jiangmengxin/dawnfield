@@ -1,7 +1,7 @@
 // 地图资产管线（M5）：每图专属敌人换皮 + 装饰 + 弹体/地皮纹理，进图懒生成（ensureMapAssets 幂等）
 // 敌人换皮 = makeEnemy(形体 × 调色 × 表情)：保持「扁平粉彩圆团 + 小点眼、静态单帧」与角色拉开表现力
 // Boss 为每图门面，单独手绘（与草甸 e_boss 同待遇）
-import { GROVE, HILLS, LAVENDER, POND, PAL, cssOf } from '../palette';
+import { BRAMBLE, GROVE, HILLS, LAVENDER, NOCTURNE, POND, PAL, SUMMIT, cssOf } from '../palette';
 import type { MapId } from '../../content/ids';
 import { blobBody, Ctx, EyeStyle, eyes, makeTex, petalShape, softGlow, star } from './core';
 
@@ -14,7 +14,8 @@ function rgba(c: number, a: number): string {
 type EnemyShape =
   | 'round' | 'bubble' | 'tailed' | 'shelled' | 'spiky'
   | 'leaf' | 'winged' | 'wisp' | 'sprig' | 'cone' | 'jelly' | 'frog'
-  | 'cap' | 'moth' | 'bee'; // M6：蘑菇盖 / 蝶蛾翅 / 条纹蜂
+  | 'cap' | 'moth' | 'bee' // M6：蘑菇盖 / 蝶蛾翅 / 条纹蜂
+  | 'eared' | 'starlet' | 'crescent'; // M7：圆耳团 / 星形身 / 月相轮
 
 export interface EnemyRecipe {
   w: number;
@@ -415,6 +416,60 @@ export function makeEnemy(scene: Phaser.Scene, key: string, rc: EnemyRecipe): vo
           ctx.quadraticCurveTo(cx + s * r * 0.45, cy - r * 1.25, cx + s * r * 0.7, cy - r * 1.15);
           ctx.stroke();
         }
+        break;
+      }
+
+      case 'eared': {
+        // 圆耳团（鼹鼠/熊崽/小枭）：头顶双圆耳 + 圆身；accent = 耳内色
+        for (const s of [-1, 1]) {
+          ctx.beginPath();
+          ctx.arc(cx + s * r * 0.62, cy - r * 0.78, r * 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = bc;
+          ctx.fill();
+          ctx.lineWidth = 2.2;
+          ctx.strokeStyle = ec;
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(cx + s * r * 0.62, cy - r * 0.78, r * 0.2, 0, Math.PI * 2);
+          ctx.fillStyle = ac;
+          ctx.fill();
+        }
+        blobBody(ctx, cx, cy, r, rc.body, rc.edge, 1, 0.95);
+        break;
+      }
+
+      case 'starlet': {
+        // 星形身（星闪闪/星火花）：五角星 + 中心柔光
+        softGlow(ctx, cx, cy, r * 1.5, rgba(rc.body, 0.4));
+        star(ctx, cx, cy, 5, r * 1.3, r * 0.62, bc, ec);
+        ctx.fillStyle = 'rgba(255,255,255,0.55)';
+        ctx.beginPath();
+        ctx.ellipse(cx - r * 0.3, cy - r * 0.38, r * 0.3, r * 0.18, -0.5, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+      }
+
+      case 'crescent': {
+        // 月相轮（月相灵/蚀月轮）：圆轮 + 暗影偏移盘 + 亮缘月牙；accent = 月牙亮色
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = bc;
+        ctx.fill();
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = ec;
+        ctx.stroke();
+        // 暗影盘（偏右上 → 左下露出月牙亮带）
+        ctx.beginPath();
+        ctx.arc(cx + r * 0.32, cy - r * 0.22, r * 0.82, 0, Math.PI * 2);
+        ctx.fillStyle = rgba(rc.edge, 0.45);
+        ctx.fill();
+        // 月牙亮带
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.78, Math.PI * 0.45, Math.PI * 1.25);
+        ctx.lineWidth = r * 0.26;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = rgba(rc.accent ?? 0xfff0c0, 0.9);
+        ctx.stroke();
         break;
       }
 
@@ -1464,10 +1519,709 @@ function createLavenderAssets(scene: Phaser.Scene): void {
   });
 }
 
+// ---------- 莓果灌丛 ----------
+
+function createBrambleAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_berryling', { w: 32, h: 32, shape: 'round', r: 11.5,  body: BRAMBLE.berryling, edge: BRAMBLE.berrylingEdge, eye: { gap: 4, r: 1.7 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_bristle',   { w: 38, h: 38, shape: 'spiky', r: 10.5,  body: BRAMBLE.bristle, edge: BRAMBLE.bristleEdge, eye: { gap: 4, r: 1.7, style: 'angry' } });
+  makeEnemy(scene, 'e_mole',      { w: 38, h: 40, shape: 'eared', r: 12,    body: BRAMBLE.mole, edge: BRAMBLE.moleEdge, accent: BRAMBLE.moleNose, eye: { gap: 4, r: 1.6, style: 'sleepy' }, mouth: 'pout' });
+  makeEnemy(scene, 'e_magpie',    { w: 42, h: 32, shape: 'winged', r: 10.5, body: BRAMBLE.magpie, edge: BRAMBLE.magpieEdge, accent: BRAMBLE.magpieBeak, eye: { gap: 4, r: 1.8 } });
+  makeEnemy(scene, 'e_cubby',     { w: 44, h: 46, shape: 'eared', r: 14,    body: BRAMBLE.cubby, edge: BRAMBLE.cubbyEdge, accent: BRAMBLE.cubbyMuzzle, eye: { gap: 5, r: 1.9 }, mouth: 'open' });
+  makeEnemy(scene, 'e_gourd',     { w: 38, h: 38, shape: 'round', r: 13.5,  body: BRAMBLE.gourd, edge: BRAMBLE.gourdEdge, eye: { gap: 5, r: 1.8, style: 'surprised' }, mouth: 'open' });
+
+  // 精英：大莓王（巨莓 + 叶冠 + 满身籽点）
+  makeTex(scene, 'e_bigberry', 104, 108, (ctx) => {
+    softGlow(ctx, 52, 62, 46, rgba(BRAMBLE.bigberry, 0.28));
+    blobBody(ctx, 52, 62, 36, BRAMBLE.bigberry, BRAMBLE.bigberryEdge, 1.05, 1);
+    // 籽点
+    ctx.fillStyle = 'rgba(255,240,224,0.85)';
+    for (const [dx, dy] of [[-22, -6], [-10, 12], [6, 20], [20, 4], [12, -14], [-6, -18], [24, 18], [-24, 14]] as const) {
+      ctx.beginPath();
+      ctx.ellipse(52 + dx, 62 + dy, 2.2, 3, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 叶冠（三片）
+    petalShape(ctx, 38, 24, 22, 7, -0.85, cssOf(BRAMBLE.bush), cssOf(BRAMBLE.bushEdge));
+    petalShape(ctx, 66, 24, 22, 7, 0.85, cssOf(BRAMBLE.bush), cssOf(BRAMBLE.bushEdge));
+    petalShape(ctx, 52, 18, 24, 8, 0, cssOf(BRAMBLE.clover), cssOf(BRAMBLE.bushEdge));
+    eyes(ctx, 52, 56, 12, 4.2, 'angry');
+    ctx.strokeStyle = cssOf(PAL.ink);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(52, 74, 7, 1.15 * Math.PI, 1.85 * Math.PI);
+    ctx.stroke();
+  });
+
+  // Boss：莓刺熊王（立熊 + 莓果肚兜 + 荆棘披肩）
+  makeTex(scene, 'e_bramblebear', 168, 158, (ctx) => {
+    softGlow(ctx, 84, 88, 70, rgba(BRAMBLE.bramblebear, 0.3));
+    // 双耳
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(84 + s * 34, 32, 17, 0, Math.PI * 2);
+      ctx.fillStyle = cssOf(BRAMBLE.bramblebear);
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = cssOf(BRAMBLE.bramblebearEdge);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(84 + s * 34, 32, 8, 0, Math.PI * 2);
+      ctx.fillStyle = cssOf(BRAMBLE.cubbyMuzzle);
+      ctx.fill();
+    }
+    // 身体（蹲坐宽身）
+    blobBody(ctx, 84, 90, 52, BRAMBLE.bramblebear, BRAMBLE.bramblebearEdge, 1.08, 1);
+    // 荆棘披肩（肩头刺藤）
+    ctx.strokeStyle = cssOf(BRAMBLE.thornDecorEdge);
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(84 + s * 18, 52);
+      ctx.quadraticCurveTo(84 + s * 44, 46, 84 + s * 58, 60);
+      ctx.stroke();
+      for (const k of [0.35, 0.7]) {
+        const tx = 84 + s * (18 + 40 * k);
+        const ty = 50 + 8 * k;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(tx + s * 3, ty - 6);
+        ctx.stroke();
+      }
+    }
+    // 浅色口鼻 + 莓果肚兜
+    ctx.beginPath();
+    ctx.ellipse(84, 96, 17, 12, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(BRAMBLE.cubbyMuzzle);
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = cssOf(BRAMBLE.bramblebearEdge);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(84, 92, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(PAL.ink);
+    ctx.fill();
+    // 肚口小莓果
+    for (const [bx, by] of [[64, 122], [84, 128], [104, 122]] as const) {
+      ctx.beginPath();
+      ctx.arc(bx, by, 7, 0, Math.PI * 2);
+      ctx.fillStyle = cssOf(BRAMBLE.berryling);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = cssOf(BRAMBLE.berrylingEdge);
+      ctx.stroke();
+    }
+    eyes(ctx, 84, 74, 16, 5.5, 'angry');
+  });
+
+  // 莓果弹（浆果炮手/莓刺熊王弹幕）
+  makeTex(scene, 'bz_berry', 18, 18, (ctx) => {
+    ctx.beginPath();
+    ctx.arc(9, 9, 6, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(BRAMBLE.berryShot);
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = cssOf(BRAMBLE.berryShotDeep);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,240,224,0.85)';
+    for (const [dx, dy] of [[-2, -1], [1.5, 1.5], [0.5, -2.5]] as const) {
+      ctx.beginPath();
+      ctx.arc(9 + dx, 9 + dy, 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(6.8, 6.8, 1.5, 1, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 荆棘地皮（地图机制；椭圆刺丛）
+  makeTex(scene, 'bz_thorns', 116, 64, (ctx, w, h) => {
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 8, 0, 0, w / 2 - 2);
+    g.addColorStop(0, rgba(BRAMBLE.thornDecor, 0.28));
+    g.addColorStop(0.85, rgba(BRAMBLE.thornDecor, 0.2));
+    g.addColorStop(1, rgba(BRAMBLE.thornDecorEdge, 0.42));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, w / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // 交错刺藤
+    ctx.strokeStyle = rgba(BRAMBLE.thornDecorEdge, 0.85);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    for (const [x0, y0, x1, y1] of [[18, 38, 52, 22], [40, 46, 80, 36], [62, 20, 98, 34], [30, 26, 58, 40]] as const) {
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 - 6, x1, y1);
+      ctx.stroke();
+      // 小刺
+      for (const k of [0.3, 0.65]) {
+        const tx = x0 + (x1 - x0) * k;
+        const ty = y0 + (y1 - y0) * k - 4;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(tx + 2.5, ty - 5);
+        ctx.stroke();
+      }
+    }
+  });
+
+  // 装饰：莓果灌木 / 落莓 / 刺藤团 / 三叶草 / 小树桩
+  for (let v = 0; v < 2; v++) {
+    makeTex(scene, 'bd_bush' + v, 36, 30, (ctx) => {
+      // 灌木冠（三球）
+      ctx.fillStyle = cssOf(BRAMBLE.bush);
+      ctx.strokeStyle = cssOf(BRAMBLE.bushEdge);
+      ctx.lineWidth = 1.8;
+      const puffs: Array<[number, number, number]> = v === 0
+        ? [[12, 18, 9], [24, 17, 9.5], [18, 11, 9]]
+        : [[11, 16, 8], [25, 18, 9], [18, 10, 8.5]];
+      ctx.beginPath();
+      for (const [x, y, r2] of puffs) {
+        ctx.moveTo(x + r2, y);
+        ctx.arc(x, y, r2, 0, Math.PI * 2);
+      }
+      ctx.fill();
+      ctx.stroke();
+      // 挂果
+      ctx.fillStyle = cssOf(BRAMBLE.berryDecor);
+      for (const [x, y] of v === 0 ? [[13, 16], [22, 20], [19, 9]] as const : [[12, 14], [25, 15]] as const) {
+        ctx.beginPath();
+        ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+  }
+  makeTex(scene, 'bd_berry', 24, 18, (ctx) => {
+    for (const [x, y, r2] of [[8, 10, 5], [17, 12, 4]] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, r2, 0, Math.PI * 2);
+      ctx.fillStyle = cssOf(BRAMBLE.berryDecor);
+      ctx.fill();
+      ctx.lineWidth = 1.3;
+      ctx.strokeStyle = cssOf(BRAMBLE.berryDeep);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,240,224,0.8)';
+      ctx.beginPath();
+      ctx.arc(x - 1, y - 1, 0.8, 0, Math.PI * 2);
+      ctx.arc(x + 1.5, y + 1, 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    petalShape(ctx, 7, 3.5, 6, 2.2, -0.6, cssOf(BRAMBLE.clover), cssOf(BRAMBLE.bushEdge));
+  });
+  makeTex(scene, 'bd_thorn', 30, 20, (ctx) => {
+    ctx.strokeStyle = cssOf(BRAMBLE.thornDecorEdge);
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    for (const [x0, y0, x1, y1, bend] of [[3, 14, 27, 8, -5], [5, 8, 25, 16, 5]] as const) {
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 + bend, x1, y1);
+      ctx.stroke();
+      for (const k of [0.35, 0.7]) {
+        const tx = x0 + (x1 - x0) * k;
+        const ty = y0 + (y1 - y0) * k + bend * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(tx + 2, ty - 4);
+        ctx.stroke();
+      }
+    }
+  });
+  makeTex(scene, 'bd_clover', 22, 18, (ctx) => {
+    for (const [cx2, cy2, k] of [[8, 9, 1], [16, 12, 0.7]] as const) {
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2 - Math.PI / 2;
+        ctx.beginPath();
+        ctx.ellipse(cx2 + Math.cos(a) * 3 * k, cy2 + Math.sin(a) * 3 * k, 3.2 * k, 2.5 * k, a, 0, Math.PI * 2);
+        ctx.fillStyle = cssOf(BRAMBLE.clover);
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = rgba(BRAMBLE.cloverEdge, 0.8);
+        ctx.stroke();
+      }
+    }
+  });
+  makeTex(scene, 'bd_stump', 26, 20, (ctx) => {
+    // 侧视小树桩：桩身 + 顶面年轮
+    ctx.fillStyle = cssOf(BRAMBLE.stump);
+    ctx.strokeStyle = cssOf(BRAMBLE.stumpEdge);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(6, 9);
+    ctx.lineTo(6, 16);
+    ctx.quadraticCurveTo(13, 19.5, 20, 16);
+    ctx.lineTo(20, 9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(13, 9, 7, 4, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xe2d2b8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = rgba(BRAMBLE.stumpEdge, 0.6);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(13, 9, 3.6, 1.9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+}
+
+// ---------- 星语夜原 ----------
+
+function createNocturneAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_moonmote',  { w: 24, h: 24, shape: 'round', r: 8.5,    body: NOCTURNE.moonmote, edge: NOCTURNE.moonmoteEdge, eye: { gap: 3.2, r: 1.5 } });
+  makeEnemy(scene, 'e_twinkle',   { w: 36, h: 36, shape: 'starlet', r: 10.5, body: NOCTURNE.twinkle, edge: NOCTURNE.twinkleEdge, eye: { gap: 3.8, r: 1.6, dy: 0 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_nightmoth', { w: 46, h: 36, shape: 'moth', r: 11,      body: NOCTURNE.nightmoth, edge: NOCTURNE.nightmothEdge, accent: NOCTURNE.nightmothSpot, eye: { gap: 3.5, r: 1.6, dy: -3 } });
+  makeEnemy(scene, 'e_lunaling',  { w: 34, h: 34, shape: 'crescent', r: 12,  body: NOCTURNE.lunaling, edge: NOCTURNE.lunalingEdge, accent: NOCTURNE.lunalingMoon, eye: { gap: 4.2, r: 1.7, dy: 1 }, mouth: 'pout' });
+  makeEnemy(scene, 'e_owlet',     { w: 36, h: 38, shape: 'eared', r: 11.5,   body: NOCTURNE.owlet, edge: NOCTURNE.owletEdge, accent: NOCTURNE.owletBeak, eye: { gap: 4.5, r: 2, style: 'surprised' }, mouth: 'pout' });
+  makeEnemy(scene, 'e_sparkler',  { w: 40, h: 40, shape: 'starlet', r: 12,   body: NOCTURNE.sparkler, edge: NOCTURNE.sparklerEdge, eye: { gap: 4.2, r: 1.7, style: 'angry' }, mouth: 'open' });
+
+  // 精英：大彗星（拖尾巨星核）
+  makeTex(scene, 'e_cometlord', 116, 100, (ctx) => {
+    softGlow(ctx, 70, 50, 44, rgba(NOCTURNE.cometlord, 0.32));
+    // 彗尾（向左三道渐淡光带）
+    ctx.lineCap = 'round';
+    for (const [dy, len, w2, a] of [[-8, 52, 9, 0.5], [2, 62, 11, 0.65], [12, 48, 8, 0.45]] as const) {
+      ctx.strokeStyle = rgba(NOCTURNE.cometlord, a);
+      ctx.lineWidth = w2;
+      ctx.beginPath();
+      ctx.moveTo(64, 50 + dy);
+      ctx.quadraticCurveTo(40 - len * 0.3, 48 + dy * 1.4, 64 - len, 44 + dy * 1.8);
+      ctx.stroke();
+    }
+    // 星核
+    star(ctx, 72, 50, 5, 36, 17, cssOf(NOCTURNE.cometlord), cssOf(NOCTURNE.cometlordEdge));
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(62, 38, 7, 4, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    eyes(ctx, 72, 46, 11, 4, 'angry');
+    ctx.strokeStyle = cssOf(PAL.ink);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(72, 60, 6, 1.15 * Math.PI, 1.85 * Math.PI);
+    ctx.stroke();
+  });
+
+  // Boss：星角鹿王（星辉鹿首 + 发光大角 + 颈毛）
+  makeTex(scene, 'e_starelk', 172, 156, (ctx) => {
+    softGlow(ctx, 86, 92, 68, rgba(NOCTURNE.starelk, 0.3));
+    // 发光大角（对称分叉）
+    ctx.strokeStyle = cssOf(NOCTURNE.starelkAntler);
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(86 + s * 22, 52);
+      ctx.quadraticCurveTo(86 + s * 46, 30, 86 + s * 54, 10);
+      ctx.stroke();
+      ctx.lineWidth = 4.5;
+      ctx.beginPath();
+      ctx.moveTo(86 + s * 36, 36);
+      ctx.lineTo(86 + s * 52, 32);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(86 + s * 46, 22);
+      ctx.lineTo(86 + s * 62, 20);
+      ctx.stroke();
+      ctx.lineWidth = 6;
+      // 角尖小星
+      star(ctx, 86 + s * 54, 9, 4, 6, 2.6, '#FFF6CE', cssOf(NOCTURNE.twinkleEdge));
+    }
+    // 双耳
+    for (const s of [-1, 1]) {
+      petalShape(ctx, 86 + s * 36, 60, 22, 7.5, s * 1.25, cssOf(NOCTURNE.starelk), cssOf(NOCTURNE.starelkEdge));
+    }
+    // 头脸（长椭圆）
+    ctx.beginPath();
+    ctx.ellipse(86, 94, 42, 50, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(NOCTURNE.starelk);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = cssOf(NOCTURNE.starelkEdge);
+    ctx.stroke();
+    // 顶部高光 + 额前星斑
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(72, 64, 13, 7, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    star(ctx, 86, 70, 4, 7, 3, cssOf(NOCTURNE.starGlow));
+    // 浅色口鼻
+    ctx.beginPath();
+    ctx.ellipse(86, 122, 18, 13, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(NOCTURNE.moonmote);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(86, 117, 5, 3.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(PAL.ink);
+    ctx.fill();
+    eyes(ctx, 86, 98, 17, 5.5, 'angry');
+  });
+
+  // 星屑弹（星火花/星角鹿王弹幕）
+  makeTex(scene, 'nz_star', 18, 18, (ctx) => {
+    softGlow(ctx, 9, 9, 8, rgba(NOCTURNE.starShot, 0.7));
+    star(ctx, 9, 9, 5, 6.5, 3, cssOf(NOCTURNE.starShot), cssOf(NOCTURNE.starShotDeep));
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(9, 9, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 流星预警圈（地图机制；代码控制 alpha 闪烁）
+  makeTex(scene, 'nz_warn', 96, 96, (ctx) => {
+    ctx.strokeStyle = rgba(NOCTURNE.starShotDeep, 0.9);
+    ctx.lineWidth = 3;
+    ctx.setLineDash([10, 7]);
+    ctx.beginPath();
+    ctx.arc(48, 48, 43, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = rgba(NOCTURNE.starShot, 0.6);
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.arc(48, 48, 34, 0, Math.PI * 2);
+    ctx.stroke();
+    star(ctx, 48, 48, 4, 10, 4, rgba(NOCTURNE.starShot, 0.85));
+  });
+
+  // 装饰：银草 / 地面星光 / 月铃花 / 星晶 / 淡石
+  for (let v = 0; v < 2; v++) {
+    makeTex(scene, 'nd_grass' + v, 30, 22, (ctx) => {
+      ctx.lineCap = 'round';
+      const blades = 4 + v;
+      for (let i = 0; i < blades; i++) {
+        const x = 5 + (i * 20) / blades;
+        const bend = (i % 3 - 1) * 6;
+        const tipX = Math.min(27, Math.max(3, x + bend * 1.4));
+        ctx.strokeStyle = i % 2 === 0 ? cssOf(NOCTURNE.grass) : cssOf(NOCTURNE.grassEdge);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, 20);
+        ctx.quadraticCurveTo(Math.max(2, Math.min(28, x + bend)), 11, tipX, 3 + (i % 2) * 4);
+        ctx.stroke();
+      }
+    });
+  }
+  makeTex(scene, 'nd_star', 20, 20, (ctx) => {
+    softGlow(ctx, 10, 10, 8, rgba(NOCTURNE.starGlow, 0.55));
+    star(ctx, 10, 10, 4, 5.5, 2.2, rgba(NOCTURNE.starGlow, 0.95));
+  });
+  makeTex(scene, 'nd_bell', 24, 38, (ctx) => {
+    // 月铃花：弯茎垂吊三铃
+    ctx.strokeStyle = cssOf(NOCTURNE.grassEdge);
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(6, 36);
+    ctx.quadraticCurveTo(8, 18, 16, 8);
+    ctx.stroke();
+    for (const [x, y, k] of [[16, 10, 1], [11, 18, 0.85], [8, 26, 0.7]] as const) {
+      ctx.beginPath();
+      ctx.moveTo(x - 3.6 * k, y);
+      ctx.quadraticCurveTo(x, y - 3.5 * k, x + 3.6 * k, y);
+      ctx.lineTo(x + 2.6 * k, y + 5 * k);
+      ctx.quadraticCurveTo(x, y + 6.5 * k, x - 2.6 * k, y + 5 * k);
+      ctx.closePath();
+      ctx.fillStyle = cssOf(NOCTURNE.bell);
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = cssOf(NOCTURNE.bellDeep);
+      ctx.stroke();
+      ctx.fillStyle = cssOf(NOCTURNE.bellCore);
+      ctx.beginPath();
+      ctx.arc(x, y + 5.6 * k, 1.2 * k, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  makeTex(scene, 'nd_crystal', 22, 24, (ctx) => {
+    // 星晶簇（两根斜立晶柱）
+    for (const [x, y, h2, w2, rot] of [[9, 14, 14, 5, -0.15], [16, 16, 9, 3.6, 0.3]] as const) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(rot);
+      ctx.beginPath();
+      ctx.moveTo(0, -h2 * 0.7);
+      ctx.lineTo(w2 / 2, -h2 * 0.25);
+      ctx.lineTo(w2 / 2, h2 * 0.45);
+      ctx.lineTo(-w2 / 2, h2 * 0.45);
+      ctx.lineTo(-w2 / 2, -h2 * 0.25);
+      ctx.closePath();
+      ctx.fillStyle = rgba(NOCTURNE.crystal, 0.9);
+      ctx.fill();
+      ctx.lineWidth = 1.3;
+      ctx.strokeStyle = cssOf(NOCTURNE.crystalEdge);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-w2 * 0.15, -h2 * 0.5);
+      ctx.lineTo(-w2 * 0.15, h2 * 0.35);
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+  makeTex(scene, 'nd_pebble', 18, 13, (ctx) => {
+    ctx.beginPath();
+    ctx.ellipse(9, 7.5, 6.5, 4, 0.2, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(NOCTURNE.pebble);
+    ctx.fill();
+    ctx.lineWidth = 1.3;
+    ctx.strokeStyle = 'rgba(110,122,170,0.25)';
+    ctx.stroke();
+  });
+}
+
+// ---------- 破晓之巅 ----------
+
+function createSummitAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_shade',      { w: 32, h: 32, shape: 'round', r: 11.5,   body: SUMMIT.shade, edge: SUMMIT.shadeEdge, eye: { gap: 4, r: 1.7 } });
+  makeEnemy(scene, 'e_gloom',      { w: 40, h: 32, shape: 'wisp', r: 11,      body: SUMMIT.gloom, edge: SUMMIT.gloomEdge, eye: { gap: 4, r: 1.7, style: 'sleepy' }, mouth: 'pout' });
+  makeEnemy(scene, 'e_umbra',      { w: 42, h: 34, shape: 'winged', r: 10.5,  body: SUMMIT.umbra, edge: SUMMIT.umbraEdge, accent: SUMMIT.umbraEar, eye: { gap: 4, r: 1.8, style: 'angry' } });
+  makeEnemy(scene, 'e_glint',      { w: 22, h: 22, shape: 'round', r: 7.5,    body: SUMMIT.glint, edge: SUMMIT.glintEdge, eye: { gap: 3, r: 1.4, style: 'happy' } });
+  makeEnemy(scene, 'e_nightbloom', { w: 42, h: 44, shape: 'cap', r: 13.5,     body: SUMMIT.nightbloom, edge: SUMMIT.nightbloomEdge, accent: SUMMIT.nightbloomCap, eye: { gap: 4.5, r: 1.8, dy: 6, style: 'surprised' }, mouth: 'open' });
+  makeEnemy(scene, 'e_eclipse',    { w: 40, h: 40, shape: 'crescent', r: 14,  body: SUMMIT.eclipse, edge: SUMMIT.eclipseEdge, accent: SUMMIT.eclipseRim, eye: { gap: 4.5, r: 1.8, dy: 1, style: 'angry' } });
+  makeEnemy(scene, 'e_lurker',     { w: 38, h: 38, shape: 'round', r: 13,     body: SUMMIT.lurker, edge: SUMMIT.lurkerEdge, eye: { gap: 5, r: 1.9, style: 'angry' }, mouth: 'pout' });
+
+  // 精英：大夜影（罩袍影团 + 冷光内眸）
+  makeTex(scene, 'e_shadelord', 108, 108, (ctx) => {
+    softGlow(ctx, 54, 58, 48, rgba(SUMMIT.shadelord, 0.3));
+    // 罩袍剪影（圆顶 + 波浪下摆）
+    ctx.beginPath();
+    ctx.arc(54, 52, 38, Math.PI, 0);
+    for (let i = 0; i <= 4; i++) {
+      const x0 = 92 - (i * 76) / 4;
+      ctx.quadraticCurveTo(x0 + 9.5, 102, x0 - 9.5, 90);
+    }
+    ctx.closePath();
+    ctx.fillStyle = cssOf(SUMMIT.shadelord);
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(SUMMIT.shadelordEdge);
+    ctx.stroke();
+    // 内影
+    ctx.fillStyle = rgba(SUMMIT.shadelordEdge, 0.4);
+    ctx.beginPath();
+    ctx.ellipse(54, 60, 24, 26, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(40, 32, 10, 6, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    eyes(ctx, 54, 54, 12, 4.2, 'angry');
+    ctx.strokeStyle = cssOf(PAL.ink);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(54, 70, 7, 1.15 * Math.PI, 1.85 * Math.PI);
+    ctx.stroke();
+  });
+
+  // Boss：永夜枭（展翼大枭 + 耳羽 + 月纹胸口）
+  makeTex(scene, 'e_nightowl', 176, 152, (ctx) => {
+    softGlow(ctx, 88, 80, 72, rgba(SUMMIT.nightowl, 0.32));
+    ctx.fillStyle = cssOf(SUMMIT.nightowl);
+    ctx.strokeStyle = cssOf(SUMMIT.nightowlEdge);
+    // 展翼（下垂三段羽指）
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(88 + s * 26, 60);
+      ctx.quadraticCurveTo(88 + s * 76, 44, 88 + s * 86, 70);
+      ctx.quadraticCurveTo(88 + s * 78, 78, 88 + s * 70, 76);
+      ctx.quadraticCurveTo(88 + s * 76, 92, 88 + s * 62, 92);
+      ctx.quadraticCurveTo(88 + s * 62, 104, 88 + s * 46, 100);
+      ctx.quadraticCurveTo(88 + s * 36, 102, 88 + s * 26, 94);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
+    // 耳羽
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(88 + s * 16, 36);
+      ctx.quadraticCurveTo(88 + s * 30, 16, 88 + s * 40, 12);
+      ctx.quadraticCurveTo(88 + s * 34, 30, 88 + s * 26, 40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 3.5;
+      ctx.stroke();
+    }
+    // 身体
+    blobBody(ctx, 88, 80, 46, SUMMIT.nightowl, SUMMIT.nightowlEdge, 1, 1.1);
+    // 浅色胸腹 + 月纹
+    ctx.beginPath();
+    ctx.ellipse(88, 98, 26, 22, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(SUMMIT.nightowlBelly);
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = cssOf(SUMMIT.nightowlEdge);
+    ctx.stroke();
+    // 胸口月牙纹
+    ctx.beginPath();
+    ctx.arc(88, 98, 9, 0.7, Math.PI * 2 - 0.7);
+    ctx.arc(92, 98, 7, Math.PI * 2 - 1.0, 1.0, true);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(SUMMIT.eclipseRim);
+    ctx.fill();
+    // 眼盘（双大圆盘 + 凶眼）
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(88 + s * 17, 58, 14, 0, Math.PI * 2);
+      ctx.fillStyle = rgba(SUMMIT.nightowlBelly, 0.85);
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = cssOf(SUMMIT.nightowlEdge);
+      ctx.stroke();
+    }
+    eyes(ctx, 88, 58, 17, 5.5, 'angry');
+    // 喙
+    ctx.beginPath();
+    ctx.moveTo(82, 70);
+    ctx.lineTo(88, 80);
+    ctx.lineTo(94, 70);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(SUMMIT.nightowlBeak);
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = cssOf(SUMMIT.nightowlEdge);
+    ctx.stroke();
+  });
+
+  // 夜瓣弹（夜昙昙/永夜枭弹幕）
+  makeTex(scene, 'sz_petal', 18, 24, (ctx) => {
+    softGlow(ctx, 9, 12, 8, rgba(SUMMIT.petalShot, 0.5));
+    petalShape(ctx, 9, 12, 16, 5, 0, cssOf(SUMMIT.petalShot), cssOf(SUMMIT.petalShotDeep));
+    ctx.strokeStyle = rgba(SUMMIT.petalShotDeep, 0.7);
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(9, 5);
+    ctx.lineTo(9, 19);
+    ctx.stroke();
+  });
+
+  // 晨光柱（地图机制；金光椭圆地皮 + 光柱条纹）
+  makeTex(scene, 'sz_pillar', 130, 72, (ctx, w, h) => {
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 8, 0, 0, w / 2 - 2);
+    g.addColorStop(0, rgba(SUMMIT.pillar, 0.55));
+    g.addColorStop(0.55, rgba(SUMMIT.pillar, 0.36));
+    g.addColorStop(1, rgba(SUMMIT.pillarDeep, 0.5));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, w / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // 中心亮斑 + 放射光纹
+    ctx.fillStyle = 'rgba(255,252,236,0.75)';
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h / 2, 13, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,250,224,0.6)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h / 2, 30, 11, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,250,224,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(w / 2, h / 2, 48, 18, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  // 装饰：金穗草 / 破晓花 / 光斑 / 山石 / 萤金点
+  for (let v = 0; v < 2; v++) {
+    makeTex(scene, 'sd_tuft' + v, 32, 22, (ctx) => {
+      ctx.lineCap = 'round';
+      const blades = 4 + v;
+      for (let i = 0; i < blades; i++) {
+        const x = 5 + (i * 22) / blades;
+        const bend = (i % 3 - 1) * 7;
+        const tipX = Math.min(29, Math.max(3, x + bend * 1.5));
+        ctx.strokeStyle = i % 2 === 0 ? cssOf(SUMMIT.tuft) : cssOf(SUMMIT.tuftEdge);
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(x, 20);
+        ctx.quadraticCurveTo(Math.max(2, Math.min(30, x + bend)), 11, tipX, 3 + (i % 2) * 4);
+        ctx.stroke();
+      }
+    });
+  }
+  makeTex(scene, 'sd_bloom', 26, 26, (ctx) => {
+    // 破晓金阳花：柔光 + 12 根细长金瓣 + 亮白花心（与山岗雏菊拉开辨识）
+    softGlow(ctx, 13, 13, 12, rgba(SUMMIT.pillar, 0.55));
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      petalShape(ctx, 13 + Math.cos(a) * 6.4, 13 + Math.sin(a) * 6.4, 9.5, 2.2, a + Math.PI / 2,
+        cssOf(SUMMIT.dawnbloom), rgba(SUMMIT.dawnbloomDeep, 0.8));
+    }
+    ctx.beginPath();
+    ctx.arc(13, 13, 3.6, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFF8E0';
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = cssOf(SUMMIT.dawnbloomDeep);
+    ctx.stroke();
+  });
+  makeTex(scene, 'sd_ray', 36, 20, (ctx) => {
+    // 斜落地面的光斑带
+    const g = ctx.createLinearGradient(4, 16, 32, 4);
+    g.addColorStop(0, rgba(SUMMIT.ray, 0.0));
+    g.addColorStop(0.5, rgba(SUMMIT.ray, 0.55));
+    g.addColorStop(1, rgba(SUMMIT.ray, 0.0));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(18, 10, 16, 6, -0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,252,236,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(18, 10, 7, 2.6, -0.25, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  makeTex(scene, 'sd_rock', 24, 17, (ctx) => {
+    ctx.beginPath();
+    ctx.moveTo(3, 13);
+    ctx.quadraticCurveTo(4, 6, 10, 4.5);
+    ctx.quadraticCurveTo(18, 2.5, 21, 8);
+    ctx.quadraticCurveTo(22.5, 13, 17, 14.5);
+    ctx.quadraticCurveTo(8, 16, 3, 13);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(SUMMIT.rock);
+    ctx.fill();
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = 'rgba(90,82,72,0.2)';
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(9, 7, 4, 2, -0.2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  makeTex(scene, 'sd_glow', 22, 22, (ctx) => {
+    for (const [x, y, r2, a] of [[7, 9, 3, 0.75], [15, 6, 2.2, 0.55], [14, 15, 2.6, 0.65]] as const) {
+      softGlow(ctx, x, y, r2 * 2.2, rgba(SUMMIT.pillar, a * 0.6));
+      ctx.fillStyle = rgba(SUMMIT.pillar, a);
+      ctx.beginPath();
+      ctx.arc(x, y, r2 * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+}
+
 // ---------- 入口：进图/进 UI 页懒生成（幂等） ----------
 
 const MARKERS: Record<MapId, string> = {
   meadow: 'e_blob', pond: 'e_tad', hills: 'e_leafy', grove: 'e_shroom', lavender: 'e_budling',
+  bramble: 'e_berryling', nocturne: 'e_moonmote', summit: 'e_shade',
 };
 
 /** 确保某图的敌人/装饰/弹体纹理已生成（草甸在 Boot 全量生成，此处天然命中跳过） */
@@ -1477,4 +2231,7 @@ export function ensureMapAssets(scene: Phaser.Scene, mapId: MapId): void {
   else if (mapId === 'hills') createHillsAssets(scene);
   else if (mapId === 'grove') createGroveAssets(scene);
   else if (mapId === 'lavender') createLavenderAssets(scene);
+  else if (mapId === 'bramble') createBrambleAssets(scene);
+  else if (mapId === 'nocturne') createNocturneAssets(scene);
+  else if (mapId === 'summit') createSummitAssets(scene);
 }

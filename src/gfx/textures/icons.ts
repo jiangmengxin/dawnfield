@@ -283,6 +283,137 @@ export function createIcons(scene: Phaser.Scene): void {
     }
   });
 
+  // 卷卷藤：S 形藤条 + 对生叶 + 卷须
+  makeTex(scene, 'icon_vine', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = '#74A858';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(11, 31);
+    ctx.quadraticCurveTo(24, 26, 20, 18);
+    ctx.quadraticCurveTo(16, 11, 27, 9);
+    ctx.stroke();
+    petalShape(ctx, 13, 22, 10, 3.6, -1.2, '#A8D088', '#74A858');
+    petalShape(ctx, 26, 20, 10, 3.6, 1.1, '#A8D088', '#74A858');
+    // 末端卷须
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(27, 9);
+    ctx.arc(30.5, 9.5, 3, Math.PI, Math.PI * 2.6);
+    ctx.stroke();
+  });
+
+  // 莓果弹弓：Y 形弓架 + 皮筋 + 莓果
+  makeTex(scene, 'icon_sling', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = '#8A6840';
+    ctx.lineWidth = 3.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(20, 32);
+    ctx.lineTo(20, 22);
+    ctx.moveTo(20, 22);
+    ctx.lineTo(12, 12);
+    ctx.moveTo(20, 22);
+    ctx.lineTo(28, 12);
+    ctx.stroke();
+    // 皮筋（拉满）
+    ctx.strokeStyle = '#C09030';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(12, 12);
+    ctx.lineTo(20, 17.5);
+    ctx.lineTo(28, 12);
+    ctx.stroke();
+    // 莓果
+    ctx.beginPath();
+    ctx.arc(20, 16.5, 4.4, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xd87888);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(0xa85060);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,240,224,0.85)';
+    for (const [dx, dy] of [[-1.6, -0.5], [1.4, 1], [0.2, -2]] as const) {
+      ctx.beginPath();
+      ctx.arc(20 + dx, 16.5 + dy, 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+
+  // 流萤珠：发光萤珠 + 弧形飞迹
+  makeTex(scene, 'icon_wisp', 40, 40, (ctx) => {
+    bg(ctx);
+    // 飞迹（渐淡小点）
+    ctx.fillStyle = 'rgba(118,184,150,0.7)';
+    for (const [x, y, r] of [[10, 27, 1.4], [13, 22.5, 1.8], [17.5, 19, 2.2]] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const g = ctx.createRadialGradient(23, 15, 1, 24, 16, 9);
+    g.addColorStop(0, '#FFFFFF');
+    g.addColorStop(0.55, '#C6ECD8');
+    g.addColorStop(1, '#8CCCAA');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(24, 16, 7.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = cssOf(0x76b896);
+    ctx.stroke();
+    star(ctx, 30, 9, 4, 3.4, 1.4, '#FFF6CE', '#C0A858');
+  });
+
+  // 喇叭花号手：侧吹小号花
+  makeTex(scene, 'icon_bugle', 40, 40, (ctx) => {
+    bg(ctx);
+    // 茎（从右下伸入）
+    ctx.strokeStyle = '#74A858';
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(30, 31);
+    ctx.quadraticCurveTo(24, 26, 20, 21);
+    ctx.stroke();
+    petalShape(ctx, 28, 26, 9, 3.2, 0.9, '#A8D088', '#74A858');
+    // 喇叭口（朝左上张开）
+    ctx.save();
+    ctx.translate(17, 17);
+    ctx.rotate(-0.75);
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.quadraticCurveTo(-9, 4, -10, -7);
+    ctx.quadraticCurveTo(0, -2, 10, -7);
+    ctx.quadraticCurveTo(9, 4, 0, 8);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0xa8b8ec);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(0x7088c8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 10, 3.4, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xc8d4f4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(0, -6, 3.6, 1.4, 0, 0, Math.PI * 2);
+    ctx.fillStyle = '#F7DD8A';
+    ctx.fill();
+    ctx.restore();
+    // 音波
+    ctx.strokeStyle = 'rgba(112,136,200,0.7)';
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath();
+      ctx.arc(8, 8, 4 + i * 3.4, Math.PI * 0.85, Math.PI * 1.55);
+      ctx.stroke();
+    }
+  });
+
   // 被动图标
   makeTex(scene, 'icon_power', 40, 40, (ctx) => {
     bg(ctx);
@@ -618,6 +749,162 @@ export function createIcons(scene: Phaser.Scene): void {
     ctx.strokeStyle = '#D8A840';
     ctx.stroke();
     star(ctx, 20, 24, 4, 2.6, 1.1, '#FFF2C0');
+  });
+
+  // 飘飘羽：弯弧羽毛 + 羽絮
+  makeTex(scene, 'icon_feather', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.save();
+    ctx.translate(20, 20);
+    ctx.rotate(0.6);
+    // 羽轴
+    ctx.strokeStyle = cssOf(0x88a8c0);
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 13);
+    ctx.quadraticCurveTo(1.5, 2, 0, -12);
+    ctx.stroke();
+    // 羽片（两侧弧带）
+    ctx.fillStyle = 'rgba(200,220,232,0.95)';
+    ctx.strokeStyle = cssOf(0x88a8c0);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, -12);
+    ctx.quadraticCurveTo(8, -6, 6.5, 4);
+    ctx.quadraticCurveTo(3, 8, 0.5, 9);
+    ctx.quadraticCurveTo(-5, 8, -6.5, 0);
+    ctx.quadraticCurveTo(-6, -8, 0, -12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // 羽枝
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(136,168,192,0.55)';
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0.4, i * 4 - 3);
+      ctx.lineTo(i % 2 === 0 ? 5 : -5, i * 4 - 5.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+    // 飘絮小点
+    ctx.fillStyle = 'rgba(136,168,192,0.7)';
+    ctx.beginPath();
+    ctx.arc(30, 12, 1.4, 0, Math.PI * 2);
+    ctx.arc(28, 18, 1, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 莓果蜜饯：罐装糖渍莓果
+  makeTex(scene, 'icon_snack', 40, 40, (ctx) => {
+    bg(ctx);
+    // 罐身
+    ctx.beginPath();
+    ctx.moveTo(13, 15);
+    ctx.quadraticCurveTo(11, 24, 13.5, 29);
+    ctx.quadraticCurveTo(16, 31.5, 24, 31.5);
+    ctx.quadraticCurveTo(29, 29.5, 27, 22);
+    ctx.quadraticCurveTo(26.5, 17.5, 27, 15);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(232,144,152,0.55)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = cssOf(0xb86878);
+    ctx.stroke();
+    // 罐口布盖
+    ctx.fillStyle = '#F0D8A8';
+    ctx.beginPath();
+    ctx.ellipse(20, 13.5, 8, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = '#C09858';
+    ctx.stroke();
+    // 罐内莓果
+    ctx.fillStyle = cssOf(0xd87888);
+    for (const [x, y, r] of [[16.5, 24, 3], [22.5, 26, 3.2], [21, 20, 2.6]] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(15.5, 22.5, 1.3, 2.2, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    // 旁边一颗带叶莓果
+    ctx.beginPath();
+    ctx.arc(30.5, 25, 3, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xd87888);
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = cssOf(0xa85060);
+    ctx.stroke();
+    petalShape(ctx, 30, 20.5, 5, 2, 0.5, '#A8D088', '#74A858');
+  });
+
+  // 草叶哨：草茎口哨 + 音符波
+  makeTex(scene, 'icon_whistle', 40, 40, (ctx) => {
+    bg(ctx);
+    // 双草叶（一长一短交叉）
+    petalShape(ctx, 17, 21, 24, 4.6, 0.45, cssOf(PAL.grass), cssOf(PAL.grassDark));
+    petalShape(ctx, 21, 22, 19, 3.8, 0.95, '#B8D898', cssOf(PAL.grassDark));
+    // 叶脉
+    ctx.strokeStyle = 'rgba(168,205,140,0.9)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(12, 30);
+    ctx.lineTo(22, 12);
+    ctx.stroke();
+    // 音波弧
+    ctx.strokeStyle = 'rgba(122,160,102,0.8)';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath();
+      ctx.arc(27, 11, 3.4 + i * 3.2, -Math.PI * 0.45, Math.PI * 0.35);
+      ctx.stroke();
+    }
+  });
+
+  // 小花架：木格架 + 攀花
+  makeTex(scene, 'icon_trellis', 40, 40, (ctx) => {
+    bg(ctx);
+    // 交叉木格
+    ctx.strokeStyle = '#A8845C';
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    for (const x of [14, 21, 28]) {
+      ctx.beginPath();
+      ctx.moveTo(x - 4, 31);
+      ctx.lineTo(x + 4, 9);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x + 4, 31);
+      ctx.lineTo(x - 4, 9);
+      ctx.stroke();
+    }
+    // 攀藤
+    ctx.strokeStyle = cssOf(PAL.grassDark);
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(12, 30);
+    ctx.quadraticCurveTo(22, 24, 19, 16);
+    ctx.quadraticCurveTo(17.5, 11, 24, 9);
+    ctx.stroke();
+    // 小花两朵
+    for (const [fx2, fy2, k] of [[15, 24, 1], [24, 12, 0.85]] as const) {
+      for (let i = 0; i < 5; i++) {
+        const a = (i / 5) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.ellipse(fx2 + Math.cos(a) * 2.8 * k, fy2 + Math.sin(a) * 2.8 * k, 2 * k, 1.5 * k, a, 0, Math.PI * 2);
+        ctx.fillStyle = cssOf(0xd0a8e8);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(fx2, fy2, 1.4 * k, 0, Math.PI * 2);
+      ctx.fillStyle = '#F7DD8A';
+      ctx.fill();
+    }
   });
 
   // 兜底卡图标

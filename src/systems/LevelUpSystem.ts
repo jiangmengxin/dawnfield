@@ -103,6 +103,7 @@ export class LevelUpSystem implements RunSystem {
       ctx.run.passives.set(id, (ctx.run.passives.get(id) ?? 0) + 1);
       ctx.recomputeStats();
       if (id === 'bloom') ctx.run.heal(PASSIVE_FX.bloomHp);
+      if (id === 'snack') ctx.run.heal(PASSIVE_FX.snackHp);
     } else if (offer.kind === 'heal') {
       ctx.run.heal(40);
       SFX.heal();
