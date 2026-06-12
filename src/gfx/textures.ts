@@ -142,7 +142,7 @@ export function createAllTextures(scene: Phaser.Scene): void {
     ctx.moveTo(20, 14);
     ctx.quadraticCurveTo(22, 8, 20, 5);
     ctx.stroke();
-    softGlow(ctx, 20, 5, 6, 'rgba(255,233,168,1)');
+    softGlow(ctx, 20, 5, 4.9, 'rgba(255,233,168,1)'); // r=4.9：渐变在画布上沿前衰减到 0，不被切
     ctx.fillStyle = '#FFF6D8';
     ctx.beginPath();
     ctx.arc(20, 5, 2.6, 0, Math.PI * 2);
@@ -167,15 +167,17 @@ export function createAllTextures(scene: Phaser.Scene): void {
 
   // === 阴影 ===
   makeTex(scene, 'shadow', 64, 28, (ctx, w, h) => {
-    const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
-    g.addColorStop(0, 'rgba(90,82,72,0.20)');
-    g.addColorStop(1, 'rgba(90,82,72,0)');
-    ctx.fillStyle = g;
+    // 渐变必须在 translate/scale 之后创建（渐变坐标按填充时的 CTM 变换），
+    // 否则中心会偏到画布右侧；半径内缩 1px 防边缘截断
     ctx.save();
     ctx.translate(w / 2, h / 2);
     ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, w / 2 - 1);
+    g.addColorStop(0, 'rgba(90,82,72,0.20)');
+    g.addColorStop(1, 'rgba(90,82,72,0)');
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.arc(0, 0, w / 2, 0, Math.PI * 2);
+    ctx.arc(0, 0, w / 2 - 1, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   });
@@ -191,19 +193,19 @@ export function createAllTextures(scene: Phaser.Scene): void {
     ctx.stroke();
   });
 
-  makeTex(scene, 'e_midge', 26, 24, (ctx) => {
-    // 翅膀
+  makeTex(scene, 'e_midge', 30, 24, (ctx) => {
+    // 翅膀（画布 30 宽：翅尖 15±13.5+描边 仍在界内，原 26 宽两侧被切平）
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.strokeStyle = cssOf(PAL.midgeEdge);
     ctx.lineWidth = 1.5;
     for (const s of [-1, 1]) {
       ctx.beginPath();
-      ctx.ellipse(13 + s * 8, 7, 6, 3.4, s * 0.5, 0, Math.PI * 2);
+      ctx.ellipse(15 + s * 8, 7, 6, 3.4, s * 0.5, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
     }
-    blobBody(ctx, 13, 14, 7.5, PAL.midge, PAL.midgeEdge);
-    eyes(ctx, 13, 13, 3, 1.4);
+    blobBody(ctx, 15, 14, 7.5, PAL.midge, PAL.midgeEdge);
+    eyes(ctx, 15, 13, 3, 1.4);
   });
 
   makeTex(scene, 'e_shelly', 44, 40, (ctx) => {
@@ -284,7 +286,7 @@ export function createAllTextures(scene: Phaser.Scene): void {
   });
 
   makeTex(scene, 'e_elite', 104, 104, (ctx) => {
-    softGlow(ctx, 52, 56, 50, 'rgba(160,144,200,0.25)');
+    softGlow(ctx, 52, 56, 48, 'rgba(160,144,200,0.25)'); // r=48：下沿恰好到画布底，不被切
     blobBody(ctx, 52, 56, 40, PAL.elite, PAL.eliteEdge, 1, 0.95);
     // 头顶小芽
     ctx.strokeStyle = cssOf(PAL.grassDark);
@@ -304,7 +306,7 @@ export function createAllTextures(scene: Phaser.Scene): void {
   });
 
   makeTex(scene, 'e_boss', 168, 158, (ctx) => {
-    softGlow(ctx, 84, 88, 80, 'rgba(138,150,184,0.3)');
+    softGlow(ctx, 84, 88, 70, 'rgba(138,150,184,0.3)'); // r=70：下沿恰好到画布底，不被切
     // 波浪裙摆
     ctx.beginPath();
     ctx.moveTo(22, 100);
@@ -391,10 +393,11 @@ export function createAllTextures(scene: Phaser.Scene): void {
   });
 
   makeTex(scene, 'w_drop', 16, 24, (ctx) => {
+    // 顶点 y=3：顶部尖角的斜接(miter)尖端会比路径再高出 ~1.8px，原 y=2 时被切
     ctx.beginPath();
-    ctx.moveTo(8, 2);
-    ctx.quadraticCurveTo(14.5, 13, 8, 20);
-    ctx.quadraticCurveTo(1.5, 13, 8, 2);
+    ctx.moveTo(8, 3);
+    ctx.quadraticCurveTo(14.5, 13.5, 8, 21);
+    ctx.quadraticCurveTo(1.5, 13.5, 8, 3);
     ctx.closePath();
     ctx.fillStyle = cssOf(PAL.rain);
     ctx.fill();
@@ -403,7 +406,7 @@ export function createAllTextures(scene: Phaser.Scene): void {
     ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.beginPath();
-    ctx.ellipse(6, 12, 1.6, 3, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(6, 13, 1.6, 3, 0.3, 0, Math.PI * 2);
     ctx.fill();
   });
 
@@ -455,7 +458,8 @@ export function createAllTextures(scene: Phaser.Scene): void {
   });
 
   makeTex(scene, 'w_cloud', 116, 66, (ctx) => {
-    const puffs: Array<[number, number, number]> = [[34, 40, 18], [58, 32, 22], [84, 40, 17], [58, 46, 19]];
+    // 底部云朵 y=45：45+19+描边1.25 < 66，原 y=46 时底缘描边被切
+    const puffs: Array<[number, number, number]> = [[34, 40, 18], [58, 32, 22], [84, 40, 17], [58, 45, 19]];
     ctx.fillStyle = '#EAF2FA';
     ctx.strokeStyle = cssOf(PAL.rainDeep);
     ctx.lineWidth = 2.5;
@@ -511,7 +515,7 @@ export function createAllTextures(scene: Phaser.Scene): void {
   });
 
   makeTex(scene, 'chest', 44, 38, (ctx) => {
-    softGlow(ctx, 22, 19, 21, 'rgba(232,200,120,0.45)');
+    softGlow(ctx, 22, 19, 19, 'rgba(232,200,120,0.45)'); // r=19：上下沿恰好到画布边，不被切
     const rr = (x: number, y: number, w2: number, h2: number, r: number) => {
       ctx.beginPath();
       ctx.moveTo(x + r, y);
@@ -554,14 +558,16 @@ export function createAllTextures(scene: Phaser.Scene): void {
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(1, 1, 6, 6);
   });
-  makeTex(scene, 'p_ring', 96, 96, (ctx) => {
+  makeTex(scene, 'p_ring', 104, 104, (ctx) => {
+    // 画布 104：外圈宽描边 42+6=48 < 52，原 96 时恰好顶边四侧被切；
+    // 环半径保持 42，调用方 scale 语义不变
     ctx.beginPath();
-    ctx.arc(48, 48, 42, 0, Math.PI * 2);
+    ctx.arc(52, 52, 42, 0, Math.PI * 2);
     ctx.lineWidth = 6;
     ctx.strokeStyle = 'rgba(255,255,255,0.9)';
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(48, 48, 42, 0, Math.PI * 2);
+    ctx.arc(52, 52, 42, 0, Math.PI * 2);
     ctx.lineWidth = 12;
     ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.stroke();
@@ -574,12 +580,15 @@ export function createAllTextures(scene: Phaser.Scene): void {
       for (let i = 0; i < blades; i++) {
         const x = 5 + (i * 20) / blades + (v * 7 + i * 13) % 5;
         const bend = ((i + v) % 3 - 1) * 5;
+        // 叶尖/控制点夹在画布内（v0 首叶左弯时尖端原本算到 x=-3 被切）
+        const tipX = Math.min(26.5, Math.max(3.5, x + bend * 1.6));
+        const ctrlX = Math.min(27, Math.max(2.5, x + bend));
         ctx.strokeStyle = i % 2 === 0 ? cssOf(PAL.grassDark) : cssOf(PAL.grass);
         ctx.lineWidth = 2.6;
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(x, 22);
-        ctx.quadraticCurveTo(x + bend, 12, x + bend * 1.6, 4 + (i % 2) * 4);
+        ctx.quadraticCurveTo(ctrlX, 12, tipX, 4 + (i % 2) * 4);
         ctx.stroke();
       }
     });
