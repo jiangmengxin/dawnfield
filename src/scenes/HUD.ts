@@ -157,7 +157,7 @@ export class HUDScene extends Phaser.Scene {
       this.timerText.setOrigin(0.5, 0).setFontSize(30).setPosition(cx, safe.y + 14);
       this.pauseBtn.setPosition(safe.x + safe.w - 36, safe.y + 64);
       this.speedBtn.setPosition(safe.x + safe.w - 36, safe.y + 116);
-      this.bossName.setPosition(cx, safe.y + 96);
+      this.bossName.setPosition(cx, safe.y + 122); // 金币行（y+92）下方，避免遮挡
     }
     this.killIcon.setPosition(cx - 24, safe.y + 64).setVisible(!compact);
     this.killText.setPosition(cx - 8, safe.y + 64).setVisible(!compact);
@@ -236,7 +236,7 @@ export class HUDScene extends Phaser.Scene {
       if (boss && boss.active) {
         const bw = Math.min(420, safe.w - 80);
         const bx = safe.x + safe.w / 2 - bw / 2;
-        const by = safe.y + (compact ? 154 : 108);
+        const by = safe.y + (compact ? 154 : 134);
         const bk = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
         this.bossName.setText(t('en_' + this.gs.map.bossId));
         g.fillStyle(0x5a5248, 0.1);
