@@ -81,7 +81,9 @@ src/systems/   context(CombatContext/RunSystem/RunModifier) WaveDirector EnemySy
 
 - dev 服务配置在仓库外层 `.claude/launch.json`（dawnfield-dev，端口 5183）。
 - **Phaser 4 会忽略合成 pointer 事件**（非 isTrusted），自动化点击需直接在按钮容器上 `emit('pointerup')`；递归遍历 `children.list`（含容器嵌套）筛 `o.input && o.listenerCount('pointerup') > 0`。
-- **后台标签页 RAF 不跑**：预览页面 hidden 时需手动泵帧 `setInterval(() => { if (document.hidden) game.loop.step(performance.now()); }, 16)`。
+- **后台标签页 RAF 不跑**，且 hidden 标签页的 `setInterval` 会被浏览器节流到 ~1Hz（泵帧 interval 失效，dt 又被钳到 50ms → 游戏近乎冻结）。可靠做法是**同步批量步进**：`let t = performance.now(); for (let i = 0; i < frames; i++) { t += 16.7; game.loop.step(t); }`（一次 eval 模拟 N 帧，确定性强）。
+- **操控 `dawnfield.save` 做存档测试时**，旧页面卸载会触发 pagehide flush 把内存缓存写回、覆盖你手工写入的值。先 `Storage.prototype.setItem` 打补丁屏蔽 `dawnfield.save` 写入再 reload（补丁只影响当前页面实例）。
+- dev 服务长时间运行后 Vite 可能给出**陈旧的模块转换缓存**（部分文件新、部分旧的诡异混合）；怀疑时直接重启 dev 服务。
 - resize 后 UIScene 重建有 150ms 防抖 + 二次校验，截图前等约 1-2 秒。
 - 调试钩子：`window.__game`（Phaser.Game）、`window.__errs`（运行时错误数组）。
 - 快速到达指定状态：设置页打开「无敌/全屏拾取」可加速验证；强制结算可在 eval 中调 `gs.defeat()`。
