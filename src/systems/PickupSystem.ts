@@ -49,7 +49,7 @@ export class PickupSystem implements RunSystem {
       if (best) {
         best.value += value;
         if (tex === 'gem' && best.value >= 5) best.img.setTint(PAL.gemBig).setScale(1.25);
-        if (tex === 'coin' && best.value >= DROPS.coinBig) best.img.setScale(1.3);
+        // M19：金币统一一种大小（不随面值放大）
       }
       return;
     }
@@ -68,7 +68,7 @@ export class PickupSystem implements RunSystem {
     if (tex === 'gem') {
       o.img.setScale(value >= 5 ? 1.25 : 0.9).setTint(value >= 5 ? PAL.gemBig : PAL.gem);
     } else {
-      o.img.setScale(value >= DROPS.coinBig ? 1.3 : 1).clearTint();
+      o.img.setScale(1).clearTint(); // M19：金币统一一种大小；scaleX 由 updateOrbs 旋转动画接管
     }
   }
 
@@ -174,8 +174,13 @@ export class PickupSystem implements RunSystem {
             ctx.fx.burst(px, py - 8, { tex: 'p_star', color: PAL.chest, count: 3, speed: 70, life: 0.3, scale: 0.6 });
           }
         }
-      } else {
-        g.img.y += Math.sin(ctx.run.elapsed * 3 + g.born * 7) * 0.18;
+      } else if (kind === 'gem') {
+        g.img.y += Math.sin(ctx.run.elapsed * 3 + g.born * 7) * 0.18; // 光珠上下浮动
+      }
+      // M19 金币原地旋转：scaleX 随时间做余弦翻转（过 0 时收为边缘 → 立体旋转感）；
+      // 磁吸飞行中同样旋转；g.born 错相位，避免全场金币同步翻面
+      if (kind === 'coin' && g.active) {
+        g.img.scaleX = Math.cos(ctx.run.elapsed * 4.5 + g.born * 7);
       }
     }
   }
