@@ -256,6 +256,48 @@ export function createMiscTextures(scene: Phaser.Scene): void {
     ctx.arc(48, 48, 46, 0, Math.PI * 2);
     ctx.fill();
   });
+  // M18 meadow 花圃育成：花苞（绿萼裹含苞粉尖）；催熟时机制按进度放大发亮，绽放炸 XP/治疗
+  makeTex(scene, 'mz_bud', 64, 64, (ctx) => {
+    const cx = 32, cy = 36;
+    // 绿萼花托（饱满水滴向上收）
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + 18);
+    ctx.bezierCurveTo(cx - 16, cy + 10, cx - 13, cy - 6, cx - 8, cy - 14);
+    ctx.bezierCurveTo(cx - 3, cy - 20, cx + 3, cy - 20, cx + 8, cy - 14);
+    ctx.bezierCurveTo(cx + 13, cy - 6, cx + 16, cy + 10, cx, cy + 18);
+    ctx.closePath();
+    ctx.fillStyle = '#8FB46A';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#5E8A44';
+    ctx.stroke();
+    // 萼片纵向分隔弧
+    ctx.strokeStyle = 'rgba(94,138,68,0.5)';
+    ctx.lineWidth = 1.4;
+    for (const dx of [-6, 0, 6]) {
+      ctx.beginPath();
+      ctx.moveTo(cx + dx, cy + 14);
+      ctx.quadraticCurveTo(cx + dx * 1.4, cy - 2, cx + dx * 0.5, cy - 14);
+      ctx.stroke();
+    }
+    // 顶端含苞粉瓣尖
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 22);
+    ctx.quadraticCurveTo(cx - 7, cy - 14, cx - 4, cy - 8);
+    ctx.quadraticCurveTo(cx, cy - 6, cx + 4, cy - 8);
+    ctx.quadraticCurveTo(cx + 7, cy - 14, cx, cy - 22);
+    ctx.closePath();
+    ctx.fillStyle = '#F6C2D8';
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#D88AAC';
+    ctx.stroke();
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(cx - 4, cy - 2, 3, 6, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+  });
   for (let v = 0; v < 2; v++) {
     makeTex(scene, 'd_pebble' + v, 18, 14, (ctx) => {
       ctx.beginPath();

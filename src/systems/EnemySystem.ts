@@ -277,8 +277,15 @@ export class EnemySystem implements RunSystem {
       // 水洼减速 / 顺风加速（花浪阵风：敌我同加速）
       const slow = ctx.slowAt(e.x, e.y) ? 0.55 : 1;
       const haste = ctx.hasteMulAt(e.x, e.y);
-      e.x += (mvx * slow * haste + e.kvx) * dt;
-      e.y += (mvy * slow * haste + e.kvy) * dt;
+      // M18 hills 山风：敌人按 knockMul 受风（顺风加速逆风减速；Boss knockMul=0 不受）
+      const w = ctx.windVec;
+      let windK = 1;
+      if ((w.x !== 0 || w.y !== 0) && e.knockMul > 0) {
+        const ml = Math.hypot(mvx, mvy) || 1;
+        windK = Math.max(0.5, 1 + ((mvx * w.x + mvy * w.y) / ml) * e.knockMul);
+      }
+      e.x += (mvx * slow * haste * windK + e.kvx) * dt;
+      e.y += (mvy * slow * haste * windK + e.kvy) * dt;
 
       // 朝向 + 呼吸（flipInvert 沿用冲冲既有朝向规则）
       if (Math.abs(mvx) > 1) e.setFlipX((mvx < 0) !== (ENEMIES[e.id].flipInvert === true));

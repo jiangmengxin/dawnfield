@@ -60,6 +60,9 @@ export class GameScene extends Phaser.Scene {
   private ctx!: CombatContext;
   private systems: RunSystem[] = [];
   private playerSys!: PlayerSystem;
+  private mechSys: MapMechanicSystem | null = null; // M18：机制调度器引用（onEnemyKilled 转发用）
+  private wind = { x: 0, y: 0 }; // M18 hills 山风：wind 机制每帧写，Player/Enemy 系统读
+  private envSlowVal = 1; // M18 tide 涨潮：玩家环境减速乘子（tide 每帧覆写）
   private inputMgr!: InputManager;
   private zonesRef!: ZoneSystem;
   private pickupsRef!: PickupSystem;
@@ -161,7 +164,7 @@ export class GameScene extends Phaser.Scene {
           this.playerSys,
           { update: () => this.grid.rebuild(this.enemies.actives) },
           this.waveDir,
-          ...(this.map.mechanic ? [new MapMechanicSystem(this.ctx, this.map.mechanic)] : []),
+          ...((this.mechSys = this.map.mechanics.length ? new MapMechanicSystem(this.ctx, this.map.mechanics) : null) ? [this.mechSys!] : []),
           this.enemies,
           this.weapons,
           pickups,
@@ -231,6 +234,10 @@ export class GameScene extends Phaser.Scene {
       get enemyCapMul() { return g.enemyCapMul * g.dynCapMul; },
       hitEnemy: (e, dmg, opts) => g.hitEnemy(e, dmg, opts),
       castFx: (id) => g.castFx(id),
+      get windVec() { return g.wind; },
+      get envSlow() { return g.envSlowVal; },
+      setEnvSlow: (v) => { g.envSlowVal = v; },
+      mechanicNotifyKill: (e) => g.mechSys?.notifyKill(e),
       dmgLog: (src, dmg) => g.dps.add(src, dmg),
       onEnemyKilled: (e) => g.onEnemyKilled(e),
       damagePlayer: (d, src) => g.damagePlayer(d, src),
@@ -395,6 +402,7 @@ export class GameScene extends Phaser.Scene {
       SFX.kill();
     }
     for (const m of this.modifiers) m.onEnemyKilled?.(e, this.ctx);
+    this.mechSys?.notifyKill(e); // M18 grove 孢子连锁：机制侧击杀钩子（在钩子产币/规则卡之后）
     if (e.isElite) {
       // 精英死亡 = 小高潮（M12）：冲击波双环 + 顿帧 + 低频闷响（精英是宝箱载体）
       this.run.eliteKills++;

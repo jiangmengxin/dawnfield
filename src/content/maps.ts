@@ -34,19 +34,35 @@ export interface DecorLayer {
 
 // ---------- 地图机制 ----------
 
+// M18：每图核心机制差异化——核心机制改变策略轴，旧区域机制降级为次要风味并存（mechanic 改数组）。
+// 调度器在 systems/MapMechanicSystem.ts，每 kind 一模块 systems/mechanics/<kind>.ts。
 export type MechanicSpec =
+  // ---------- 旧区域机制（M6/M7；降级为各图次要风味，行为不变） ----------
   | { kind: 'puddles'; first: number; interval: number; count: number; r: number; dur: number; playerSlow: number }
   | { kind: 'storm'; first: number; interval: number; warnT: number; dur: number; pushPlayer: number; pushEnemy: number }
-  // M6：治愈泉（周期在四周涌出治愈泉眼，站进去回血——为了回血要冒险走位）
   | { kind: 'springs'; first: number; interval: number; count: number; r: number; dur: number; hps: number }
-  // M6：花浪阵风（周期铺开顺风带，敌我踩上同加速——借风跑路或被风追身）
   | { kind: 'gusts'; first: number; interval: number; count: number; r: number; dur: number; mul: number }
-  // M7：荆棘地皮（周期长出刺丛，玩家踩上扎脚——敌人毫不在意，挤压走位空间）
-  | { kind: 'brambles'; first: number; interval: number; count: number; r: number; dur: number; dmg: number }
-  // M7：流星雨（预警光圈→流星砸落，敌我同伤——躲开它或借它清群）
   | { kind: 'starfall'; first: number; interval: number; count: number; r: number; warnT: number; dmg: number; edmg: number }
-  // M7：晨光柱（周期落下破晓光柱，站入回血且灼烧柱中敌人——黎明站桩点）
-  | { kind: 'dawnpillar'; first: number; interval: number; count: number; r: number; dur: number; hps: number; dps: number };
+  // M18 将被 thornwall/beacon 吸收（保留至批次2 切换）
+  | { kind: 'brambles'; first: number; interval: number; count: number; r: number; dur: number; dmg: number }
+  | { kind: 'dawnpillar'; first: number; interval: number; count: number; r: number; dur: number; hps: number; dps: number }
+  // ---------- M18 核心机制（每图一条，改变策略轴） ----------
+  // meadow 花圃育成：花苞旁停留催熟→绽放炸 XP/治疗团；敌人践踏摧毁（守点 vs 风筝）
+  | { kind: 'bloomfield'; first: number; interval: number; maxAlive: number; r: number; growT: number; xp: number; heal: number }
+  // pond 涨潮退潮：周期涨水，荷叶岛外重减速+滴血（敌人不受影响）（领土收缩→选岛守岛换岛）
+  | { kind: 'tide'; period: number; highT: number; warnT: number; islandN: number; islandR: number; slow: number; dps: number }
+  // hills 山风走向：常驻定向风（缓慢转向），顺风加速逆风减速，敌人按 knockMul 同理（路线核算）
+  | { kind: 'wind'; turnEvery: number; speed: number; accel: number }
+  // grove 孢子连锁：机制孢子云内死亡的敌人迸发孢子爆，连锁伤邻怪（聚怪与击杀顺序）
+  | { kind: 'sporechain'; first: number; interval: number; count: number; r: number; dur: number; edmg: number; chainR: number; maxDepth: number }
+  // lavender 花粉积蓄：花粉带内每秒积 1 层（上限 maxStacks），每层增伤+范围，离开衰减（贪 buff vs 安全）
+  | { kind: 'pollen'; first: number; interval: number; count: number; r: number; dur: number; maxStacks: number; dmgPer: number; areaPer: number }
+  // bramble 荆棘围栏：刺篱成弧生长为实体墙，阻挡玩家（敌人穿行、弹体飞越）（空间管理，防被围死）
+  | { kind: 'thornwall'; first: number; interval: number; segR: number; segN: number; gapDeg: number; dur: number; dist: number }
+  // nocturne 夜幕与光界：全场罩暗、玩家光圈内正常，拾星屑扩光圈（光圈即资源）
+  | { kind: 'nightfall'; baseLight: number; darkAlpha: number; orbR: number; orbT: number }
+  // summit 破晓烽台：晨光柱累计停留点燃→永久据点网（上限 maxLit），每点燃 1 座敌人生成 HP 衰减（推进点灯 vs 苟刷）
+  | { kind: 'beacon'; first: number; interval: number; count: number; r: number; igniteT: number; maxLit: number; hps: number; dps: number; enemyHpPer: number };
 
 // ---------- BGM 主题（WebAudio 生成式，audio/sound.ts 消费） ----------
 
@@ -79,7 +95,7 @@ export interface MapSpec {
   waves: WavePhase[];
   events: WaveEvent[];
   decor: DecorLayer[];
-  mechanic: MechanicSpec | null;
+  mechanics: MechanicSpec[]; // M18：核心机制 + 次要风味并存（首项为核心，决定 BGM/文案基调）
   bgm: BgmSpec;
   unlockAch: AchievementId | null; // null = 默认解锁（解锁链：通关上一图）
 }
@@ -235,7 +251,8 @@ export const MAPS: MapSpec[] = [
       { keys: ['d_flower0', 'd_flower1', 'd_flower2'], nMin: 1, nMax: 3, chance: 0.75 },
       { keys: ['d_pebble0', 'd_pebble1'], nMin: 1, nMax: 1, chance: 0.5 },
     ],
-    mechanic: null,
+    // M18 核心：花圃育成（首图 first 晚=前期纯净教学；守苗炸 XP/治疗 vs 风筝）
+    mechanics: [{ kind: 'bloomfield', first: 90, interval: 14, maxAlive: 3, r: 46, growT: 4.5, xp: 24, heal: 18 }],
     bgm: MEADOW_BGM,
     unlockAch: null,
   },
@@ -285,7 +302,8 @@ export const MAPS: MapSpec[] = [
       { keys: ['pd_lotus'], nMin: 1, nMax: 1, chance: 0.3 },
       { keys: ['pd_shell'], nMin: 1, nMax: 1, chance: 0.35 },
     ],
-    mechanic: { kind: 'puddles', first: 16, interval: 13, count: 2, r: 72, dur: 11, playerSlow: 0.62 },
+    // M18 核心：涨潮退潮（岛外重减速滴血，puddles 吸收为退潮残留积水；选岛守岛换岛）
+    mechanics: [{ kind: 'tide', period: 30, highT: 9, warnT: 4.5, islandN: 3, islandR: 95, slow: 0.5, dps: 4 }],
     bgm: POND_BGM,
     unlockAch: 'meadowClear',
   },
@@ -338,7 +356,11 @@ export const MAPS: MapSpec[] = [
       { keys: ['hd_daisy'], nMin: 1, nMax: 1, chance: 0.35 },
       { keys: ['hd_stone'], nMin: 1, nMax: 1, chance: 0.4 },
     ],
-    mechanic: { kind: 'storm', first: 75, interval: 95, warnT: 3, dur: 7, pushPlayer: 95, pushEnemy: 130 },
+    // M18 核心：山风走向（常驻定向风，顺逆风调速）+ storm 保留为周期高潮
+    mechanics: [
+      { kind: 'wind', turnEvery: 14, speed: 0.3, accel: 0.5 },
+      { kind: 'storm', first: 75, interval: 95, warnT: 3, dur: 7, pushPlayer: 95, pushEnemy: 130 },
+    ],
     bgm: HILLS_BGM,
     unlockAch: 'pondClear',
   },
@@ -393,7 +415,11 @@ export const MAPS: MapSpec[] = [
       { keys: ['gd_mossrock'], nMin: 1, nMax: 1, chance: 0.4 },
       { keys: ['gd_twig'], nMin: 1, nMax: 1, chance: 0.35 },
     ],
-    mechanic: { kind: 'springs', first: 25, interval: 24, count: 1, r: 66, dur: 9, hps: 8 },
+    // M18 核心：孢子连锁（云内击杀连锁爆，聚怪收割）+ springs 治愈泉保留
+    mechanics: [
+      { kind: 'sporechain', first: 40, interval: 16, count: 1, r: 90, dur: 12, edmg: 18, chainR: 70, maxDepth: 3 },
+      { kind: 'springs', first: 25, interval: 24, count: 1, r: 66, dur: 9, hps: 8 },
+    ],
     bgm: GROVE_BGM,
     unlockAch: 'hillsClear',
   },
@@ -453,7 +479,7 @@ export const MAPS: MapSpec[] = [
       { keys: ['ld_pebble'], nMin: 1, nMax: 1, chance: 0.4 },
       { keys: ['ld_bfly'], nMin: 1, nMax: 1, chance: 0.3 },
     ],
-    mechanic: { kind: 'gusts', first: 40, interval: 30, count: 3, r: 105, dur: 9, mul: 1.4 },
+    mechanics: [{ kind: 'gusts', first: 40, interval: 30, count: 3, r: 105, dur: 9, mul: 1.4 }],
     bgm: LAVENDER_BGM,
     unlockAch: 'groveClear',
   },
@@ -514,7 +540,7 @@ export const MAPS: MapSpec[] = [
       { keys: ['bd_clover'], nMin: 1, nMax: 2, chance: 0.5 },
       { keys: ['bd_stump'], nMin: 1, nMax: 1, chance: 0.3 },
     ],
-    mechanic: { kind: 'brambles', first: 22, interval: 17, count: 2, r: 62, dur: 12, dmg: 9 },
+    mechanics: [{ kind: 'brambles', first: 22, interval: 17, count: 2, r: 62, dur: 12, dmg: 9 }],
     bgm: BRAMBLE_BGM,
     unlockAch: 'lavenderClear',
   },
@@ -576,7 +602,7 @@ export const MAPS: MapSpec[] = [
       { keys: ['nd_crystal'], nMin: 1, nMax: 1, chance: 0.4 },
       { keys: ['nd_pebble'], nMin: 1, nMax: 1, chance: 0.4 },
     ],
-    mechanic: { kind: 'starfall', first: 30, interval: 24, count: 3, r: 82, warnT: 1.25, dmg: 12, edmg: 80 },
+    mechanics: [{ kind: 'starfall', first: 30, interval: 24, count: 3, r: 82, warnT: 1.25, dmg: 12, edmg: 80 }],
     bgm: NOCTURNE_BGM,
     unlockAch: 'brambleClear',
   },
@@ -639,7 +665,7 @@ export const MAPS: MapSpec[] = [
       { keys: ['sd_rock'], nMin: 1, nMax: 1, chance: 0.45 },
       { keys: ['sd_glow'], nMin: 1, nMax: 1, chance: 0.35 },
     ],
-    mechanic: { kind: 'dawnpillar', first: 25, interval: 21, count: 1, r: 72, dur: 8, hps: 7, dps: 30 },
+    mechanics: [{ kind: 'dawnpillar', first: 25, interval: 21, count: 1, r: 72, dur: 8, hps: 7, dps: 30 }],
     bgm: SUMMIT_BGM,
     unlockAch: 'nocturneClear',
   },

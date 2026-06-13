@@ -44,15 +44,17 @@ export class PlayerSystem implements RunSystem {
     let vx = mv.x;
     let vy = mv.y;
     const len = Math.hypot(vx, vy);
-    // 地图机制水皮：玩家也减速（武器水洼不影响玩家）；顺风带：玩家也加速
-    const mech = ctx.map.mechanic;
-    const slowK = mech?.kind === 'puddles' && ctx.playerSlowAt(player.x, player.y) ? mech.playerSlow : 1;
-    const hasteK = mech?.kind === 'gusts' ? ctx.hasteMulAt(player.x, player.y) : 1;
+    // 地图机制减速/加速：倍率随 zone 携带（M18 解耦 kind），无 zone 时各返回 1；envSlow 为 tide 涨潮环境减速
+    const slowK = ctx.playerSlowAt(player.x, player.y) * ctx.envSlow;
+    const hasteK = ctx.hasteMulAt(player.x, player.y);
     if (len > 0.01) {
       vx /= Math.max(1, len);
       vy /= Math.max(1, len);
-      player.x += vx * ctx.stats.moveSpeed * slowK * hasteK * dt;
-      player.y += vy * ctx.stats.moveSpeed * slowK * hasteK * dt;
+      // M18 hills 山风：沿移动方向调制（顺风加速逆风减速）；vx/vy 已归一化，dot ∈ [-strength, strength]
+      const w = ctx.windVec;
+      const windK = (w.x !== 0 || w.y !== 0) ? Math.max(0.5, 1 + vx * w.x + vy * w.y) : 1;
+      player.x += vx * ctx.stats.moveSpeed * slowK * hasteK * windK * dt;
+      player.y += vy * ctx.stats.moveSpeed * slowK * hasteK * windK * dt;
       if (slowK < 1) {
         this.rippleT -= dt;
         if (this.rippleT <= 0) {

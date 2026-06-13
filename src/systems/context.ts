@@ -127,6 +127,13 @@ export interface CombatContext {
   hitEnemy(e: Enemy, dmg: number, opts?: HitOpts): number;
   /** M17 施放反馈：玩家小幅 pop + 武器主题色环（GameScene 内 0.15s 节流，6 武器齐射不闪疯） */
   castFx(id: WeaponId): void;
+  /** M18 hills 山风：当前定向风向量（单位向量 × 强度，0..1）；wind 机制每帧写，Player/Enemy 系统读 */
+  readonly windVec: { x: number; y: number };
+  /** M18 tide 涨潮：玩家环境减速乘子（岛外涨潮 <1，否则 1）；tide 机制每帧写，PlayerSystem 读 */
+  readonly envSlow: number;
+  setEnvSlow(v: number): void;
+  /** M18 grove 孢子连锁：敌人死亡转发给机制模块（GameScene.onEnemyKilled 内调用） */
+  mechanicNotifyKill(e: Enemy): void;
   /** 伤害归账（M8 武器 DPS 统计；调试面板显示） */
   dmgLog(src: string, dmg: number): void;
   onEnemyKilled(e: Enemy): void;
@@ -135,8 +142,8 @@ export interface CombatContext {
   hitStop(sec: number): void;
   addZone(z: ZoneSpec): void;
   slowAt(x: number, y: number): boolean;
-  /** 该点是否有「减速玩家」的水皮（地图机制；武器水洼不算） */
-  playerSlowAt(x: number, y: number): boolean;
+  /** 该点「减速玩家」水皮的速度乘子（无则 1；地图机制，武器水洼不算） */
+  playerSlowAt(x: number, y: number): number;
   /** 该点顺风加速乘子（花浪阵风机制，敌我同加速），无则 1 */
   hasteMulAt(x: number, y: number): number;
   magnetizeGems(x: number, y: number, r: number): void;

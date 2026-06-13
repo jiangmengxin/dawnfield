@@ -72,15 +72,17 @@ export class ZoneSystem implements RunSystem {
     return false;
   }
 
-  /** 该点是否踩在「减速玩家」的水皮上（地图机制专用；武器水洼不算） */
-  playerSlowAt(x: number, y: number): boolean {
+  /** 该点「减速玩家」水皮的速度乘子（取最强=最小，无则 1）；地图机制专用，武器水洼不算。
+   *  M18：减速倍率随 zone.mul 携带（puddles 0.62 / tide 0.5…），PlayerSystem 不再硬编码 kind */
+  playerSlowAt(x: number, y: number): number {
+    let mul = 1;
     for (const z of this.zones) {
       if (z.effect !== 'slow' || !z.affectsPlayer) continue;
       const dx = x - z.x;
       const dy = y - z.y;
-      if (dx * dx + dy * dy * 4 < z.r * z.r) return true;
+      if (dx * dx + dy * dy * 4 < z.r * z.r) mul = Math.min(mul, z.mul);
     }
-    return false;
+    return mul;
   }
 
   /** 该点的顺风加速乘子（花浪阵风机制；敌我同加速），无则 1 */

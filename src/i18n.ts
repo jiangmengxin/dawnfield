@@ -23,6 +23,7 @@ const D: Dict = {
   level: ['等级', 'LV'],
   eliteWarn: ['! 精英来袭 !', '! An elite approaches !'],
   stormWarn: ['! 大风将至，站稳脚跟 !', '! A gale is coming, hold steady !'],
+  tideWarn: ['! 涨潮将至，退守荷叶岛 !', '! Tide is rising, retreat to the lily pads !'],
 
   // 升级
   levelUpTitle: ['升级！选择一项', 'Level Up! Pick one'],
