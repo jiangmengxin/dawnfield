@@ -293,18 +293,18 @@ export function createMiscTextures(scene: Phaser.Scene): void {
   // 击杀计数图标：柔和骨白小骷髅（粉彩向，不阴森）；尺寸对齐 coin(18) 便于 HUD 等大并列
   makeTex(scene, 'icon_kill', 18, 18, (ctx) => {
     ctx.lineJoin = 'round';
-    // 头骨剪影：上圆下收 + 锯齿下颌（牙）
+    // 头骨剪影：上圆下收 + 锯齿下颌（牙）；放大填满画布，与 coin(14px 圆) 视觉等大
     ctx.beginPath();
-    ctx.moveTo(3.5, 9);
-    ctx.bezierCurveTo(3.5, 3.4, 14.5, 3.4, 14.5, 9);
-    ctx.bezierCurveTo(14.5, 12, 13, 12.6, 12.6, 14);
-    ctx.lineTo(11.5, 16);
-    ctx.lineTo(10.3, 14);
-    ctx.lineTo(9, 16);
-    ctx.lineTo(7.7, 14);
-    ctx.lineTo(6.5, 16);
-    ctx.lineTo(5.4, 14);
-    ctx.bezierCurveTo(5, 12.6, 3.5, 12, 3.5, 9);
+    ctx.moveTo(2.7, 9);
+    ctx.bezierCurveTo(2.7, 2.6, 15.3, 2.6, 15.3, 9);
+    ctx.bezierCurveTo(15.3, 12.4, 13.6, 13.2, 13.1, 15);
+    ctx.lineTo(11.8, 17.1);
+    ctx.lineTo(10.4, 15);
+    ctx.lineTo(9, 17.1);
+    ctx.lineTo(7.6, 15);
+    ctx.lineTo(6.2, 17.1);
+    ctx.lineTo(4.9, 15);
+    ctx.bezierCurveTo(4.4, 13.2, 2.7, 12.4, 2.7, 9);
     ctx.closePath();
     ctx.fillStyle = '#F2ECDC';
     ctx.fill();
@@ -314,16 +314,16 @@ export function createMiscTextures(scene: Phaser.Scene): void {
     // 眼窝
     ctx.fillStyle = cssOf(PAL.ink);
     ctx.beginPath();
-    ctx.ellipse(6.5, 8.2, 2, 2.3, 0, 0, Math.PI * 2);
+    ctx.ellipse(5.9, 8, 2.4, 2.8, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(11.5, 8.2, 2, 2.3, 0, 0, Math.PI * 2);
+    ctx.ellipse(12.1, 8, 2.4, 2.8, 0, 0, Math.PI * 2);
     ctx.fill();
     // 鼻
     ctx.beginPath();
-    ctx.moveTo(9, 9.9);
-    ctx.lineTo(8.1, 11.5);
-    ctx.lineTo(9.9, 11.5);
+    ctx.moveTo(9, 10.2);
+    ctx.lineTo(7.8, 12.2);
+    ctx.lineTo(10.2, 12.2);
     ctx.closePath();
     ctx.fill();
   });
@@ -445,6 +445,109 @@ export function createMiscTextures(scene: Phaser.Scene): void {
     ctx.closePath();
     ctx.fill();
     // 星光点缀
+    star(ctx, 35, 7, 4, 4.2, 1.7, '#FFFFFF');
+    star(ctx, 9.5, 11, 4, 2.6, 1.1, 'rgba(255,255,255,0.85)');
+  });
+
+  // M19 规则卡宝箱：与晨光宝箱同形，紫罗兰配色 + 盖面 ✦ 徽记，一眼区分「这是规则卡箱」
+  makeTex(scene, 'arcanachest', 44, 38, (ctx) => {
+    softGlow(ctx, 22, 20, 18, 'rgba(180,140,224,0.5)');
+    const rr = (x: number, y: number, w2: number, h2: number, r: number) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w2, y, x + w2, y + h2, r);
+      ctx.arcTo(x + w2, y + h2, x, y + h2, r);
+      ctx.arcTo(x, y + h2, x, y, r);
+      ctx.arcTo(x, y, x + w2, y, r);
+      ctx.closePath();
+    };
+    // 箱体（紫木纹渐变 + 板缝）
+    const body = ctx.createLinearGradient(0, 17, 0, 34);
+    body.addColorStop(0, '#C9A8E8');
+    body.addColorStop(1, '#8E6BC0');
+    rr(7, 17, 30, 17, 4);
+    ctx.fillStyle = body;
+    ctx.fill();
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = '#6E4FA0';
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(110,79,160,0.4)';
+    for (const yy of [23.5, 28.5]) {
+      ctx.beginPath();
+      ctx.moveTo(9, yy);
+      ctx.lineTo(35, yy);
+      ctx.stroke();
+    }
+    // 箱体金属箍 ×2 + 铆钉
+    for (const x of [10.5, 29.5]) {
+      rr(x, 19.5, 4, 13, 1.5);
+      ctx.fillStyle = '#ECE0F8';
+      ctx.fill();
+      ctx.lineWidth = 1.4;
+      ctx.strokeStyle = '#9A7FC8';
+      ctx.stroke();
+      ctx.fillStyle = '#9A7FC8';
+      for (const yy of [22.5, 30]) {
+        ctx.beginPath();
+        ctx.arc(x + 2, yy, 0.9, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    // 拱顶箱盖
+    const lid = ctx.createLinearGradient(0, 5, 0, 18);
+    lid.addColorStop(0, '#DCC2F2');
+    lid.addColorStop(1, '#A887D8');
+    ctx.beginPath();
+    ctx.moveTo(7, 18);
+    ctx.lineTo(7, 13);
+    ctx.quadraticCurveTo(7.5, 5, 22, 5);
+    ctx.quadraticCurveTo(36.5, 5, 37, 13);
+    ctx.lineTo(37, 18);
+    ctx.closePath();
+    ctx.fillStyle = lid;
+    ctx.fill();
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = '#6E4FA0';
+    ctx.stroke();
+    // 盖面高光
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(14.5, 9.5, 4.6, 2, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    // 盖沿金属带 + 端头铆钉
+    rr(5.5, 15.5, 33, 4.5, 2);
+    ctx.fillStyle = '#ECE0F8';
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = '#9A7FC8';
+    ctx.stroke();
+    ctx.fillStyle = '#9A7FC8';
+    for (const x of [8.5, 35.5]) {
+      ctx.beginPath();
+      ctx.arc(x, 17.8, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 锁扣面板 + 锁孔
+    rr(18.5, 14, 7, 9.5, 2.5);
+    ctx.fillStyle = '#F4ECFF';
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = '#9A7FC8';
+    ctx.stroke();
+    ctx.fillStyle = '#6E4FA0';
+    ctx.beginPath();
+    ctx.arc(22, 17.6, 1.7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(21.2, 18.6);
+    ctx.lineTo(22.8, 18.6);
+    ctx.lineTo(22.5, 21.2);
+    ctx.lineTo(21.5, 21.2);
+    ctx.closePath();
+    ctx.fill();
+    // 盖面 ✦ 规则卡徽记 + 星光点缀
+    star(ctx, 22, 9.5, 4, 3.6, 1.5, '#FFF2C0');
     star(ctx, 35, 7, 4, 4.2, 1.7, '#FFFFFF');
     star(ctx, 9.5, 11, 4, 2.6, 1.1, 'rgba(255,255,255,0.85)');
   });

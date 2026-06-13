@@ -10,7 +10,7 @@ import { getSettings } from '../core/settings';
 import type { CombatContext, RunSystem } from './context';
 
 interface Orb { img: Phaser.GameObjects.Image; value: number; magnet: boolean; active: boolean; born: number }
-interface Pickup { img: Phaser.GameObjects.Image; kind: 'heart' | 'chest' | 'drop'; dropId?: DropItemId; active: boolean }
+interface Pickup { img: Phaser.GameObjects.Image; kind: 'heart' | 'chest' | 'arcanachest' | 'drop'; dropId?: DropItemId; active: boolean }
 
 export class PickupSystem implements RunSystem {
   private gems: Orb[] = [];
@@ -24,8 +24,8 @@ export class PickupSystem implements RunSystem {
   /** M19 掉落道具拾取回调（GameScene 装配 DropItemSystem 后注入 → dropSys.collect） */
   onDropCollect: ((id: DropItemId) => void) | null = null;
 
-  /** onChest：踩到宝箱时回调（GameScene 接 LevelUpSystem.openChest） */
-  constructor(private ctx: CombatContext, private onChest: () => void) {}
+  /** onChest：踩到宝箱时回调（arcana=true 为规则卡专属宝箱）；GameScene 接 LevelUpSystem.open(Arcana)Chest */
+  constructor(private ctx: CombatContext, private onChest: (arcana: boolean) => void) {}
 
   /** 调试信息用实体计数 */
   get gemCount(): number {
@@ -115,7 +115,7 @@ export class PickupSystem implements RunSystem {
     this.ctx.scene.tweens.add({ targets: p.img, scale: 1, duration: 300, ease: 'Back.easeOut' });
   }
 
-  spawnPickup(kind: 'heart' | 'chest', x: number, y: number): void {
+  spawnPickup(kind: 'heart' | 'chest' | 'arcanachest', x: number, y: number): void {
     if (this.suppressDrops) return;
     let p = this.pickups.find((i) => !i.active);
     if (!p) {
@@ -212,7 +212,7 @@ export class PickupSystem implements RunSystem {
             ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_dot', color: PAL.heart, count: 8, speed: 80, life: 0.5, grav: -80 });
           }
         } else {
-          this.onChest();
+          this.onChest(p.kind === 'arcanachest'); // 规则卡专属宝箱 → 仅规则卡分支
         }
       }
     }

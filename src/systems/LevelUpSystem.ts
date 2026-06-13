@@ -230,6 +230,33 @@ export class LevelUpSystem implements RunSystem {
     emitEvent(ctx.scene.game, 'hud:chest', reward);
   }
 
+  /** 规则卡专属宝箱（M19）：只给规则卡（全卡池任选一），紫色箱体，独立于常规宝箱 */
+  openArcanaChest(): void {
+    const ctx = this.ctx;
+    const pool = this.arcanaPool();
+    // 兜底：spawn 前已校验 pool 非空；并发耗尽时给金币替代，避免空箱
+    const reward: ChestReward = pool.length > 0
+      ? { items: [{ kind: 'arcana', cards: pool }], arcana: true }
+      : { items: [{ kind: 'gold', coins: CHEST.goldCoins, heal: CHEST.goldHeal }], arcana: true };
+    SFX.chest();
+    ctx.scene.scene.pause();
+    emitEvent(ctx.scene.game, 'hud:chest', reward);
+  }
+
+  /** 精英是否额外掉规则卡宝箱：设置开 + 未达上限 + 仍有可得卡 + 命中概率（沿用 ARCANA.chestChance） */
+  shouldDropArcanaChest(): boolean {
+    const run = this.ctx.run;
+    if (!getSettings().arcana || run.arcana.length >= ARCANA.maxPerRun) return false;
+    if (this.arcanaPool().length === 0) return false;
+    return this.ctx.rng() < ARCANA.chestChance;
+  }
+
+  /** 当前可获取的规则卡候选（未持有且已解锁） */
+  private arcanaPool(): ArcanaId[] {
+    const run = this.ctx.run;
+    return ARCANA_META.map((m) => m.id).filter((id) => !run.arcana.includes(id) && Meta.isArcanaUnlocked(id));
+  }
+
   private buildChestReward(): ChestReward {
     const run = this.ctx.run;
     // 件数：1 常见，3 / 5 稀有惊喜（先判 5 再判 3）
@@ -241,15 +268,8 @@ export class LevelUpSystem implements RunSystem {
     if (evolvable.length > 0) {
       items.push({ kind: 'evolve', weapon: evolvable[Math.floor(Math.random() * evolvable.length)] });
     }
-    // 2) 规则卡（M9 概率口径不变；候选 = 全部未持有且已解锁卡，与开局选卡一致，每箱至多一件）
-    //    随机走 ctx.rng()（M13 契约：M17 种子流 chest 桶）
-    if (items.length < n && getSettings().arcana && run.arcana.length < ARCANA.maxPerRun
-      && this.ctx.rng() < ARCANA.chestChance) {
-      const pool = ARCANA_META.map((m) => m.id)
-        .filter((id) => !run.arcana.includes(id) && Meta.isArcanaUnlocked(id));
-      if (pool.length > 0) items.push({ kind: 'arcana', cards: pool });
-    }
-    // 3) 已持有项升级（不放回抽取；放逐对宝箱升级件同样生效，保持一致性）
+    // 2) 已持有项升级（不放回抽取；放逐对宝箱升级件同样生效，保持一致性）
+    //    M19：常规宝箱不再含规则卡——规则卡改由精英额外掉落的「规则卡专属宝箱」提供
     const cands: Offer[] = [];
     for (const w of this.weapons.list) {
       if (!w.evolved && w.level < WEAPON_MAX_LEVEL && !run.banished.has('w_' + w.id)) {

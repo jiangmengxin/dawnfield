@@ -66,6 +66,9 @@ export class HUDScene extends Phaser.Scene {
   /** 暂停/倍速固定触控尺寸（HUD 通用规范：触控目标 ≥44） */
   private static readonly HUD_BTN = 44;
 
+  /** 状态行顶边相对安全区顶的偏移：XP 通栏下方统一净空线，HP/计时/按钮 顶对齐 */
+  private static readonly HUD_ROW_TOP = 14;
+
   /** 屏边安全留白：所有边缘元素的统一内缩，≥16px（gapMd），大屏随 vp.s() 略增。
    *  注意是"下限"而非"缩放内缩"——绝不因小屏缩放把元素推到更贴边。 */
   private edgeGutter(): number {
@@ -204,43 +207,30 @@ export class HUDScene extends Phaser.Scene {
     const rightEdge = safe.x + safe.w - gut;
     const BTN = HUDScene.HUD_BTN; // 暂停/倍速固定 44 触控尺寸
 
-    if (compact) {
-      // 竖屏精简：XP 通栏下方一条对齐的状态行（HP | 计时 | 倍速+暂停 同一中线）
-      const rowY = safe.y + 40;
-      this.timerText.setOrigin(0.5, 0.5).setFontSize(22).setPosition(cx, rowY);
-      this.pauseBtn.setPosition(rightEdge - BTN / 2, rowY);
-      this.speedBtn.setPosition(rightEdge - BTN / 2 - BTN - THEME.gapSm, rowY);
-      this.bossName.setPosition(cx, safe.y + 142);
-    } else {
-      this.timerText.setOrigin(0.5, 0).setFontSize(30).setPosition(cx, safe.y + 14);
-      this.pauseBtn.setPosition(rightEdge - BTN / 2, safe.y + 64);
-      this.speedBtn.setPosition(rightEdge - BTN / 2, safe.y + 116);
-      this.bossName.setPosition(cx, safe.y + 122); // 金币行（y+92）下方，避免遮挡
-    }
-    // 击杀/金币图标统一显示尺寸（同源 18px，等比缩放保证两者等大）
-    const iconScale = (compact ? 13 : 15) / 18;
-    this.killIcon.setScale(iconScale).setVisible(true);
-    this.coinIcon.setScale(iconScale).setVisible(true);
-    this.killText.setVisible(true);
-    this.coinText.setVisible(true);
-    if (compact) {
-      // 竖屏：右侧竖排迷你统计 等级 / 击杀 / 金币（在按钮行下方、避开左侧令牌，统一右缘对齐）
-      const iconX = rightEdge - 42;
-      this.levelText.setOrigin(1, 0).setFontSize(13).setPosition(rightEdge, safe.y + 66).setVisible(true);
-      this.killIcon.setPosition(iconX, safe.y + 92);
-      this.killText.setOrigin(1, 0.5).setFontSize(13).setPosition(rightEdge, safe.y + 92);
-      this.coinIcon.setPosition(iconX, safe.y + 114);
-      this.coinText.setOrigin(1, 0.5).setFontSize(13).setPosition(rightEdge, safe.y + 114);
-    } else {
-      // 横屏：计时下方中列 击杀/金币（图标在左、数字紧随，两图标等大）；等级右上
-      this.killIcon.setPosition(cx - 26, safe.y + 64);
-      this.killText.setOrigin(0, 0.5).setFontSize(17).setPosition(cx - 12, safe.y + 64);
-      this.coinIcon.setPosition(cx - 26, safe.y + 92);
-      this.coinText.setOrigin(0, 0.5).setFontSize(17).setPosition(cx - 12, safe.y + 92);
-      this.levelText.setOrigin(1, 0).setFontSize(16).setPosition(rightEdge, safe.y + 14).setVisible(true);
-    }
+    // 顶栏统一（移动端/横屏一致）：HP | 计时 | 倍速+暂停 顶边对齐同一净空线；
+    // 等级/击杀/金币 在按钮下方右侧竖排，统一步距。HP 条顶边在 update() 里同样贴 rowTop。
+    const rowTop = safe.y + HUDScene.HUD_ROW_TOP;
+    // 暂停/倍速：横排右上（横屏也横排），顶边贴 rowTop
+    this.pauseBtn.setPosition(rightEdge - BTN / 2, rowTop + BTN / 2);
+    this.speedBtn.setPosition(rightEdge - BTN / 2 - BTN - THEME.gapSm, rowTop + BTN / 2);
+    // 计时：中上，顶边与按钮顶对齐
+    this.timerText.setOrigin(0.5, 0).setFontSize(compact ? 26 : 30).setPosition(cx, rowTop);
+
+    // 右侧统计栈：等级 / 击杀 / 金币（按钮下方、统一步距；图标 X 在 update() 随数字宽度跟随，
+    // 保证后期击杀/金币位数增长时数字右缘对齐、图标不重叠）
+    const statTop = rowTop + BTN + 12;
+    const step = compact ? 24 : 26;
+    const sfs = compact ? 14 : 15;
+    const iconScale = (compact ? 14 : 15) / 18; // 骷髅与金币同源 18px → 等比同显示尺寸
+    this.levelText.setOrigin(1, 0.5).setFontSize(sfs).setPosition(rightEdge, statTop).setVisible(true);
+    this.killText.setOrigin(1, 0.5).setFontSize(sfs).setPosition(rightEdge, statTop + step).setVisible(true);
+    this.coinText.setOrigin(1, 0.5).setFontSize(sfs).setPosition(rightEdge, statTop + step * 2).setVisible(true);
+    this.killIcon.setScale(iconScale).setY(statTop + step).setVisible(true);
+    this.coinIcon.setScale(iconScale).setY(statTop + step * 2).setVisible(true);
+
+    this.bossName.setPosition(cx, rowTop + 128);
     this.warnText.setPosition(cx, safe.y + safe.h * 0.3);
-    this.debugText.setPosition(safe.x + gut, safe.y + safe.h - 8);
+    this.debugText.setPosition(safe.x + gut, safe.y + safe.h - 4);
     this.buildIconRow();
     if (this.overlayMode !== 'none') {
       // 重新布局开销大，直接关闭重开
@@ -280,7 +270,7 @@ export class HUDScene extends Phaser.Scene {
     const hpH = 16;
     const hpR = 8;
     const hpX = safe.x + gut + shX;
-    const hpY = safe.y + (compact ? 32 : 16) + shY; // 竖屏与状态行(40)同中线
+    const hpY = safe.y + HUDScene.HUD_ROW_TOP + shY; // 顶边与计时/按钮同净空线（顶对齐）
     // 桌面 HP 条与下方 6 格技能区等宽（与 buildIconRow 固定尺寸一致）
     const slotRowW = MAX_WEAPONS * (32 + 7) - 7;
     const hpW = compact ? Math.min(132, safe.w * 0.32) : Math.min(slotRowW, safe.w * 0.35);
@@ -344,15 +334,20 @@ export class HUDScene extends Phaser.Scene {
     this.killText.setText(String(run.kills));
     this.coinText.setText(String(Math.floor(run.coins)));
     this.levelText.setText(t('level') + ' ' + run.level);
+    // 图标紧贴数字左缘（数字右缘对齐 rightEdge，后期位数增长时图标随之左移、不重叠）
+    const statRight = safe.x + safe.w - this.edgeGutter();
+    const ig = 7;
+    this.killIcon.setX(statRight - this.killText.width - ig - this.killIcon.displayWidth / 2);
+    this.coinIcon.setX(statRight - this.coinText.width - ig - this.coinIcon.displayWidth / 2);
 
     // Boss 条（名称/配色随本图 Boss）
     if (this.bossVisible) {
       const boss = this.gs.enemies.boss;
       if (boss && boss.active) {
-        // Boss 条居中（两侧 ≥40 留白），位置在 bossName 之下（compact 142 / full 122）
+        // Boss 条居中（两侧 ≥40 留白），位置在 bossName（rowTop+128）之下
         const bw = Math.min(420, safe.w - 80);
         const bx = safe.x + safe.w / 2 - bw / 2;
-        const by = safe.y + (compact ? 154 : 134);
+        const by = safe.y + HUDScene.HUD_ROW_TOP + 144;
         const bh = 12;
         const br = 6;
         const bk = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
@@ -473,11 +468,11 @@ export class HUDScene extends Phaser.Scene {
     this.iconRow = [];
     const safe = this.vp.safe;
     const compact = this.compactHud;
-    // 6+6 槽位常显：左缘对齐 HP 条同一 gut 安全留白；竖屏槽位更小更紧凑
+    // 6+6 槽位常显：左缘对齐 HP 条同一 gut 安全留白；HP 条（顶 14、高 16）下方一档
     const size = compact ? 26 : 32;
     const gap = compact ? 4 : 7;
     const x0 = safe.x + this.edgeGutter();
-    const y = safe.y + (compact ? 58 : 44);
+    const y = safe.y + HUDScene.HUD_ROW_TOP + 16 + 8;
     this.iconRow.push(...this.drawSlotRow(x0, y, size, this.weaponSlots(), 11, gap));
     this.iconRow.push(...this.drawSlotRow(x0, y + size + gap, size, this.passiveSlots(), 11, gap));
     // 规则卡不在 HUD 常显，构筑详情见暂停面板（drawArcanaRow）
@@ -1280,16 +1275,17 @@ export class HUDScene extends Phaser.Scene {
     const h = this.vp.h;
     const cx = w / 2;
     const cy = h * 0.45;
+    const isArc = reward.arcana === true; // M19 规则卡专属宝箱：紫色箱体 + 专属标题
     const veil = this.addVeil();
-    this.chestTitle = this.add.text(cx, h * 0.2, t('chestTitle'), {
+    this.chestTitle = this.add.text(cx, h * 0.2, isArc ? t('chestArcanaTitle') : t('chestTitle'), {
       fontFamily: FONT, fontSize: '28px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 6,
     }).setOrigin(0.5).setDepth(101);
     // 待开演出：地面光环呼吸 + 宝箱浮动；尺寸随 vp.s() 缩放，小屏不再过大（ART2）
     const k = this.vp.s(1); // 全局缩放因子（0.85–1.2）
-    const halo = this.add.image(cx, cy + 4, 'p_dot').setTint(0xf2cf6e).setAlpha(0.5)
+    const halo = this.add.image(cx, cy + 4, 'p_dot').setTint(isArc ? 0xb48ce0 : 0xf2cf6e).setAlpha(0.5)
       .setDisplaySize(170 * k, 170 * k).setDepth(100);
-    const chest = this.add.image(cx, cy, 'chest').setScale(3 * k).setDepth(101);
+    const chest = this.add.image(cx, cy, isArc ? 'arcanachest' : 'chest').setScale(3 * k).setDepth(101);
     const hint = this.add.text(cx, h * 0.62, t('chestOpen'), {
       fontFamily: FONT, fontSize: '17px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(101);

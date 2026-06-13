@@ -63,6 +63,8 @@ export type ChestItem =
 /** 宝箱开箱结果：1 件常见，3/5 件稀有惊喜（CHEST.tripleChance/pentaChance） */
 export interface ChestReward {
   items: ChestItem[];
+  /** M19 规则卡专属宝箱：紫色箱体，奖励仅含 1 件 arcana；HUD 据此换箱体/标题 */
+  arcana?: boolean;
 }
 
 /** 掉落道具的全局生效态（M19）：DropItemSystem 聚合在场持续效果后经 ctx.setDropState 写入，
@@ -171,7 +173,7 @@ export interface CombatContext {
   spawnEnemyBullet(spec: EnemyBulletSpec): void;
   spawnGem(x: number, y: number, value: number): void;
   spawnCoin(x: number, y: number, value: number): void;
-  spawnPickup(kind: 'heart' | 'chest', x: number, y: number): void;
+  spawnPickup(kind: 'heart' | 'chest' | 'arcanachest', x: number, y: number): void;
   /** M19 掉落道具：在 (x,y) 生成一件可拾取道具（踩到即触发） */
   spawnDropItem(id: DropItemId, x: number, y: number): void;
   /** M19 地图专属道具：按 DROP_RATES.mapDrop×掉率 从 ctx.map.drops 随机产出（机制产物调用） */

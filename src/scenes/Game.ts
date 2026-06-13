@@ -140,7 +140,7 @@ export class GameScene extends Phaser.Scene {
     this.levelUp = new LevelUpSystem(this.ctx, this.weapons, this.modifiers, (id) => this.grantArcana(id));
     this.playerSys = new PlayerSystem(this.ctx, this.inputMgr);
     const zones = new ZoneSystem(this.ctx);
-    const pickups = new PickupSystem(this.ctx, () => this.levelUp.openChest());
+    const pickups = new PickupSystem(this.ctx, (arcana) => (arcana ? this.levelUp.openArcanaChest() : this.levelUp.openChest()));
     const projectiles = new ProjectileSystem(this.ctx);
     this.zonesRef = zones;
     this.pickupsRef = pickups;
@@ -458,6 +458,8 @@ export class GameScene extends Phaser.Scene {
       SFX.boom(true);
       shakeCam(this, 180, 0.005);
       this.pickupsRef.spawnPickup('chest', e.x, e.y);
+      // M19 规则卡专属宝箱（紫色）：按 arcana 概率额外掉落，与常规宝箱分离
+      if (this.levelUp.shouldDropArcanaChest()) this.pickupsRef.spawnPickup('arcanachest', e.x + 30, e.y);
       for (let i = 0; i < DROPS.eliteCoinN; i++) {
         this.pickupsRef.spawnCoin(e.x + (Math.random() - 0.5) * 50, e.y + (Math.random() - 0.5) * 50, DROPS.eliteCoinV);
       }
@@ -498,6 +500,8 @@ export class GameScene extends Phaser.Scene {
     this.pickupsRef.magnetizeGems(e.x, e.y, 1e5);
     // M19 无尽 Boss 必掉一件通用道具（强力补给）
     this.pickupsRef.spawnDropPickup(rollCommonDrop(this.ctx.rng), e.x, e.y - 20);
+    // M19 规则卡专属宝箱：Boss 同样按 arcana 概率额外掉落
+    if (this.levelUp.shouldDropArcanaChest()) this.pickupsRef.spawnPickup('arcanachest', e.x + 36, e.y);
     SFX.victoryJingle();
     emitEvent(this.game, 'hud:warn', 'endlessBossDown');
   }

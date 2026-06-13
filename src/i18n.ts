@@ -91,6 +91,7 @@ const D: Dict = {
 
   // 宝箱
   chestTitle: ['晨光宝箱', 'Dawn Chest'],
+  chestArcanaTitle: ['规则卡宝箱', 'Arcana Chest'],
   chestOpen: ['点击开启', 'Tap to open'],
   chestArcanaPick: ['规则卡降临！选择一张', 'Arcana revealed! Choose one'],
   chestRich: ['金光涌动！开出 {n} 件', 'Overflowing! {n} treasures'],
