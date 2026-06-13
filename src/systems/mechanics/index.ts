@@ -11,9 +11,10 @@ import { BloomfieldMechanic } from './bloomfield';
 import { TideMechanic } from './tide';
 import { WindMechanic } from './wind';
 import { SporechainMechanic } from './sporechain';
-
-/** 占位机制（核心 kind 尚未接入时）：批次2 接入后移除命中 */
-const NOOP: Mechanic = { update() { /* noop */ }, destroy() { /* noop */ } };
+import { PollenMechanic } from './pollen';
+import { ThornwallMechanic } from './thornwall';
+import { NightfallMechanic } from './nightfall';
+import { BeaconMechanic } from './beacon';
 
 export function createMechanic(ctx: CombatContext, spec: MechanicSpec): Mechanic {
   switch (spec.kind) {
@@ -30,7 +31,10 @@ export function createMechanic(ctx: CombatContext, spec: MechanicSpec): Mechanic
     case 'tide': return new TideMechanic(ctx, spec);
     case 'wind': return new WindMechanic(ctx, spec);
     case 'sporechain': return new SporechainMechanic(ctx, spec);
-    // M18 批次2（pollen/thornwall/nightfall/beacon）：接入前数据层不引用，故不会命中 NOOP
-    default: return NOOP;
+    // M18 批次2 核心机制
+    case 'pollen': return new PollenMechanic(ctx, spec);
+    case 'thornwall': return new ThornwallMechanic(ctx, spec);
+    case 'nightfall': return new NightfallMechanic(ctx, spec);
+    case 'beacon': return new BeaconMechanic(ctx, spec);
   }
 }

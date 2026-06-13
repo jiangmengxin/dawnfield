@@ -56,11 +56,11 @@ export type MechanicSpec =
   // grove 孢子连锁：机制孢子云内死亡的敌人迸发孢子爆，连锁伤邻怪（聚怪与击杀顺序）
   | { kind: 'sporechain'; first: number; interval: number; count: number; r: number; dur: number; edmg: number; chainR: number; maxDepth: number }
   // lavender 花粉积蓄：花粉带内每秒积 1 层（上限 maxStacks），每层增伤+范围，离开衰减（贪 buff vs 安全）
-  | { kind: 'pollen'; first: number; interval: number; count: number; r: number; dur: number; maxStacks: number; dmgPer: number; areaPer: number }
+  | { kind: 'pollen'; first: number; interval: number; count: number; r: number; dur: number; maxStacks: number; dmgPer: number }
   // bramble 荆棘围栏：刺篱成弧生长为实体墙，阻挡玩家（敌人穿行、弹体飞越）（空间管理，防被围死）
   | { kind: 'thornwall'; first: number; interval: number; segR: number; segN: number; gapDeg: number; dur: number; dist: number }
-  // nocturne 夜幕与光界：全场罩暗、玩家光圈内正常，拾星屑扩光圈（光圈即资源）
-  | { kind: 'nightfall'; baseLight: number; darkAlpha: number; orbR: number; orbT: number }
+  // nocturne 夜幕与光界：全场罩暗、玩家光圈内正常，拾星屑临时照亮全场（光圈即资源）
+  | { kind: 'nightfall'; darkAlpha: number; starEvery: number; litT: number }
   // summit 破晓烽台：晨光柱累计停留点燃→永久据点网（上限 maxLit），每点燃 1 座敌人生成 HP 衰减（推进点灯 vs 苟刷）
   | { kind: 'beacon'; first: number; interval: number; count: number; r: number; igniteT: number; maxLit: number; hps: number; dps: number; enemyHpPer: number };
 
@@ -479,7 +479,11 @@ export const MAPS: MapSpec[] = [
       { keys: ['ld_pebble'], nMin: 1, nMax: 1, chance: 0.4 },
       { keys: ['ld_bfly'], nMin: 1, nMax: 1, chance: 0.3 },
     ],
-    mechanics: [{ kind: 'gusts', first: 40, interval: 30, count: 3, r: 105, dur: 9, mul: 1.4 }],
+    // M18 核心：花粉积蓄（站花粉带增伤，贪 buff vs 安全）+ gusts 顺风带保留
+    mechanics: [
+      { kind: 'pollen', first: 35, interval: 18, count: 1, r: 95, dur: 14, maxStacks: 5, dmgPer: 0.04 },
+      { kind: 'gusts', first: 40, interval: 30, count: 3, r: 105, dur: 9, mul: 1.4 },
+    ],
     bgm: LAVENDER_BGM,
     unlockAch: 'groveClear',
   },
@@ -540,7 +544,8 @@ export const MAPS: MapSpec[] = [
       { keys: ['bd_clover'], nMin: 1, nMax: 2, chance: 0.5 },
       { keys: ['bd_stump'], nMin: 1, nMax: 1, chance: 0.3 },
     ],
-    mechanics: [{ kind: 'brambles', first: 22, interval: 17, count: 2, r: 62, dur: 12, dmg: 9 }],
+    // M18 核心：荆棘围栏（实体墙阻挡玩家，留开口防围死；旧 brambles 扎脚地皮被吸收）
+    mechanics: [{ kind: 'thornwall', first: 30, interval: 22, segR: 26, segN: 5, gapDeg: 140, dur: 10, dist: 150 }],
     bgm: BRAMBLE_BGM,
     unlockAch: 'lavenderClear',
   },
@@ -602,7 +607,11 @@ export const MAPS: MapSpec[] = [
       { keys: ['nd_crystal'], nMin: 1, nMax: 1, chance: 0.4 },
       { keys: ['nd_pebble'], nMin: 1, nMax: 1, chance: 0.4 },
     ],
-    mechanics: [{ kind: 'starfall', first: 30, interval: 24, count: 3, r: 82, warnT: 1.25, dmg: 12, edmg: 80 }],
+    // M18 核心：夜幕与光界（全场罩暗、拾星屑照亮，光圈即资源）+ starfall 流星雨保留（瞬间照亮正反馈）
+    mechanics: [
+      { kind: 'nightfall', darkAlpha: 0.35, starEvery: 10, litT: 6 },
+      { kind: 'starfall', first: 30, interval: 24, count: 3, r: 82, warnT: 1.25, dmg: 12, edmg: 80 },
+    ],
     bgm: NOCTURNE_BGM,
     unlockAch: 'brambleClear',
   },
@@ -665,7 +674,8 @@ export const MAPS: MapSpec[] = [
       { keys: ['sd_rock'], nMin: 1, nMax: 1, chance: 0.45 },
       { keys: ['sd_glow'], nMin: 1, nMax: 1, chance: 0.35 },
     ],
-    mechanics: [{ kind: 'dawnpillar', first: 25, interval: 21, count: 1, r: 72, dur: 8, hps: 7, dps: 30 }],
+    // M18 核心：破晓烽台（累计点燃永久据点网 + 每座敌人 HP 衰减；dawnpillar 升级吸收）
+    mechanics: [{ kind: 'beacon', first: 25, interval: 18, count: 1, r: 70, igniteT: 4, maxLit: 3, hps: 7, dps: 30, enemyHpPer: 0.05 }],
     bgm: SUMMIT_BGM,
     unlockAch: 'nocturneClear',
   },

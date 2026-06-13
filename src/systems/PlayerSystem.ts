@@ -78,6 +78,21 @@ export class PlayerSystem implements RunSystem {
     } else {
       this.bounce += dt * 3;
     }
+    // M18 bramble 荆棘围栏：实体墙推出玩家（敌人穿行、弹体飞越，仅挡玩家）；用视觉半径避免穿模
+    const obs = ctx.obstacles;
+    if (obs.length > 0) {
+      const pr = ctx.run.char.artR;
+      for (const o of obs) {
+        const dx = player.x - o.x;
+        const dy = player.y - o.y;
+        const d = Math.hypot(dx, dy);
+        const minD = o.r + pr;
+        if (d < minD && d > 0.01) {
+          player.x = o.x + (dx / d) * minD;
+          player.y = o.y + (dy / d) * minD;
+        }
+      }
+    }
     const moving = len > 0.01;
     // 起步/急停 squash-stretch 脉冲（起步纵向拉伸，急停压扁）
     if (moving !== this.wasMoving) {

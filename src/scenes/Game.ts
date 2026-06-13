@@ -63,6 +63,9 @@ export class GameScene extends Phaser.Scene {
   private mechSys: MapMechanicSystem | null = null; // M18：机制调度器引用（onEnemyKilled 转发用）
   private wind = { x: 0, y: 0 }; // M18 hills 山风：wind 机制每帧写，Player/Enemy 系统读
   private envSlowVal = 1; // M18 tide 涨潮：玩家环境减速乘子（tide 每帧覆写）
+  private mechDmgMulVal = 1; // M18 lavender 花粉：机制伤害乘区（hitEnemy 读）
+  private enemyHpMulVal = 1; // M18 summit 烽台：敌人生成 HP 乘区（spawn 读）
+  private obstaclesArr: Array<{ x: number; y: number; r: number }> = []; // M18 bramble 荆棘墙
   private inputMgr!: InputManager;
   private zonesRef!: ZoneSystem;
   private pickupsRef!: PickupSystem;
@@ -237,6 +240,11 @@ export class GameScene extends Phaser.Scene {
       get windVec() { return g.wind; },
       get envSlow() { return g.envSlowVal; },
       setEnvSlow: (v) => { g.envSlowVal = v; },
+      get mechDmgMul() { return g.mechDmgMulVal; },
+      setMechDmgMul: (v) => { g.mechDmgMulVal = v; },
+      get enemyHpMul() { return g.enemyHpMulVal; },
+      setEnemyHpMul: (v) => { g.enemyHpMulVal = v; },
+      get obstacles() { return g.obstaclesArr; },
       mechanicNotifyKill: (e) => g.mechSys?.notifyKill(e),
       dmgLog: (src, dmg) => g.dps.add(src, dmg),
       onEnemyKilled: (e) => g.onEnemyKilled(e),
@@ -359,6 +367,7 @@ export class GameScene extends Phaser.Scene {
       if (m.modifyDamage) final = m.modifyDamage(final, e);
     }
     final *= this.enemies.shieldMulFor(e); // M15 护盾光环：圈内友方减伤（先点名击杀护盾怪）
+    final *= this.mechDmgMulVal; // M18 lavender 花粉积蓄：站花粉带增伤
     e.hp -= final;
     if (!opts.quiet) {
       // 打击感分级（M12）：大伤害/暴击 → 微顿帧（预算化）+ 数字分级 + 音高上抬

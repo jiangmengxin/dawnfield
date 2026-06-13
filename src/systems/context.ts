@@ -134,6 +134,14 @@ export interface CombatContext {
   setEnvSlow(v: number): void;
   /** M18 grove 孢子连锁：敌人死亡转发给机制模块（GameScene.onEnemyKilled 内调用） */
   mechanicNotifyKill(e: Enemy): void;
+  /** M18 lavender 花粉：机制临时伤害乘区（花粉层数→增伤），hitEnemy 读；pollen 机制每帧写 */
+  readonly mechDmgMul: number;
+  setMechDmgMul(v: number): void;
+  /** M18 summit 破晓烽台：敌人生成 HP 乘区（点燃据点→全场衰减），EnemySystem.spawn 读；beacon 机制写 */
+  readonly enemyHpMul: number;
+  setEnemyHpMul(v: number): void;
+  /** M18 bramble 荆棘围栏：实体墙障碍圆（thornwall 机制 mutate），PlayerSystem 移动后推出玩家 */
+  readonly obstacles: Array<{ x: number; y: number; r: number }>;
   /** 伤害归账（M8 武器 DPS 统计；调试面板显示） */
   dmgLog(src: string, dmg: number): void;
   onEnemyKilled(e: Enemy): void;

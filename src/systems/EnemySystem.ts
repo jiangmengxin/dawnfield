@@ -101,7 +101,7 @@ export class EnemySystem implements RunSystem {
       * (spec.boss ? 1 + ENDLESS.bossExtraPerCycle * k : 1);
     const spdMul = d.speedMul * Math.min(ENDLESS.speedCap, 1 + ENDLESS.speedMulPerCycle * k);
     const dmgMul = d.dmgMul * (1 + ENDLESS.dmgMulPerCycle * k);
-    e.hp = e.maxHp = spec.hp * hpScale(min) * (spec.boss || spec.elite ? this.ctx.run.difficultyHp : 1) * hpMul;
+    e.hp = e.maxHp = spec.hp * hpScale(min) * (spec.boss || spec.elite ? this.ctx.run.difficultyHp : 1) * hpMul * this.ctx.enemyHpMul;
     e.spd = spec.speed * (0.9 + Math.random() * 0.2) * spdMul;
     e.dmg = spec.dmg * dmgScale(min) * dmgMul;
     e.xpVal = spec.xp;

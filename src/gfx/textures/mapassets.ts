@@ -1901,6 +1901,16 @@ function createNocturneAssets(scene: Phaser.Scene): void {
     star(ctx, 48, 48, 4, 10, 4, rgba(NOCTURNE.starShot, 0.85));
   });
 
+  // M18 夜幕 overlay（机制 nightfall）：中心透明光圈 → 边缘夜色渐暗；overlay 跟随玩家 + setAlpha 调整暗度
+  makeTex(scene, 'nz_dark', 256, 256, (ctx) => {
+    const g = ctx.createRadialGradient(128, 128, 42, 128, 128, 132);
+    g.addColorStop(0, 'rgba(18,20,38,0)');
+    g.addColorStop(0.5, 'rgba(18,20,38,0.55)');
+    g.addColorStop(1, 'rgba(18,20,38,1)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 256, 256);
+  });
+
   // 装饰：银草 / 地面星光 / 月铃花 / 星晶 / 淡石
   for (let v = 0; v < 2; v++) {
     makeTex(scene, 'nd_grass' + v, 30, 22, (ctx) => {
