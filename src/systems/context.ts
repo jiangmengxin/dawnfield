@@ -51,6 +51,8 @@ export interface Offer {
   essence?: 'dmg' | 'cd' | 'area';
   isNew: boolean;
   toLevel: number;
+  /** 突破模式（M20）：已进化超武的额外突破层（≥1）；置位时卡面走超武形态 + 「突破 LvN」标签 */
+  breakthrough?: number;
 }
 
 /** 宝箱单件物品：按 进化 > 规则卡 > 升级 > 金币 的优先级装箱 */
@@ -81,13 +83,18 @@ export interface DropState {
 /** 运行模式（公共契约：M11 实装无尽） */
 export type RunMode = 'normal' | 'endless';
 
-/** 场景启动参数（公共契约：M10 预留 mode/diff，M11 实装无尽与狂暴档位） */
+/** 场景启动参数（公共契约：M10 预留 mode/diff，M11 实装无尽与狂暴档位；M20 模式开关移入选图页） */
 export interface RunLaunchData {
   charId: string;
   mapId: string;
-  mode?: RunMode; // 缺省 'normal'
-  diff?: 0 | 1 | 2; // 狂暴档位，缺省 0
+  mode?: RunMode; // 缺省 'normal'（无尽）
+  diff?: 0 | 1 | 2; // 狂暴档位，缺省 0；M20 单一「狂暴」= 2
   bench?: boolean; // M12 DPS 基准模式（仅 DEV 响应）
+  // M20 选图页模式开关（均缺省 false；规则由选图页默认置 true）
+  arcana?: boolean; // 规则：开局选卡 + 规则卡宝箱（原 settings.arcana）
+  random?: boolean; // 随机：自动随机三选一 / 自动随机开局规则卡，跳过选卡界面
+  speed2x?: boolean; // 倍速：开局 2×，局内倍速按钮在 2× / 4× 间切换
+  breakthrough?: boolean; // 突破：已进化超武可无限继续升级
 }
 
 export interface RunResult {

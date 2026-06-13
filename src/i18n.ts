@@ -90,6 +90,15 @@ const D: Dict = {
   diff_hyper2: ['狂暴 II', 'Hyper II'],
   diff_hyper2_d: ['敌人凶猛 · 精英双刷 · 金币×2 · 经验×1.2', 'Ferocious foes · Double elites · Coins ×2 · XP ×1.2'],
 
+  // M20 选图页模式开关（统一两字命名；彼此独立可叠加）
+  mode_endless: ['无尽', 'Endless'],
+  mode_berserk: ['狂暴', 'Berserk'],
+  mode_arcana: ['规则', 'Arcana'],
+  mode_random: ['随机', 'Random'],
+  mode_speed: ['倍速', 'Turbo'],
+  mode_breakthrough: ['突破', 'Breakout'],
+  breakthroughTag: ['突破 Lv{n}', 'Breakout Lv{n}'],
+
   // 宝箱
   chestTitle: ['晨光宝箱', 'Dawn Chest'],
   chestArcanaTitle: ['规则卡宝箱', 'Arcana Chest'],

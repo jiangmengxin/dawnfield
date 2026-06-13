@@ -1,4 +1,4 @@
-// 设置页：BGM/SFX 分轨音量（M8）/ 伤害数字 / 屏幕震动 / 规则卡（M9）/ 语言 + 调试区
+// 设置页：BGM/SFX 分轨音量（M8）/ 伤害数字 / 屏幕震动 / 语言 + 调试区（规则卡 M20 移至选图页模式开关）
 // （静音开关仍在主菜单与暂停面板；两轨拉零等效静音）
 // 调试：信息/无敌/全屏拾取/自动选卡/解锁全部内容 + 加币/时间跳跃/指定武器/波次预览/规则卡直给（后四者仅对进行中的局生效）
 // M3 起设置持久化进版本化存档（core/save）；行高随可用高度自适应，矮屏不溢出
@@ -41,9 +41,10 @@ export class SettingsScene extends UIScene {
     // 再留 20px 使 rowBg 外扩 ±10 后与页边 ≥16px 安全留白
     const maxW = Math.min(content.w - 20, Math.max(440, Math.min(560, content.w * 0.66)));
     const x0 = content.x + (content.w - maxW) / 2;
-    // 13 行：6 设置 + 1 分区标题 + 5 调试开关 + 2 调试操作行（每行 3 枚，SE1 换行）；行高自适应
+    // 12 行：5 设置 + 1 分区标题 + 5 调试开关 + 2 调试操作行（每行 3 枚，SE1 换行）；行高自适应
+    // （M20 规则卡移出设置 → 选图页「规则」模式开关）
     const sectionH = 34;
-    const fit = (content.h - sectionH - THEME.gapMd * 2) / 13;
+    const fit = (content.h - sectionH - THEME.gapMd * 2) / 12;
     const rowH = fit >= 44 ? Math.max(44, Math.min(vp.s(60), fit)) : Math.max(26, fit);
     let y = content.y + THEME.gapMd;
 
@@ -92,7 +93,7 @@ export class SettingsScene extends UIScene {
     toggleRow('set_dmgNum', s.dmgNumbers, boolSetting('dmgNumbers'));
     // 屏震改回开关（C6）：开启 = 收敛后的弱强度（shake.ts SHAKE_ON=0.3），关闭 = 无
     toggleRow('set_shake', s.shake, boolSetting('shake'));
-    toggleRow('set_arcana', s.arcana, boolSetting('arcana')); // 规则卡（M9）：下一局生效
+    // M20：规则卡开关移至选图页「规则」模式，不再占设置行
 
     // 语言：当前语言按钮（C6：宽度随文案自适应、右缘对齐，不再固定 140 显得空旷；为多语言预留）
     const cy = y + rowH / 2;

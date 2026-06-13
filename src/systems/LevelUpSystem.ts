@@ -9,7 +9,6 @@ import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
 import { Meta } from '../core/MetaState';
-import { getSettings } from '../core/settings';
 import type { ChestItem, ChestReward, CombatContext, Offer, RunModifier, RunSystem } from './context';
 import type { WeaponManager } from './weapons';
 
@@ -101,6 +100,9 @@ export class LevelUpSystem implements RunSystem {
       if (w) {
         if (w.level < WEAPON_MAX_LEVEL && !w.evolved) {
           cands.push({ offer: { kind: 'weapon', id: meta.id, isNew: false, toLevel: w.level + 1 }, w: 3 });
+        } else if (w.evolved && run.breakthrough) {
+          // 突破模式（M20）：已进化超武入池继续升级（level 封顶 5，突破层另计）
+          cands.push({ offer: { kind: 'weapon', id: meta.id, isNew: false, toLevel: WEAPON_MAX_LEVEL, breakthrough: w.breakthrough + 1 }, w: 2.4 });
         }
       } else if (this.weapons.list.length < run.stats.maxWeapons) {
         // 槽上限读 stats（M13 allin 降为 4：已超出不移除，仅停止新供给；精华触发随之提前）
@@ -246,7 +248,7 @@ export class LevelUpSystem implements RunSystem {
   /** 精英是否额外掉规则卡宝箱：设置开 + 未达上限 + 仍有可得卡 + 命中概率（沿用 ARCANA.chestChance） */
   shouldDropArcanaChest(): boolean {
     const run = this.ctx.run;
-    if (!getSettings().arcana || run.arcana.length >= ARCANA.maxPerRun) return false;
+    if (!run.arcanaMode || run.arcana.length >= ARCANA.maxPerRun) return false;
     if (this.arcanaPool().length === 0) return false;
     return this.ctx.rng() < ARCANA.chestChance;
   }
@@ -272,8 +274,11 @@ export class LevelUpSystem implements RunSystem {
     //    M19：常规宝箱不再含规则卡——规则卡改由精英额外掉落的「规则卡专属宝箱」提供
     const cands: Offer[] = [];
     for (const w of this.weapons.list) {
-      if (!w.evolved && w.level < WEAPON_MAX_LEVEL && !run.banished.has('w_' + w.id)) {
+      if (run.banished.has('w_' + w.id)) continue;
+      if (!w.evolved && w.level < WEAPON_MAX_LEVEL) {
         cands.push({ kind: 'weapon', id: w.id, isNew: false, toLevel: w.level + 1 });
+      } else if (w.evolved && run.breakthrough) {
+        cands.push({ kind: 'weapon', id: w.id, isNew: false, toLevel: WEAPON_MAX_LEVEL, breakthrough: w.breakthrough + 1 });
       }
     }
     for (const [pid, lv] of run.passives) {

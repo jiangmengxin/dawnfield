@@ -144,10 +144,12 @@ export class HUDScene extends Phaser.Scene {
     pauseGlyph.fillRoundedRect(-7.5, -8, 5.5, 16, 2.5);
     pauseGlyph.fillRoundedRect(2, -8, 5.5, 16, 2.5);
     (this.pauseBtn as Phaser.GameObjects.Container).add(pauseGlyph);
-    this.speedBtn = makeButton(this, 0, 0, 44, 44, getSettings().speed + 'x', () => {
-      const next = this.gs.speed === 2 ? 1 : 2;
+    this.speedBtn = makeButton(this, 0, 0, 44, 44, this.gs.speed + 'x', () => {
+      // 倍速模式（M20）：在 2× / 4× 间切换；否则沿用 1× / 2×（并持久化基础倍速）
+      const cur = this.gs.speed;
+      const next = this.gs.run.speed2x ? (cur >= 4 ? 2 : 4) : (cur === 2 ? 1 : 2);
       this.gs.setSpeed(next);
-      updateSettings({ speed: next });
+      if (!this.gs.run.speed2x) updateSettings({ speed: next as 1 | 2 });
       setButtonLabel(this.speedBtn, next + 'x');
     }, { fontSize: 17 });
     this.pauseBtn.setDepth(12);
@@ -728,9 +730,10 @@ export class HUDScene extends Phaser.Scene {
   }
 
   private showLevelUp(offers: Offer[]): void {
-    // 调试：自动选第一张卡，跳过选卡界面
-    if (getSettings().autoPick && offers.length > 0) {
-      this.gs.levelUp.applyOffer(offers[0]);
+    // 随机模式（M20）：随机抽一张直接应用，跳过选卡界面；调试「自动选卡」仍固定取第一张
+    if ((this.gs.run.randomMode || getSettings().autoPick) && offers.length > 0) {
+      const pick = this.gs.run.randomMode ? offers[Math.floor(Math.random() * offers.length)] : offers[0];
+      this.gs.levelUp.applyOffer(pick);
       this.scene.resume('game');
       return;
     }
@@ -899,10 +902,11 @@ export class HUDScene extends Phaser.Scene {
   /** 规则卡选卡（M9）：全部未持有卡一次铺开任选其一（与升级三选一的横排大卡明显区分——
    *  全卡池网格 + 顶部色带方卡）；素色幕布 */
   private showArcanaPick(choices: ArcanaId[]): void {
-    // 调试「自动选卡」：自动选第一张并以金色横幅告知（避免静默跳过开局选卡造成困惑）
-    if (getSettings().autoPick && choices.length > 0) {
-      this.gs.levelUp.applyArcana(choices[0]);
-      this.queueToast(t('arcGet').replace('{n}', t('arc_' + choices[0])));
+    // 随机模式（M20）随机抽一张 / 调试「自动选卡」固定首张：自动选并以金色横幅告知（避免静默跳过造成困惑）
+    if ((this.gs.run.randomMode || getSettings().autoPick) && choices.length > 0) {
+      const pick = this.gs.run.randomMode ? choices[Math.floor(Math.random() * choices.length)] : choices[0];
+      this.gs.levelUp.applyArcana(pick);
+      this.queueToast(t('arcGet').replace('{n}', t('arc_' + pick)));
       this.scene.resume('game');
       return;
     }
@@ -1177,6 +1181,17 @@ export class HUDScene extends Phaser.Scene {
     }
     if (offer.kind === 'weapon') {
       const meta = WEAPON_META.find((m) => m.id === offer.id)!;
+      if (offer.breakthrough) {
+        // 突破模式（M20）：已进化超武继续升级——展示超武形态名 + 「突破 LvN」金标
+        return {
+          icon: meta.icon,
+          name: t('w_' + offer.id + '_e'),
+          desc: t('w_' + offer.id + '_e_d'),
+          color: meta.color,
+          tag: t('breakthroughTag').replace('{n}', String(offer.breakthrough)),
+          tagColor: '#C8902A',
+        };
+      }
       return {
         icon: meta.icon,
         name: t('w_' + offer.id),
@@ -1459,9 +1474,13 @@ export class HUDScene extends Phaser.Scene {
   private revealChestReward(reward: ChestReward): void {
     const w = this.vp.w;
     const h = this.vp.h;
-    const auto = getSettings().autoPick; // 调试口径：规则卡件直取首张，不进选卡
+    // 自动解卡：随机模式（M20，随机抽一张）/ 调试自动选卡（取首张）——均跳过卡池选卡器
+    const auto = this.gs.run.randomMode || getSettings().autoPick;
     const items = reward.items;
     const arc = items.find((it): it is Extract<ChestItem, { kind: 'arcana' }> => it.kind === 'arcana');
+    const arcAutoPick = arc
+      ? (this.gs.run.randomMode ? arc.cards[Math.floor(Math.random() * arc.cards.length)] : arc.cards[0])
+      : undefined;
     const finish = (pick?: ArcanaId): void => {
       this.closeOverlay();
       this.gs.levelUp.applyChest(reward, pick);
@@ -1491,15 +1510,18 @@ export class HUDScene extends Phaser.Scene {
       }
       if (it.kind === 'arcana') {
         return auto
-          ? { icon: ARCANA_META.find((m) => m.id === it.cards[0])!.icon, label: t('arcTag') + '！ ' + t('arc_' + it.cards[0]) }
+          ? { icon: ARCANA_META.find((m) => m.id === arcAutoPick)!.icon, label: t('arcTag') + '！ ' + t('arc_' + arcAutoPick) }
           : { icon: 'icon_arcana', label: t('chestArcanaRow') }; // 专属金卡徽记，区别于星屑粒子
       }
       if (it.kind === 'upgrade') {
         const o = it.offer;
-        const name = o.kind === 'weapon' ? t('w_' + o.id) : t('p_' + o.id);
         const icon = o.kind === 'weapon'
           ? WEAPON_META.find((m) => m.id === o.id)!.icon
           : PASSIVE_META.find((m) => m.id === o.id)!.icon;
+        if (o.kind === 'weapon' && o.breakthrough) {
+          return { icon, label: t('w_' + o.id + '_e') + ' ' + t('breakthroughTag').replace('{n}', String(o.breakthrough)) };
+        }
+        const name = o.kind === 'weapon' ? t('w_' + o.id) : t('p_' + o.id);
         return { icon, label: name + ' Lv ' + o.toLevel };
       }
       return { icon: 'coin', label: t('chestGold').replace('{c}', String(it.coins)).replace('{h}', String(it.heal)) };
@@ -1511,7 +1533,7 @@ export class HUDScene extends Phaser.Scene {
       const info = itemInfo(it);
       let label = info.label;
       if (it.kind === 'evolve') label += '\n' + t('w_' + it.weapon + '_e_d');
-      if (it.kind === 'arcana') label += '\n' + t('arc_' + it.cards[0] + '_d');
+      if (it.kind === 'arcana') label += '\n' + t('arc_' + arcAutoPick + '_d');
       if (it.kind === 'upgrade') label = t('chestUpgrade') + '\n' + info.label;
       const glow = track(this.add.image(w / 2, h * 0.42, 'p_dot').setTint(0xf2cf6e).setAlpha(0.6)
         .setDisplaySize(120, 120).setDepth(103));
@@ -1602,7 +1624,7 @@ export class HUDScene extends Phaser.Scene {
         });
         return;
       }
-      finish();
+      finish(arcAutoPick); // 自动模式（随机/调试）直接入手已定卡；无规则卡件时为 undefined（applyChest 忽略）
     }, { fontSize: THEME.btnFs }));
     ok.setDepth(104);
   }

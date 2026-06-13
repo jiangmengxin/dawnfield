@@ -1,7 +1,7 @@
 // 武器系统：16 种机制完全不同的武器 + 各自的进化形态
 // 行为代码按武器分文件；平衡数值在 content/weapons.ts
 import { PASSIVE_MAX_LEVEL } from '../../content/passives';
-import { WEAPON_MAX_LEVEL, WEAPON_META } from '../../content/weapons';
+import { BREAKTHROUGH, WEAPON_MAX_LEVEL, WEAPON_META } from '../../content/weapons';
 import type { WeaponId } from '../../content/ids';
 import { Meta } from '../../core/MetaState';
 import type { CombatContext, RunSystem } from '../context';
@@ -54,8 +54,13 @@ export class WeaponManager implements RunSystem {
   private wrapCtx(id: WeaponId): CombatContext {
     const base = this.ctx;
     const sub = Object.create(base) as CombatContext;
+    // 突破模式（M20）：按本武器突破层在结算前放大伤害（中央乘区，覆盖该武器全部 hitEnemy 出口）；
+    // self 首次命中时缓存（武器实例在 wrapCtx 之后构造，故惰性查）
+    let self: Weapon | undefined;
     sub.hitEnemy = (e, dmg, opts) => {
-      const applied = base.hitEnemy(e, dmg, opts);
+      if (!self) self = this.get(id);
+      const bt = self && self.breakthrough > 0 ? 1 + BREAKTHROUGH.dmgPerLevel * self.breakthrough : 1;
+      const applied = base.hitEnemy(e, dmg * bt, opts);
       if (applied > 0) base.dmgLog(id, applied);
       return applied;
     };
@@ -76,6 +81,10 @@ export class WeaponManager implements RunSystem {
     if (w) {
       if (w.level < WEAPON_MAX_LEVEL) {
         w.level++;
+        w.onLevelUp();
+      } else if (w.evolved && this.ctx.run.breakthrough) {
+        // 突破模式（M20）：满级且已进化的超武继续升级 = 累加突破层（level 仍封顶 5，不越界数组）
+        w.breakthrough++;
         w.onLevelUp();
       }
     } else {

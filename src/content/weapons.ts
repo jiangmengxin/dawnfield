@@ -4,6 +4,10 @@ import type { PassiveId, WeaponId } from './ids';
 
 export const WEAPON_MAX_LEVEL = 5;
 
+/** 突破模式（M20）：已进化超武每多升 1 级 = 额外 +15% 伤害（中央乘区，无上限）。
+ *  超武各项数值用固定 evo 常数、不读等级数组，故突破层只走伤害乘区，不触碰越界下标。 */
+export const BREAKTHROUGH = { dmgPerLevel: 0.15 };
+
 export interface WeaponMeta {
   id: WeaponId;
   color: number;

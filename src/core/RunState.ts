@@ -11,6 +11,14 @@ import { ESSENCE, MAX_WEAPONS, PLAYER, xpForLevel } from '../content/player';
 import { powerUpBonus, PowerUpBonus } from '../content/shop';
 import { getSave } from './save';
 
+/** 选图页模式开关（M20）：均缺省 false，由选图页按勾选传入 */
+export interface RunFlags {
+  arcana?: boolean;
+  random?: boolean;
+  speed2x?: boolean;
+  breakthrough?: boolean;
+}
+
 export interface Stats {
   dmg: number;
   cd: number;
@@ -36,6 +44,14 @@ export class RunState {
   /** 模式与难度（M11）：金币/经验乘区与敌方乘区读此处；普通局恒 'normal'/0 */
   readonly mode: RunMode;
   readonly diff: 0 | 1 | 2;
+  /** 规则模式（M20，原 settings.arcana）：开局选卡 + 规则卡宝箱；关闭即与 M8 等价 */
+  readonly arcanaMode: boolean;
+  /** 随机模式（M20）：HUD 自动随机三选一 / 随机开局规则卡，跳过选卡界面 */
+  readonly randomMode: boolean;
+  /** 倍速模式（M20）：开局 2×，局内倍速按钮在 2× / 4× 间切换 */
+  readonly speed2x: boolean;
+  /** 突破模式（M20）：已进化超武可无限继续升级（武器系统读此放行 + 中央增伤） */
+  readonly breakthrough: boolean;
   /** 无尽当前轮次（1-based，WaveDirector 推进；Boss 前与普通局恒 0） */
   cycle = 0;
   hp = PLAYER.hp;
@@ -94,10 +110,14 @@ export class RunState {
     return 1 + this.pu.dropRate;
   }
 
-  constructor(charId = 'spark', mode: RunMode = 'normal', diff: 0 | 1 | 2 = 0) {
+  constructor(charId = 'spark', mode: RunMode = 'normal', diff: 0 | 1 | 2 = 0, flags: RunFlags = {}) {
     this.char = getCharacter(charId);
     this.mode = mode;
     this.diff = diff;
+    this.arcanaMode = flags.arcana ?? false;
+    this.randomMode = flags.random ?? false;
+    this.speed2x = flags.speed2x ?? false;
+    this.breakthrough = flags.breakthrough ?? false;
     const puLv = getSave().powerUps;
     this.rerolls = 1 + (puLv.reroll ?? 0);
     this.banishes = 1 + (puLv.banish ?? 0);

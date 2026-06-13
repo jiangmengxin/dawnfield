@@ -1,8 +1,7 @@
-// 地图选择（M12 改版）：地图网格上方两组模式开关——模式（普通/无尽）+ 难度（普通/狂暴 I/II），
-// 点击地图直接开局（取代 M11 的难度弹窗，少一步且当前选择常显）；
-// 逐图解锁约束（无尽/狂暴需通关、狂暴 II 需狂暴 I 通关）以卡面锁定提示表达
+// 地图选择（M20 改版）：地图网格上方一组独立可叠加的模式开关——
+// 无尽 / 狂暴 / 规则 / 随机 / 倍速 / 突破（chip 自动换行、逐行居中），点击地图直接开局；
+// 无尽 / 狂暴 需先通关本图（卡面锁定提示表达），其余模式无解锁约束
 import { FONT, t } from '../i18n';
-import { PAL } from '../gfx/palette';
 import { MAPS } from '../content/maps';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { ensureMapAssets } from '../gfx/textures';
@@ -15,15 +14,19 @@ import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { UIButton } from '../ui/widgets/UIButton';
 import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
 import { showToast } from '../ui/widgets/Toast';
-import type { MapId } from '../content/ids';
 import type { RunLaunchData, RunMode } from '../systems/context';
 
 const TARGET_MAPS = 8; // 1.0 目标量级
 
 export class MapSelectScene extends UIScene {
   private charId = 'spark';
+  // M20 模式开关（彼此独立可叠加）：无尽 / 狂暴(=diff2) / 规则 / 随机 / 倍速 / 突破
   private tab: RunMode = 'normal';
   private diff: 0 | 1 | 2 = 0;
+  private arcanaMode = true; // 规则：默认开（沿用原 settings.arcana 默认体验）
+  private random = false;
+  private speed2x = false;
+  private breakthrough = false;
 
   constructor() {
     super('mapselect');
@@ -33,16 +36,15 @@ export class MapSelectScene extends UIScene {
     this.charId = data.charId ?? 'spark';
     this.tab = 'normal';
     this.diff = 0;
+    this.arcanaMode = true;
+    this.random = false;
+    this.speed2x = false;
+    this.breakthrough = false;
   }
 
-  /** 该图是否已通关（狂暴 I / 无尽的解锁条件）；调试「解锁全部内容」一并放行 */
+  /** 该图是否已通关（狂暴 / 无尽的解锁条件）；调试「解锁全部内容」一并放行 */
   private cleared(mapId: string): boolean {
     return Meta.hasAch(mapId + 'Clear') || getSettings().unlockAll;
-  }
-
-  /** 狂暴 II：该图狂暴 I 已通关 */
-  private hyper2(mapId: MapId): boolean {
-    return (Meta.save.hyper[mapId] ?? 0) >= 1 || getSettings().unlockAll;
   }
 
   protected buildLayout(): void {
@@ -50,21 +52,35 @@ export class MapSelectScene extends UIScene {
     const compact = this.vp.bp === 'compact';
     const fontScale = compact ? 0.9 : 1;
 
-    // 模式/难度改为一横排独立勾选开关（C3，预留扩展）：无尽 / 狂暴 / 狂暴II（II 需先开狂暴）
+    // M20 模式开关：6 个独立 chip（无尽/狂暴/规则/随机/倍速/突破）——恒为单行铺开，
+    // 开启用金色高亮（不再用勾选/文字介绍）；手机上整排超宽时按内容宽统一缩放，
+    // UIButton 自带 fitText 再缩字号兜底，保证六枚始终一排不换行
     const chipFs = this.vp.fs(15);
     const chipH = Math.max(THEME.hitMin, this.vp.s(44));
-    const chips: Array<{ label: string; on: boolean; enabled?: boolean; toggle: () => void }> = [
+    const chips: Array<{ label: string; on: boolean; toggle: () => void }> = [
       {
-        label: t('tab_endless'), on: this.tab === 'endless',
+        label: t('mode_endless'), on: this.tab === 'endless',
         toggle: () => { this.tab = this.tab === 'endless' ? 'normal' : 'endless'; this.rebuild(); },
       },
       {
-        label: t('diff_hyper1'), on: this.diff >= 1,
-        toggle: () => { this.diff = this.diff >= 1 ? 0 : 1; this.rebuild(); },
+        label: t('mode_berserk'), on: this.diff >= 1, // 单一狂暴 = 狂暴 II 数值（diff=2）
+        toggle: () => { this.diff = this.diff >= 1 ? 0 : 2; this.rebuild(); },
       },
       {
-        label: t('diff_hyper2'), on: this.diff === 2, enabled: this.diff >= 1,
-        toggle: () => { this.diff = this.diff === 2 ? 1 : 2; this.rebuild(); },
+        label: t('mode_arcana'), on: this.arcanaMode,
+        toggle: () => { this.arcanaMode = !this.arcanaMode; this.rebuild(); },
+      },
+      {
+        label: t('mode_random'), on: this.random,
+        toggle: () => { this.random = !this.random; this.rebuild(); },
+      },
+      {
+        label: t('mode_speed'), on: this.speed2x,
+        toggle: () => { this.speed2x = !this.speed2x; this.rebuild(); },
+      },
+      {
+        label: t('mode_breakthrough'), on: this.breakthrough,
+        toggle: () => { this.breakthrough = !this.breakthrough; this.rebuild(); },
       },
     ];
     const measure = (s: string): number => {
@@ -73,29 +89,26 @@ export class MapSelectScene extends UIScene {
       t0.destroy();
       return wd;
     };
-    const labels = chips.map((c) => (c.on ? '✓ ' : '') + c.label);
-    const widths = labels.map((s) => measure(s) + 34);
-    const totalW = widths.reduce((a, b) => a + b, 0) + THEME.gapSm * (chips.length - 1);
+    // 自然宽 = 文字 + 内边距；整排（含间距）超出内容宽时统一缩放至刚好放下（手机六枚一排）
+    const gap = compact ? THEME.gapXs : THEME.gapSm;
+    const natural = chips.map((c) => measure(c.label) + 34);
+    const sumNatural = natural.reduce((a, b) => a + b, 0);
+    const avail = content.w - gap * (chips.length - 1);
+    const scale = Math.min(1, avail / sumNatural);
+    const widths = natural.map((w) => w * scale);
+    const totalW = widths.reduce((a, b) => a + b, 0) + gap * (chips.length - 1);
     let chx = content.x + content.w / 2 - totalW / 2;
-    const chipY = content.y + chipH / 2;
+    const cy = content.y + chipH / 2;
     chips.forEach((c, i) => {
       const wd = widths[i];
-      const btn = new UIButton(this, chx + wd / 2, chipY, {
-        w: wd, h: chipH, label: labels[i], fontSize: chipFs,
+      new UIButton(this, chx + wd / 2, cy, {
+        w: wd, h: chipH, label: c.label, fontSize: chipFs,
         fill: c.on ? 0xffeec0 : undefined, edge: c.on ? 0xe2b452 : undefined,
         onTap: c.toggle,
       });
-      if (c.enabled === false) btn.setEnabled(false);
-      chx += wd + THEME.gapSm;
+      chx += wd + gap;
     });
-
-    // 当前难度说明（开关行下方居中一行）
-    const diffKey = this.diff === 0 ? 'diff_normal_d' : this.diff === 1 ? 'diff_hyper1_d' : 'diff_hyper2_d';
-    const hint = this.add.text(content.x + content.w / 2, content.y + chipH + 8, t(diffKey), {
-      fontFamily: FONT, fontSize: this.vp.fs(13) + 'px', color: PAL.inkSoft, align: 'center',
-      wordWrap: { width: content.w - 20 },
-    }).setOrigin(0.5, 0);
-    const top = content.y + chipH + 8 + hint.height + THEME.gapSm;
+    const top = content.y + chipH + THEME.gapSm;
 
     const panel = new ScrollPanel(this, {
       x: content.x, y: top, w: content.w, h: content.y + content.h - top,
@@ -113,14 +126,12 @@ export class MapSelectScene extends UIScene {
         };
       }
       ensureMapAssets(this, m.id); // 图标纹理懒生成（幂等）
-      // 当前模式/难度下该图的解锁约束（不满足 → 卡面提示，点击不放行）
+      // 当前模式下该图的解锁约束（不满足 → 卡面提示，点击不放行）；无尽/狂暴均需先通关本图
       const lockMsg = this.tab === 'endless' && !this.cleared(m.id)
         ? t('ui_endlessLocked')
         : this.diff >= 1 && !this.cleared(m.id)
           ? t('ui_needClear')
-          : this.diff === 2 && !this.hyper2(m.id)
-            ? t('ui_needHyper1')
-            : null;
+          : null;
       const rec = Meta.save.endless[m.id];
       const tag = lockMsg
         ? t('ui_locked')
@@ -161,7 +172,10 @@ export class MapSelectScene extends UIScene {
 
   private launch(mapId: string): void {
     resetStack();
-    const data: RunLaunchData = { charId: this.charId, mapId, mode: this.tab, diff: this.diff };
+    const data: RunLaunchData = {
+      charId: this.charId, mapId, mode: this.tab, diff: this.diff,
+      arcana: this.arcanaMode, random: this.random, speed2x: this.speed2x, breakthrough: this.breakthrough,
+    };
     this.scene.start('game', data);
   }
 

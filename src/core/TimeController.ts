@@ -1,15 +1,17 @@
-// 局内统一时钟：倍速（1x/2x）+ hit-stop 顿帧
+// 局内统一时钟：倍速（1x/2x/4x，M20 倍速模式解锁 4×）+ hit-stop 顿帧
 // 倍速必须经 setSpeed 同步 dt 乘子 / time / tweens 三套时钟，否则 delayedCall 与 tween 会错位
 import type Phaser from 'phaser';
 
+export type GameSpeed = 1 | 2 | 4;
+
 export class TimeController {
-  speed: 1 | 2 = 1;
+  speed: GameSpeed = 1;
   private hitStopT = 0;
   private scale = 1;
 
   constructor(private scene: Phaser.Scene) {}
 
-  setSpeed(v: 1 | 2): void {
+  setSpeed(v: GameSpeed): void {
     this.speed = v;
     this.scene.time.timeScale = v;
     this.scene.tweens.timeScale = v;

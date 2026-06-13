@@ -26,6 +26,8 @@ export abstract class Weapon {
   id: WeaponId;
   level = 1;
   evolved = false;
+  /** 突破模式（M20）：已进化超武额外升级层（0 = 未突破）；只驱动中央伤害乘区 */
+  breakthrough = 0;
   protected cdT = 0.5;
   protected ctx: CombatContext;
 

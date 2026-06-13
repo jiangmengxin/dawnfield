@@ -12,7 +12,7 @@ import { Meta } from '../core/MetaState';
 import { RunState, Stats } from '../core/RunState';
 import { getSettings } from '../core/settings';
 import { shakeCam } from '../gfx/shake';
-import { TimeController } from '../core/TimeController';
+import { GameSpeed, TimeController } from '../core/TimeController';
 import { AchievementTracker } from '../systems/AchievementTracker';
 import { createArcanaModifier } from '../systems/arcana';
 import type { ArcanaId, WeaponId } from '../content/ids';
@@ -80,6 +80,8 @@ export class GameScene extends Phaser.Scene {
   /** 模式与难度（公共契约：M10 预留，M11 实装无尽与狂暴） */
   private mode: RunMode = 'normal';
   private diff: 0 | 1 | 2 = 0;
+  /** M20 选图页模式开关（init 读取，create 透传 RunState） */
+  private flags: { arcana?: boolean; random?: boolean; speed2x?: boolean; breakthrough?: boolean } = {};
   /** hitstop 预算（M12 打击感分级）：每秒回充，超预算的微顿帧静默丢弃 */
   private hitStopBudget = HITFEEL.budgetPerSec;
   /** BGM 强度临时抬升剩余秒数（M12 surge；M18 Boss 战复用） */
@@ -98,14 +100,17 @@ export class GameScene extends Phaser.Scene {
     this.mapId = this.map.id; // 未知 id 兜底草甸后回写
     this.mode = data?.mode ?? 'normal';
     this.diff = data?.diff ?? 0;
+    this.flags = {
+      arcana: data?.arcana, random: data?.random, speed2x: data?.speed2x, breakthrough: data?.breakthrough,
+    };
     this.benchMode = data?.bench === true && import.meta.env.DEV;
   }
 
-  get speed(): 1 | 2 {
+  get speed(): GameSpeed {
     return this.clock.speed;
   }
 
-  setSpeed(v: 1 | 2): void {
+  setSpeed(v: GameSpeed): void {
     this.clock.setSpeed(v);
   }
 
@@ -114,10 +119,10 @@ export class GameScene extends Phaser.Scene {
     this.enemyCapMul = this.isMobile ? 0.75 : 1;
 
     // 重置局内状态（场景可重开）；角色差异（HP/移速/体积/偏移）经 RunState.char 生效
-    this.run = new RunState(this.charId, this.mode, this.diff);
+    this.run = new RunState(this.charId, this.mode, this.diff, this.flags);
     this.run.mapXpK = this.map.xpK; // 升级节奏随时长档（M12：短图加快）
     this.modifiers.length = 0; // 规则卡逐局重置（LevelUpSystem 持同一数组引用，不可换新）
-    this.run.pendingArcana = getSettings().arcana && !this.benchMode; // 开局三选一（设置可关；关闭即与 M8 等价）
+    this.run.pendingArcana = this.run.arcanaMode && !this.benchMode; // 开局三选一（M20 规则模式开关；关闭即与 M8 等价）
     this.facing = { x: 1, y: 0 };
     this.grid = new SpatialGrid<Enemy>(72);
     this.lastKillSfx = 0;
@@ -215,9 +220,10 @@ export class GameScene extends Phaser.Scene {
       this.run.running = true;
       void import('../dev/bench').then((m) => m.runBench(this));
     } else {
+      // 倍速模式开局 2×；否则沿用设置里持久化的基础倍速（HUD 启动即按此速读初始标签）
+      this.setSpeed(this.run.speed2x ? 2 : getSettings().speed);
       this.scene.launch('hud');
       this.run.running = true;
-      this.setSpeed(getSettings().speed);
       SFX.startBgm(this.map.bgm); // 每图 BGM 主题（调式/速度/音色/打击乐）
     }
 
