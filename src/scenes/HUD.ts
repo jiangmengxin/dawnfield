@@ -1414,7 +1414,7 @@ export class HUDScene extends Phaser.Scene {
       if (it.kind === 'arcana') {
         return auto
           ? { icon: ARCANA_META.find((m) => m.id === it.cards[0])!.icon, label: t('arcTag') + '！ ' + t('arc_' + it.cards[0]) }
-          : { icon: 'p_star', tint: 0xe2b452, label: t('chestArcanaRow') };
+          : { icon: 'icon_arcana', label: t('chestArcanaRow') }; // 专属金卡徽记，区别于星屑粒子
       }
       if (it.kind === 'upgrade') {
         const o = it.offer;
@@ -1508,7 +1508,8 @@ export class HUDScene extends Phaser.Scene {
         });
       });
     }
-    const ok = track(makeButton(this, w / 2, h * 0.78, THEME.btnW, THEME.btnH, 'OK', () => {
+    const okLabel = arc && !auto ? t('chestArcanaPickBtn') : 'OK'; // 含规则卡时按钮明示「选规则卡」
+    const ok = track(makeButton(this, w / 2, h * 0.78, THEME.btnW, THEME.btnH, okLabel, () => {
       if (this.overlayMode !== 'chest') return;
       if (arc && !auto) {
         // 清单 → 全卡池选卡（其余件待选卡后一并入手）

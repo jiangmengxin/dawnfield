@@ -587,6 +587,21 @@ export function createMiscTextures(scene: Phaser.Scene): void {
     makeTex(scene, DROP_ITEMS[id].icon, 28, 28, (ctx) => DROP_ICONS[id](ctx));
   }
 
+  // === 规则卡通用徽记（宝箱多件清单里代表「规则卡」一件，区别于星屑粒子） ===
+  makeTex(scene, 'icon_arcana', 28, 28, (ctx) => {
+    rrPath(ctx, 5, 3, 18, 22, 4);
+    const g = ctx.createLinearGradient(0, 3, 0, 25);
+    g.addColorStop(0, '#FFE9A6');
+    g.addColorStop(1, '#E2B452');
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#C18F35';
+    ctx.stroke();
+    hi(ctx, 10, 8, 3, 1.4, -0.4, 0.45);
+    star(ctx, 14, 14, 4, 6.6, 2.6, '#FFFDF0');
+  });
+
   // === 虚拟摇杆 ===
   makeTex(scene, 'joy_base', 140, 140, (ctx) => {
     ctx.beginPath();

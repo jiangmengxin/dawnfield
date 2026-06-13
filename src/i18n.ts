@@ -94,7 +94,8 @@ const D: Dict = {
   chestOpen: ['点击开启', 'Tap to open'],
   chestArcanaPick: ['规则卡降临！选择一张', 'Arcana revealed! Choose one'],
   chestRich: ['金光涌动！开出 {n} 件', 'Overflowing! {n} treasures'],
-  chestArcanaRow: ['规则卡（稍后任选）', 'Arcana card (pick next)'],
+  chestArcanaRow: ['✦ 规则卡 可选', '✦ Arcana inside'],
+  chestArcanaPickBtn: ['✦ 选规则卡', '✦ Choose Arcana'],
   arcOwned: ['已持有', 'Owned'],
   // 规则卡分页选择器（B3）
   arcSelect: ['选择', 'Choose'],
