@@ -226,7 +226,7 @@ export class GameScene extends Phaser.Scene {
       hitEnemy: (e, dmg, opts) => g.hitEnemy(e, dmg, opts),
       dmgLog: (src, dmg) => g.dps.add(src, dmg),
       onEnemyKilled: (e) => g.onEnemyKilled(e),
-      damagePlayer: (d) => g.damagePlayer(d),
+      damagePlayer: (d, src) => g.damagePlayer(d, src),
       hitStop: (sec) => g.requestHitStop(sec), // M12：系统侧顿帧统一走预算（演出级直用 clock）
       addZone: (z) => g.zonesRef.add(z),
       slowAt: (x, y) => g.zonesRef.slowAt(x, y),
@@ -334,6 +334,7 @@ export class GameScene extends Phaser.Scene {
     for (const m of this.modifiers) {
       if (m.modifyDamage) final = m.modifyDamage(final, e);
     }
+    final *= this.enemies.shieldMulFor(e); // M15 护盾光环：圈内友方减伤（先点名击杀护盾怪）
     e.hp -= final;
     if (!opts.quiet) {
       // 打击感分级（M12）：大伤害/暴击 → 微顿帧（预算化）+ 数字分级 + 音高上抬
@@ -377,6 +378,7 @@ export class GameScene extends Phaser.Scene {
     if (e.isElite) {
       // 精英死亡 = 小高潮（M12）：冲击波双环 + 顿帧 + 低频闷响（精英是宝箱载体）
       this.run.eliteKills++;
+      if (e.affix) this.run.affixKills++; // M15 affixSlayer 埋点（结算累计入档）
       this.clock.hitStop(HITFEEL.eliteStop);
       this.fx.ring(e.x, e.y, DEATH_COLOR[e.id], 10, 0.65);
       this.fx.ring(e.x, e.y, 0xfff2c0, 7, 0.45);
@@ -417,7 +419,7 @@ export class GameScene extends Phaser.Scene {
     emitEvent(this.game, 'hud:warn', 'endlessBossDown');
   }
 
-  damagePlayer(d: number): void {
+  damagePlayer(d: number, src?: Enemy): void {
     if (this.run.iframeT > 0 || !this.run.running) return;
     if (getSettings().invincible) return; // 调试：无敌（优先于复活，不消耗次数）
     // M13 钩子：受伤结算前改写（iframe 判定后、扣血前）；返回 ≤0 = 完全免疫，不进 iframe
@@ -430,6 +432,7 @@ export class GameScene extends Phaser.Scene {
     this.run.hp -= applied;
     // M13 成就埋点：首次受伤时刻 + Boss 战受伤标记（flawlessBoss/untouchable10）
     if (this.run.firstHurtAt === Infinity) this.run.firstHurtAt = this.run.elapsed;
+    if (src?.affix === 'gravitic') this.run.gravHit = true; // M15 graviticEscape 埋点
     const boss = this.enemies.boss;
     if (boss && boss.active) this.run.bossHit = true;
     SFX.hurt();
@@ -530,6 +533,9 @@ export class GameScene extends Phaser.Scene {
       bossNoHit: !this.run.bossHit,
       firstHurtAt: this.run.firstHurtAt,
       firstEvolveAt: this.run.firstEvolveAt,
+      affixKills: this.run.affixKills,
+      gravSeen: this.run.gravSeen,
+      gravHit: this.run.gravHit,
     };
     this.scene.stop('hud');
     this.scene.start('result', result);

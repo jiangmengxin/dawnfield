@@ -63,6 +63,8 @@ for (const id of unionMembers('ArcanaId')) {
 for (const id of unionMembers('TraitId')) {
   for (const suf of ['', '_d']) need(`trait_${id}${suf}`, `TraitId:${id}`);
 }
+// M15 精英词缀浮签（t('affix_' + id) 动态拼接由 id 推导覆盖）
+for (const id of unionMembers('AffixId')) need(`affix_${id}`, `AffixId:${id}`);
 
 // ---------- 扫描源码中的字面量键 ----------
 

@@ -1,8 +1,10 @@
-// 敌人移动行为模板表（12 种）：content/enemies.ts 按 behavior 字段指派
+// 敌人移动行为模板表（M15 起 19 种）：content/enemies.ts 按 behavior 字段指派
 // 每帧产出移动向量；行为内可触发攻击（吐弹）等副作用；调参常量在 content/enemies.ts
 import {
-  AMBUSH, BLINK, BURROW, DASHER, DRIFT, ENEMIES, HOP, ORBIT, PHASE, PULSE, SPIRAL, SWOOP, TURRET, ZIGZAG,
+  AMBUSH, BLINK, BURROW, DASHER, DRIFT, ENEMIES, EXPLODER, HOP, ORBIT, PHASE, PULSE, SHIELDER,
+  SPIRAL, SUMMONER, SWOOP, TURRET, ZIGZAG,
 } from '../content/enemies';
+import { ENDLESS } from '../content/endless';
 import type { BehaviorId } from '../content/ids';
 import { DEATH_COLOR } from '../gfx/palette';
 import { SFX } from '../audio/sound';
@@ -96,7 +98,7 @@ const dash: BehaviorFn = (e, ctx, dt, nx, ny, dist, out) => {
     out.mvy = e.dashDirY * cfg.dashSpeed;
     if (e.stateT <= 0) {
       e.dashState = 'recover';
-      e.stateT = cfg.recover;
+      e.stateT = cfg.recover * e.recoverMul; // M15 swift 词缀：硬直缩短
     }
   } else {
     out.mvx = nx * e.spd * 0.3;
@@ -348,6 +350,144 @@ const phase: BehaviorFn = (e, _ctx, dt, nx, ny, _dist, out) => {
   }
 };
 
+/** 自爆爆炸结算（M15）：行为引信与 EnemySystem 死亡爆炸共用；rMul = 半径缩放（被击杀 ×killR） */
+export function exploderBoom(e: Enemy, ctx: CombatContext, rMul: number): void {
+  const r = EXPLODER.r * rMul;
+  ctx.fx.ring(e.x, e.y, DEATH_COLOR[e.id], r / 42 * 1.3, 0.45);
+  ctx.fx.ring(e.x, e.y, 0xfff2c0, r / 42, 0.35);
+  ctx.fx.burst(e.x, e.y, { tex: 'p_dot', color: DEATH_COLOR[e.id], count: 14, speed: 240, life: 0.4, scale: 1.1 });
+  SFX.boom(false);
+  // 对玩家：spec.dmg（随 dmgScale 成长，与接触伤害同口径）
+  const p = ctx.player;
+  if (Math.hypot(p.x - e.x, p.y - e.y) < r + ctx.run.char.radius) ctx.damagePlayer(e.dmg, e);
+  // 对敌人：固定 edmg——可风筝借力清群（敌我同伤趣味）
+  ctx.grid.queryCircle(e.x, e.y, r, exploderTmp);
+  for (const o of exploderTmp) {
+    if (o === e || !o.active || o.dying) continue;
+    const ap = ctx.hitEnemy(o, EXPLODER.edmg, { kb: 90, kx: (o.x - e.x) / r, ky: (o.y - e.y) / r });
+    if (ap > 0) ctx.dmgLog('exploder', ap);
+  }
+}
+
+const exploderTmp: Enemy[] = [];
+
+/** 自爆怪（M15）：加速逼近 → 进入触发圈定身膨胀预警 → 爆炸自毁（敌我同伤，可借力清群） */
+const exploder: BehaviorFn = (e, ctx, dt, nx, ny, dist, out) => {
+  if (e.dashState === 'tele') {
+    // 引信：定身抖动 + 膨胀（EnemySystem 在 tele 态不覆盖缩放）
+    e.stateT -= dt;
+    e.x += (Math.random() - 0.5) * 2.4;
+    const k = 1 - Math.max(0, e.stateT) / EXPLODER.fuse;
+    e.setScale(e.baseScale * (1 + k * 0.4));
+    if (e.stateT <= 0) {
+      e.exploded = true; // 先标记：kill() 不再触发死亡半爆
+      exploderBoom(e, ctx, 1);
+      ctx.enemies.kill(e);
+    }
+    return;
+  }
+  out.mvx = nx * e.spd * EXPLODER.mulRush;
+  out.mvy = ny * e.spd * EXPLODER.mulRush;
+  if (dist < EXPLODER.trigger) {
+    e.dashState = 'tele';
+    e.stateT = EXPLODER.fuse;
+    // M12 telegraph 规范：半透明警示区 + 收缩描边圈，时长 = 引信全程（≥0.45s）
+    ctx.fx.teleCircle(e.x, e.y, EXPLODER.r, EXPLODER.fuse);
+    ctx.fx.flash(e);
+    SFX.warning();
+  }
+};
+
+const shielderTmp: Enemy[] = [];
+
+/** 护盾怪（M15）：慢速跟随敌群重心（不直奔玩家）；光环减伤在 Game.hitEnemy 经
+ *  EnemySystem.shieldMulFor 结算，光环常显视觉由 EnemySystem 维护 */
+const shielder: BehaviorFn = (e, ctx, dt, nx, ny, _dist, out) => {
+  e.stateT -= dt;
+  if (e.stateT <= 0) {
+    // 每 rethink 秒重算一次方向：附近敌群（≥3 只）重心优先，孤身时才朝玩家
+    e.stateT = SHIELDER.rethink;
+    ctx.grid.queryCircle(e.x, e.y, SHIELDER.seekR, shielderTmp);
+    let cx = 0;
+    let cy = 0;
+    let n = 0;
+    for (const o of shielderTmp) {
+      if (o === e || !o.active || o.dying) continue;
+      cx += o.x;
+      cy += o.y;
+      n++;
+    }
+    if (n >= 3) {
+      const dx = cx / n - e.x;
+      const dy = cy / n - e.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 24) {
+        e.dashDirX = dx / d;
+        e.dashDirY = dy / d;
+      } else {
+        // 已在群心：顺着群体朝玩家缓推
+        e.dashDirX = nx * 0.6;
+        e.dashDirY = ny * 0.6;
+      }
+    } else {
+      e.dashDirX = nx;
+      e.dashDirY = ny;
+    }
+  }
+  out.mvx = e.dashDirX * e.spd * SHIELDER.mulSpeed;
+  out.mvy = e.dashDirY * e.spd * SHIELDER.mulSpeed;
+};
+
+/** 召唤者（M15）：与玩家保持距离踱步；周期吟唱（抖动预警）后召唤本图基础杂兵。
+ *  召唤物计入 actives（受 340 全局硬上限约束，不绕过性能护栏）+ 单体存活上限 cap */
+const summoner: BehaviorFn = (e, ctx, dt, nx, ny, dist, out) => {
+  if (e.dashState === 'tele') {
+    // 吟唱：定身抖动 + 轻微膨胀
+    e.stateT -= dt;
+    e.x += (Math.random() - 0.5) * 2.6;
+    e.setScale(e.baseScale * (1 + (1 - Math.max(0, e.stateT) / SUMMONER.cast) * 0.18));
+    if (e.stateT <= 0) {
+      e.dashState = 'walk';
+      let alive = 0;
+      for (const o of ctx.enemies.actives) {
+        if (o.summonerRef === e && o.active && !o.dying) alive++;
+      }
+      const globalCap = Math.round(ENDLESS.aliveHardCap * ctx.enemyCapMul);
+      const id = ENEMIES[e.id].summon ?? ctx.map.waves[0].types[0][0];
+      for (let i = 0; i < SUMMONER.n; i++) {
+        if (alive + i >= SUMMONER.cap || ctx.enemies.actives.length >= globalCap) break;
+        const a = Math.random() * Math.PI * 2;
+        const m = ctx.enemies.spawn(id, e.x + Math.cos(a) * 34, e.y + Math.sin(a) * 34);
+        m.summonerRef = e;
+        ctx.fx.burst(m.x, m.y, { tex: 'p_dot', color: DEATH_COLOR[e.id], count: 5, speed: 70, life: 0.3, scale: 0.7, alpha: 0.8 });
+      }
+      ctx.fx.ring(e.x, e.y, DEATH_COLOR[e.id], 2.4, 0.4);
+    }
+    return;
+  }
+  // 保持距离踱步：过远靠近 / 过近后撤 / 适距横移
+  if (dist > SUMMONER.keep * 1.15) {
+    out.mvx = nx * e.spd;
+    out.mvy = ny * e.spd;
+  } else if (dist < SUMMONER.keep * 0.8) {
+    out.mvx = -nx * e.spd * 0.85;
+    out.mvy = -ny * e.spd * 0.85;
+  } else {
+    e.wobble += dt * 2.5;
+    out.mvx = -ny * Math.sin(e.wobble) * e.spd * 0.4;
+    out.mvy = nx * Math.sin(e.wobble) * e.spd * 0.4;
+  }
+  e.fireT -= dt;
+  if (e.fireT <= 0 && dist < SUMMONER.keep + 220) {
+    e.fireT = SUMMONER.cd;
+    e.dashState = 'tele';
+    e.stateT = SUMMONER.cast;
+    // 吟唱预警（M12 规范：≥0.45s 视觉先行……cast=0.6s，抖动 + 警示环）
+    ctx.fx.ring(e.x, e.y, 0xe06060, 2.0, SUMMONER.cast);
+    SFX.warning();
+  }
+};
+
 export const BEHAVIORS: Record<BehaviorId, BehaviorFn> = {
   chase,
   wobble,
@@ -365,4 +505,7 @@ export const BEHAVIORS: Record<BehaviorId, BehaviorFn> = {
   ambush,
   burrow,
   phase,
+  exploder,
+  shielder,
+  summoner,
 };

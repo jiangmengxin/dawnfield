@@ -47,6 +47,9 @@ export class ResultScene extends Phaser.Scene {
         firstHurtAt: data.firstHurtAt,
         firstEvolveAt: data.firstEvolveAt,
         arcana: data.arcana,
+        // M15 graviticEscape（win 类，终评）
+        gravSeen: data.gravSeen,
+        gravHit: data.gravHit,
       },
       // recordRun 已先入账：winsByChar 含本局胜利，fiveCharWins 当场可判
       stats: { ...Meta.save.stats, charWins: Object.keys(Meta.save.stats.winsByChar).length },

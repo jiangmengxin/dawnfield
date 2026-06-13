@@ -124,6 +124,7 @@ export const GROVE = {
   snapcap: 0xd8a8b8, snapcapEdge: 0xa87088, snapcapCap: 0xc08098,
   puffcap: 0xc8c8a0, puffcapEdge: 0x989868, puffcapCap: 0xb8b884,
   roller: 0xa89cc0, rollerEdge: 0x786c94,
+  bombcap: 0xe8a088, bombcapEdge: 0xb84838, bombcapCap: 0xd87058, // M15 自爆菇：暖红警示描边（剪影强化）
   eldercap: 0xc89888, eldercapEdge: 0x906050, eldercapCap: 0xb87c68,
   sporeking: 0xb08878, sporekingEdge: 0x7c5848, sporekingCap: 0xcc9684,
   spore: 0xd8d0a8, sporeDeep: 0xa89c70,
@@ -145,6 +146,7 @@ export const LAVENDER = {
   snippy: 0xa8c890, snippyEdge: 0x789860,
   pompon: 0xece4f4, pomponEdge: 0xb0a8c8,
   briar: 0xc08898, briarEdge: 0x906070,
+  hivebud: 0xe0c080, hivebudEdge: 0x9c7028, hivebudComb: 0xc89848, // M15 蜂巢芽：深蜜檀描边（剪影强化）
   queenbee: 0xe8b860, queenbeeEdge: 0xb08830,
   flutterqueen: 0xa888d8, flutterqueenEdge: 0x7858a8,
   dust: 0xd8c0f0, thorn: 0xc090a8, thornDeep: 0x906070,
@@ -166,6 +168,7 @@ export const BRAMBLE = {
   magpie: 0x88a0b8, magpieEdge: 0x5c7490, magpieBeak: 0xf0c060,
   cubby: 0xc09868, cubbyEdge: 0x8e6c42, cubbyMuzzle: 0xe8d0b0,
   gourd: 0xc8b470, gourdEdge: 0x968444,
+  husker: 0xd0b890, huskerEdge: 0x7a5a30, huskerShell: 0xb89868, // M15 果壳卫：深壳棕描边（剪影强化）
   bigberry: 0xc87888, bigberryEdge: 0x945062,
   bramblebear: 0xa88058, bramblebearEdge: 0x77573a,
   berryShot: 0xd87890, berryShotDeep: 0xa05068,
@@ -187,6 +190,7 @@ export const NOCTURNE = {
   lunaling: 0xb8c4e0, lunalingEdge: 0x8490bc, lunalingMoon: 0xfff0c0,
   owlet: 0xa898c0, owletEdge: 0x786894, owletBeak: 0xf0c060,
   sparkler: 0xe8cc88, sparklerEdge: 0xb89c50,
+  novamote: 0xf6d890, novamoteEdge: 0xc86838, // M15 星爆尘：橙红警示描边（剪影强化）
   cometlord: 0xc0b0e0, cometlordEdge: 0x8c7ab4,
   starelk: 0x9eaad4, starelkEdge: 0x6e7aaa, starelkAntler: 0xe8d8a0,
   starShot: 0xf6e6a8, starShotDeep: 0xc8a858,
@@ -209,6 +213,8 @@ export const SUMMIT = {
   nightbloom: 0xb088a8, nightbloomEdge: 0x806078, nightbloomCap: 0x9c7090,
   eclipse: 0x9088a0, eclipseEdge: 0x645c78, eclipseRim: 0xf2d088,
   lurker: 0x847e9e, lurkerEdge: 0x585272,
+  duskward: 0x8a82a8, duskwardEdge: 0x3e3858, duskwardShell: 0xb0a8cc, // M15 暗幕守：极深紫描边（剪影强化）
+  shadowmaw: 0x7a7298, shadowmawEdge: 0x342e50, shadowmawMaw: 0xd8d0ec, // M15 影隙口：极深紫描边（剪影强化）
   shadelord: 0x786f96, shadelordEdge: 0x4e4668,
   nightowl: 0x6e6890, nightowlEdge: 0x464062, nightowlBelly: 0xb8b0cc, nightowlBeak: 0xf0c060,
   petalShot: 0xa890c0, petalShotDeep: 0x786098,
@@ -235,6 +241,9 @@ export const DEATH_COLOR: Record<EnemyId, number> = {
   shade: SUMMIT.shade, gloom: SUMMIT.gloom, umbra: SUMMIT.umbra, glint: SUMMIT.glint,
   nightbloom: SUMMIT.nightbloom, eclipse: SUMMIT.eclipse, lurker: SUMMIT.lurker,
   shadelord: SUMMIT.shadelord, nightowl: SUMMIT.nightowl,
+  // M15 新行为敌人
+  bombcap: GROVE.bombcap, hivebud: LAVENDER.hivebud, husker: BRAMBLE.husker,
+  novamote: NOCTURNE.novamote, duskward: SUMMIT.duskward, shadowmaw: SUMMIT.shadowmaw,
 };
 
 // 角色配色（makeCharacter 配方用；body 主体 / edge 描边）

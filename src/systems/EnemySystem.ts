@@ -1,13 +1,17 @@
 // 敌人系统：池化 + 行为模板驱动移动 + 分离/击退/减速 + 死亡分裂
 // 刷怪节奏在 WaveDirector；Boss 技能在 BossController
+// M15：spawn 后置钩子（精英词缀挂载 + 高威胁剪影强化）+ 护盾光环减伤 + 词缀逐帧逻辑
 import Phaser from 'phaser';
-import { ENEMIES, dmgScale, hpScale } from '../content/enemies';
+import { ENEMIES, EXPLODER, SHIELDER, dmgScale, hpScale } from '../content/enemies';
+import { AFFIX, AFFIX_COLOR, AFFIX_IDS } from '../content/affixes';
 import { BOSSES } from '../content/bosses';
 import { DIFFICULTY } from '../content/difficulty';
 import { ENDLESS } from '../content/endless';
-import type { EnemyId } from '../content/ids';
+import type { AffixId, BehaviorId, EnemyId } from '../content/ids';
+import { DEATH_COLOR, cssOf } from '../gfx/palette';
+import { FONT, t } from '../i18n';
 import { Meta } from '../core/MetaState';
-import { BEHAVIORS, BehaviorMove } from './behaviors';
+import { BEHAVIORS, BehaviorMove, exploderBoom } from './behaviors';
 import { BossController } from './BossController';
 import type { CombatContext, RunSystem } from './context';
 
@@ -35,16 +39,33 @@ export class Enemy extends Phaser.GameObjects.Image {
   shadowImg!: Phaser.GameObjects.Image;
   baseScale = 1;
   dying = false;
+  // M15：精英词缀 + 新行为状态
+  affix: AffixId | null = null;
+  affixT = 0; // 词缀周期计时（gravitic/volley 冷却、swift 残影间隔）
+  affixPullT = 0; // gravitic 拉拽剩余秒数
+  exploded = false; // exploder 已主动引爆（kill() 不再触发死亡半爆）
+  summonerRef: Enemy | null = null; // 召唤物归属（单召唤者存活上限用）
+  recoverMul = 1; // dash 硬直乘子（swift 词缀 ×0.6）
+  affixLabel?: Phaser.GameObjects.Text; // 词缀头顶浮签（随敌人池复用）
+  auraImg?: Phaser.GameObjects.Image; // shielder 光环常显圈
 }
 
 const tmpOut: Enemy[] = [];
 const tmpMove: BehaviorMove = { mvx: 0, mvy: 0 };
+
+/** 剪影强化（M15，评审 P2-4）：高威胁行为体积 +10%，远处先认出"要换打法的那只" */
+const HIGH_THREAT: ReadonlySet<BehaviorId> = new Set(
+  ['dash', 'turret', 'ambush', 'blink', 'exploder', 'shielder', 'summoner'] as BehaviorId[],
+);
 
 export class EnemySystem implements RunSystem {
   actives: Enemy[] = [];
   boss: Enemy | null = null;
   private pool: Enemy[] = [];
   private bossCtl: BossController | null = null;
+  /** 在场护盾怪（每 0.3s 重建；hitEnemy 减伤查询 O(护盾怪数)） */
+  private shielders: Enemy[] = [];
+  private shieldRebuildT = 0;
 
   constructor(private ctx: CombatContext) {}
 
@@ -92,25 +113,101 @@ export class EnemySystem implements RunSystem {
     e.isElite = spec.elite === true;
     e.isBoss = spec.boss === true;
     e.dying = false;
-    e.baseScale = 1;
-    e.setScale(1).setAlpha(1).setRotation(0).clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
+    // M15 剪影强化：高威胁行为体积 +10%（含 dash 系精英；Boss 全部 chase 不受影响）
+    e.baseScale = HIGH_THREAT.has(spec.behavior) ? 1.1 : 1;
+    e.setScale(e.baseScale).setAlpha(1).setRotation(0).clearTint().setTintMode(Phaser.TintModes.MULTIPLY);
     e.shadowImg.setScale(spec.radius / 16, spec.radius / 22);
+    // M15 状态复位（池复用）
+    e.affix = null;
+    e.affixT = 0;
+    e.affixPullT = 0;
+    e.exploded = false;
+    e.summonerRef = null;
+    e.recoverMul = 1;
+    if (spec.behavior === 'summoner') e.fireT = 2 + Math.random() * 3; // 首召错峰
     if (e.isBoss) {
       this.boss = e;
       this.bossCtl = new BossController(this.ctx, this, BOSSES[this.ctx.map.id]);
     }
     this.actives.push(e);
+    this.onEnemySpawned(e); // M15：spawn 后置钩子（3.2 契约 #3——词缀挂载点）
     return e;
+  }
+
+  /** spawn 后置钩子（M15）：精英词缀挂载 + shielder 光环常显圈 */
+  private onEnemySpawned(e: Enemy): void {
+    if (ENEMIES[e.id].behavior === 'shielder') {
+      if (!e.auraImg) e.auraImg = this.ctx.scene.add.image(0, 0, 'p_ring');
+      e.auraImg.setTexture('p_ring')
+        .setPosition(e.x, e.y)
+        .setScale(SHIELDER.auraR / 42) // p_ring 环半径 42
+        .setTint(DEATH_COLOR[e.id])
+        .setAlpha(0.3)
+        .setDepth(9)
+        .setVisible(true);
+    }
+    this.applyAffix(e);
+  }
+
+  /** 精英词缀（M15）：狂暴 II 全部精英 / 无尽第 2 轮起的精英（含 surge/护卫）随机 1 个。
+   *  普通与狂暴 I 不带；随机走 ctx.rng()（M17 种子契约） */
+  private applyAffix(e: Enemy): void {
+    if (!e.isElite) return;
+    const run = this.ctx.run;
+    if (!(run.diff >= 2 || (run.mode === 'endless' && run.cycle >= 2))) return;
+    const id = AFFIX_IDS[Math.min(AFFIX_IDS.length - 1, Math.floor(this.ctx.rng() * AFFIX_IDS.length))];
+    e.affix = id;
+    if (id === 'swift') {
+      e.spd *= AFFIX.swiftSpeed;
+      e.recoverMul = AFFIX.swiftRecover;
+    } else if (id === 'bulwark') {
+      e.hp = e.maxHp = e.maxHp * AFFIX.bulwarkHp;
+      e.knockMul *= AFFIX.bulwarkKnock;
+      e.baseScale *= AFFIX.bulwarkScale;
+      e.setScale(e.baseScale);
+    } else if (id === 'gravitic') {
+      e.affixT = AFFIX.graviticCd * (0.5 + Math.random() * 0.5); // 首发错峰（演出节奏，不入种子）
+      run.gravSeen = true;
+    } else if (id === 'volley') {
+      e.affixT = AFFIX.volleyCd * (0.5 + Math.random() * 0.5);
+    }
+    // 头顶浮签：词缀名 + 标识色（随精英移动，池复用）
+    if (!e.affixLabel) {
+      e.affixLabel = this.ctx.scene.add.text(0, 0, '', {
+        fontFamily: FONT, fontSize: '13px', fontStyle: 'bold',
+        color: '#FFFDF6', stroke: '#5A5248', strokeThickness: 3,
+      }).setOrigin(0.5, 1).setDepth(1e6 + 5);
+    }
+    e.affixLabel.setText(t('affix_' + id)).setColor(cssOf(AFFIX_COLOR[id])).setVisible(true);
   }
 
   private release(e: Enemy): void {
     e.setActive(false).setVisible(false);
     e.shadowImg.setVisible(false);
+    if (e.affixLabel) e.affixLabel.setVisible(false);
+    if (e.auraImg) e.auraImg.setVisible(false);
+    // 召唤者离场：清掉子代归属引用（防池复用后计数串台）
+    if (ENEMIES[e.id].behavior === 'summoner') {
+      for (const o of this.actives) {
+        if (o.summonerRef === e) o.summonerRef = null;
+      }
+    }
     if (e === this.boss) {
       this.boss = null;
       this.bossCtl = null;
     }
     this.pool.push(e);
+  }
+
+  /** 护盾光环减伤（M15）：目标在任一存活护盾怪光环内 → 伤害 ×(1−reduce)；护盾怪自身不受庇护 */
+  shieldMulFor(e: Enemy): number {
+    for (const s of this.shielders) {
+      if (s === e || !s.active || s.dying) continue;
+      const dx = e.x - s.x;
+      const dy = e.y - s.y;
+      if (dx * dx + dy * dy < SHIELDER.auraR * SHIELDER.auraR) return 1 - SHIELDER.reduce;
+    }
+    return 1;
   }
 
   /** 镜头外环形随机点（刷怪用） */
@@ -126,6 +223,16 @@ export class EnemySystem implements RunSystem {
     const ctx = this.ctx;
     const px = ctx.player.x;
     const py = ctx.player.y;
+
+    // M15 护盾怪列表重建（每 0.3s；340 同屏下 O(actives) 扫一遍可控）
+    this.shieldRebuildT -= dt;
+    if (this.shieldRebuildT <= 0) {
+      this.shieldRebuildT = 0.3;
+      this.shielders.length = 0;
+      for (const e of this.actives) {
+        if (e.active && !e.dying && ENEMIES[e.id].behavior === 'shielder') this.shielders.push(e);
+      }
+    }
 
     for (let i = this.actives.length - 1; i >= 0; i--) {
       const e = this.actives[i];
@@ -179,9 +286,66 @@ export class EnemySystem implements RunSystem {
       e.setDepth(1000 + e.y * 0.01);
       e.shadowImg.setPosition(e.x, e.y + e.radius * 0.9);
 
+      // M15：词缀逐帧逻辑 + 浮签/光环跟随
+      if (e.affix) this.updateAffix(e, dt, px, py);
+      if (e.affixLabel?.visible) e.affixLabel.setPosition(e.x, e.y - e.radius * e.baseScale - 14);
+      if (e.auraImg?.visible) {
+        e.auraImg.setPosition(e.x, e.y).setAlpha(0.24 + Math.sin(e.wobble * 1.5) * 0.06);
+      }
+
       // 离玩家过远的回收（防游走积累）
       if (dist > 1900 && !e.isBoss && !e.isElite) {
         this.removeAt(i);
+      }
+    }
+  }
+
+  /** 词缀逐帧逻辑（M15）：swift 残影 / gravitic 周期拉拽 / volley 蓄力环射 */
+  private updateAffix(e: Enemy, dt: number, px: number, py: number): void {
+    const ctx = this.ctx;
+    if (e.affix === 'swift') {
+      // 残影拖尾（移动中每 swiftGhostEvery 秒一帧剪影淡出）
+      e.affixT -= dt;
+      if (e.affixT <= 0) {
+        e.affixT = AFFIX.swiftGhostEvery;
+        const ghost = ctx.scene.add.image(e.x, e.y, e.texture.key)
+          .setAlpha(0.3).setScale(e.scaleX, e.scaleY).setFlipX(e.flipX).setDepth(e.depth - 1);
+        ctx.scene.tweens.add({ targets: ghost, alpha: 0, duration: 260, onComplete: () => ghost.destroy() });
+      }
+    } else if (e.affix === 'gravitic') {
+      e.affixT -= dt;
+      if (e.affixT <= 0) {
+        e.affixT = AFFIX.graviticCd;
+        e.affixPullT = AFFIX.graviticDur;
+        // 周期引力圈 FX：向心双环 + 蓄力闪
+        ctx.fx.ring(e.x, e.y, AFFIX_COLOR.gravitic, 7, 0.5);
+        ctx.fx.flash(e, 0xd8c8f8);
+      }
+      if (e.affixPullT > 0) {
+        e.affixPullT -= dt;
+        const dx = e.x - px;
+        const dy = e.y - py;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < AFFIX.graviticRange) {
+          // 拉拽玩家（可走位对抗：力度 < 玩家移速）
+          ctx.player.x += (dx / d) * AFFIX.graviticForce * dt;
+          ctx.player.y += (dy / d) * AFFIX.graviticForce * dt;
+        }
+      }
+    } else if (e.affix === 'volley') {
+      const prev = e.affixT;
+      e.affixT -= dt;
+      if (prev > AFFIX.volleyFlash && e.affixT <= AFFIX.volleyFlash) ctx.fx.flash(e, 0xf8d8a8); // 蓄力闪烁
+      if (e.affixT <= 0) {
+        e.affixT = AFFIX.volleyCd;
+        const a0 = Math.random() * Math.PI * 2;
+        for (let k = 0; k < AFFIX.volleyN; k++) {
+          const a = a0 + (k / AFFIX.volleyN) * Math.PI * 2;
+          ctx.spawnEnemyBullet({
+            x: e.x, y: e.y, nx: Math.cos(a), ny: Math.sin(a),
+            speed: AFFIX.volleySpeed, dmg: AFFIX.volleyDmg, timeScaled: true,
+          });
+        }
       }
     }
   }
@@ -199,6 +363,12 @@ export class EnemySystem implements RunSystem {
     e.dying = true;
     this.actives.splice(idx, 1);
 
+    // M15 自爆怪被击杀：仍然爆，但半径减半（主动引爆已置 exploded 不重复）
+    if (ENEMIES[e.id].behavior === 'exploder' && !e.exploded) {
+      e.exploded = true;
+      exploderBoom(e, this.ctx, EXPLODER.killR);
+    }
+
     // 死亡分裂（分裂球 → 迷你球）
     const split = ENEMIES[e.id].split;
     if (split) {
@@ -208,6 +378,18 @@ export class EnemySystem implements RunSystem {
         m.kvx = s * 120;
         m.kvy = -60;
       }
+    }
+
+    // M15 裂变词缀：死亡分裂 4 只本图基础杂兵（首波首项 = 本图基础脸）
+    if (e.affix === 'splitting') {
+      const id = this.ctx.map.waves[0].types[0][0];
+      for (let i = 0; i < AFFIX.splitN; i++) {
+        const a = (i / AFFIX.splitN) * Math.PI * 2 + Math.random();
+        const m = this.spawn(id, e.x + Math.cos(a) * 18, e.y + Math.sin(a) * 18);
+        m.kvx = Math.cos(a) * 160;
+        m.kvy = Math.sin(a) * 160;
+      }
+      this.ctx.fx.ring(e.x, e.y, AFFIX_COLOR.splitting, 4, 0.4);
     }
 
     this.ctx.onEnemyKilled(e);

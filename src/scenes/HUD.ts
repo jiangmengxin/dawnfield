@@ -1233,7 +1233,7 @@ export class HUDScene extends Phaser.Scene {
     const quit = makeButton(this, w / 2, by + gap * 3, bw, bh, t('quit'), () => {
       // 中途退出也入账：金币/统计不丢（不计胜场）
       const run = this.gs.run;
-      Meta.recordRun({ win: false, time: run.elapsed, kills: run.kills, coins: run.coins });
+      Meta.recordRun({ win: false, time: run.elapsed, kills: run.kills, coins: run.coins, affixKills: run.affixKills });
       this.closeOverlay();
       this.scene.stop('game');
       this.scene.stop();

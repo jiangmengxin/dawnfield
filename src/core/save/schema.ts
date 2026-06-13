@@ -39,6 +39,8 @@ export interface SaveStats {
   purchases: number; // 商店累计购买次数
   /** 各角色通关次数（v2 搭车字段，M13 成就消费；M11 仅建立结构） */
   winsByChar: Record<string, number>;
+  /** 累计词缀精英击杀（v2 搭车字段，M15 affixSlayer 消费；旧档缺省 0） */
+  affixKills: number;
 }
 
 /** 每图无尽最佳记录（以 sec 判优） */
@@ -84,6 +86,7 @@ export function defaultSave(): SaveV2 {
     stats: {
       runs: 0, wins: 0, kills: 0, coinsEarned: 0, bestSurvival: 0, playSeconds: 0, purchases: 0,
       winsByChar: {},
+      affixKills: 0,
     },
     settings: {
       lang: null, muted: false, volBgm: 1, volSfx: 1, dmgNumbers: true, shake: true, speed: 1,
@@ -168,6 +171,7 @@ export function sanitize(raw: unknown): SaveV2 | null {
       coinsEarned: num(s.coinsEarned, 0), bestSurvival: num(s.bestSurvival, 0),
       playSeconds: num(s.playSeconds, 0), purchases: num(s.purchases, 0),
       winsByChar,
+      affixKills: num(s.affixKills, 0),
     };
   }
 

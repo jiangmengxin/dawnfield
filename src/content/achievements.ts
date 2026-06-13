@@ -23,6 +23,9 @@ export interface AchRunView {
   firstHurtAt: number; // 首次受伤时刻（秒；未受伤 = Infinity）
   firstEvolveAt: number; // 首次进化时刻（秒；未进化 = Infinity）
   arcana: number; // 持有规则卡数
+  // M15 词缀埋点（graviticEscape：胜利时判定）
+  gravSeen: boolean; // 本局出现过引力词缀精英
+  gravHit: boolean; // 本局被引力词缀精英碰到过
 }
 
 export interface AchStatsView {
@@ -33,6 +36,8 @@ export interface AchStatsView {
   purchases: number;
   /** 已通关角色数（M13 fiveCharWins；来自 winsByChar，局外简评估可缺省） */
   charWins?: number;
+  /** 累计词缀精英击杀（M15 affixSlayer；旧档缺省 0） */
+  affixKills?: number;
 }
 
 export interface AchView {
@@ -138,6 +143,11 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
     check: (v) => v.run?.win === true && v.run.weapons === 1 },
   { id: 'arcanaTrio',      icon: 'icon_arc_petaltide',
     check: (v) => (v.run?.arcana ?? 0) >= 3 },
+  // ---------- M15 精英词缀 ----------
+  { id: 'affixSlayer',     icon: 'e_bigthistle',
+    check: (v) => (v.stats.affixKills ?? 0) >= 20 },
+  { id: 'graviticEscape',  icon: 'e_cometlord', // 结构性挑战：引力精英在场却全程没碰到你
+    check: (v) => v.run?.win === true && v.run.difficulty >= 2 && v.run.gravSeen && !v.run.gravHit },
 ];
 
 /** 旧纯计数成就（M13 替换下场）：仅当存档已解锁才渲染（成就页 legacy 区），

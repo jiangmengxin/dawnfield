@@ -89,6 +89,20 @@ export class Effects {
     });
   }
 
+  /** 预警圈（M12 telegraph 规范两段式）：半透明警示区常显 + 描边圈从外收缩到爆炸半径（M15 自爆引信用） */
+  teleCircle(x: number, y: number, r: number, dur: number): void {
+    const g = this.scene.add.graphics().setDepth(DEPTH_FX - 1);
+    g.fillStyle(0xe06060, 0.13);
+    g.fillCircle(0, 0, r);
+    g.lineStyle(3, 0xe06060, 0.55);
+    g.strokeCircle(0, 0, r);
+    g.setPosition(x, y).setScale(1.45).setAlpha(0);
+    this.scene.tweens.add({
+      targets: g, scale: 1, alpha: 1, duration: dur * 1000, ease: 'Cubic.easeIn',
+      onComplete: () => g.destroy(),
+    });
+  }
+
   /** 扩散环（爆炸/冲击波视觉） */
   ring(x: number, y: number, color: number, toScale: number, dur = 0.35): void {
     const img = this.scene.add.image(x, y, 'p_ring').setDepth(DEPTH_FX).setTint(color).setScale(0.2).setAlpha(0.9);

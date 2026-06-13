@@ -40,6 +40,8 @@ export interface EnemySpec {
   boss?: boolean;
   /** 翻面取反（沿用冲冲既有朝向规则） */
   flipInvert?: boolean;
+  /** summoner 行为召唤的杂兵（缺省 = 本图首波基础杂兵） */
+  summon?: EnemyId;
 }
 
 export const ENEMIES = defineTable<EnemyId, EnemySpec>({
@@ -87,6 +89,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   puffcap:   { hp: 30,   speed: 44,  dmg: 8,  xp: 2,  radius: 14, tex: 'e_puffcap',   knockMul: 0.8,  behavior: 'turret',
                shoot: { range: 260, cd: 2.8, speed: 160, dmg: 10, tex: 'gz_spore' } },
   roller:    { hp: 55,   speed: 50,  dmg: 14, xp: 2,  radius: 14, tex: 'e_roller',    knockMul: 0.5,  behavior: 'pulse' },
+  bombcap:   { hp: 30,   speed: 66,  dmg: 18, xp: 2,  radius: 13, tex: 'e_bombcap',   knockMul: 0.8,  behavior: 'exploder' }, // M15：dmg = 自爆对玩家伤害
   eldercap:  { hp: 1100, speed: 40,  dmg: 19, xp: 30, radius: 42, tex: 'e_eldercap',  knockMul: 0.05, behavior: 'chase', elite: true },
   sporeking: { hp: 4600, speed: 52,  dmg: 25, xp: 0,  radius: 64, tex: 'e_sporeking', knockMul: 0,    behavior: 'chase', boss: true },
 
@@ -99,6 +102,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   pompon:    { hp: 26,   speed: 60,  dmg: 10, xp: 2,  radius: 13, tex: 'e_pompon',    knockMul: 1.1,  behavior: 'hop' },
   briar:     { hp: 34,   speed: 48,  dmg: 9,  xp: 2,  radius: 13, tex: 'e_briar',     knockMul: 0.8,  behavior: 'strafeShoot',
                shoot: { range: 270, cd: 3.2, speed: 170, dmg: 10, tex: 'lz_thorn' } },
+  hivebud:   { hp: 55,   speed: 40,  dmg: 10, xp: 3,  radius: 15, tex: 'e_hivebud',   knockMul: 0.6,  behavior: 'summoner', summon: 'budling' }, // M15
   queenbee:  { hp: 950,  speed: 46,  dmg: 18, xp: 30, radius: 40, tex: 'e_queenbee',  knockMul: 0.05, behavior: 'chase', elite: true },
   flutterqueen: { hp: 5000, speed: 66, dmg: 25, xp: 0, radius: 62, tex: 'e_flutterqueen', knockMul: 0, behavior: 'chase', boss: true },
 
@@ -110,6 +114,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   cubby:     { hp: 46,   speed: 56,  dmg: 14, xp: 2,  radius: 15, tex: 'e_cubby',     knockMul: 0.6,  behavior: 'hop' },
   gourd:     { hp: 34,   speed: 46,  dmg: 8,  xp: 2,  radius: 14, tex: 'e_gourd',     knockMul: 0.8,  behavior: 'turret',
                shoot: { range: 260, cd: 2.9, speed: 165, dmg: 10, tex: 'bz_berry' } },
+  husker:    { hp: 80,   speed: 44,  dmg: 12, xp: 3,  radius: 16, tex: 'e_husker',    knockMul: 0.3,  behavior: 'shielder' }, // M15
   bigberry:  { hp: 1150, speed: 42,  dmg: 19, xp: 30, radius: 42, tex: 'e_bigberry',  knockMul: 0.05, behavior: 'chase', elite: true },
   bramblebear: { hp: 5300, speed: 58, dmg: 26, xp: 0, radius: 64, tex: 'e_bramblebear', knockMul: 0,  behavior: 'chase', boss: true },
 
@@ -121,6 +126,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   owlet:     { hp: 26,   speed: 76,  dmg: 11, xp: 2,  radius: 12, tex: 'e_owlet',     knockMul: 0.7,  behavior: 'orbit' },
   sparkler:  { hp: 30,   speed: 52,  dmg: 9,  xp: 2,  radius: 13, tex: 'e_sparkler',  knockMul: 0.8,  behavior: 'strafeShoot',
                shoot: { range: 270, cd: 3.1, speed: 175, dmg: 10, tex: 'nz_star' } },
+  novamote:  { hp: 26,   speed: 78,  dmg: 18, xp: 2,  radius: 11, tex: 'e_novamote',  knockMul: 1,    behavior: 'exploder' }, // M15：dmg = 自爆对玩家伤害
   cometlord: { hp: 1050, speed: 46,  dmg: 19, xp: 30, radius: 40, tex: 'e_cometlord', knockMul: 0.05, behavior: 'dash', elite: true,
                dash: { triggerDist: 340, telegraph: 0.85, dashSpeed: 320, dashTime: 0.65, recover: 1.5 } },
   starelk:   { hp: 5600, speed: 64,  dmg: 26, xp: 0,  radius: 62, tex: 'e_starelk',   knockMul: 0,    behavior: 'chase', boss: true },
@@ -134,6 +140,8 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
                shoot: { range: 265, cd: 2.8, speed: 170, dmg: 11, tex: 'sz_petal' } },
   eclipse:   { hp: 62,   speed: 54,  dmg: 15, xp: 2,  radius: 14, tex: 'e_eclipse',   knockMul: 0.5,  behavior: 'pulse' },
   lurker:    { hp: 46,   speed: 62,  dmg: 14, xp: 2,  radius: 14, tex: 'e_lurker',    knockMul: 0.7,  behavior: 'ambush' },
+  duskward:  { hp: 90,   speed: 42,  dmg: 12, xp: 3,  radius: 16, tex: 'e_duskward',  knockMul: 0.3,  behavior: 'shielder' }, // M15
+  shadowmaw: { hp: 70,   speed: 38,  dmg: 11, xp: 3,  radius: 15, tex: 'e_shadowmaw', knockMul: 0.6,  behavior: 'summoner', summon: 'shade' }, // M15
   shadelord: { hp: 1250, speed: 42,  dmg: 20, xp: 30, radius: 42, tex: 'e_shadelord', knockMul: 0.05, behavior: 'chase', elite: true },
   nightowl:  { hp: 6200, speed: 60,  dmg: 27, xp: 0,  radius: 64, tex: 'e_nightowl',  knockMul: 0,    behavior: 'chase', boss: true },
 });
@@ -173,3 +181,10 @@ export const AMBUSH = { trigger: 200, burst: 1.3, tire: 0.7, mulBurst: 2.3, mulT
 export const BURROW = { surface: 1.6, dig: 1.3, pop: 0.35, mulDig: 2.2, digAlpha: 0.45 };
 /** 月相灵：明相缓行 / 暗相疾行 交替（M7，亮暗随月相变速） */
 export const PHASE = { bright: 1.5, dark: 1.1, mulBright: 0.45, mulDark: 2.1, darkAlpha: 0.5 };
+/** 自爆怪（M15）：加速逼近 → 进入 trigger 定身 fuse 秒膨胀预警 → 爆炸（r 内对玩家 spec.dmg、
+ *  对敌人 edmg——可风筝借力清群，呼应 starfall 的敌我同伤趣味）；被击杀也爆但半径 ×killR */
+export const EXPLODER = { trigger: 110, fuse: 1.0, r: 130, edmg: 60, killR: 0.5, mulRush: 1.25 };
+/** 护盾怪（M15）：慢速跟随敌群重心（不直奔玩家）；auraR 内友方减伤 reduce——必须先点名击杀 */
+export const SHIELDER = { auraR: 140, reduce: 0.35, mulSpeed: 0.7, seekR: 320, rethink: 0.5 };
+/** 召唤者（M15）：与玩家保持 keep 距离踱步；每 cd 秒吟唱 cast 秒后召 n 只本图基础杂兵（单体存活上限 cap） */
+export const SUMMONER = { keep: 260, cd: 6, n: 2, cap: 6, cast: 0.6 };

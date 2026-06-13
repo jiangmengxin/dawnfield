@@ -976,6 +976,8 @@ function createGroveAssets(scene: Phaser.Scene): void {
   makeEnemy(scene, 'e_snapcap', { w: 42, h: 44, shape: 'cap', r: 14,    body: GROVE.snapcap, edge: GROVE.snapcapEdge, accent: GROVE.snapcapCap, eye: { gap: 4.5, r: 1.8, dy: 6, style: 'angry' }, mouth: 'pout' });
   makeEnemy(scene, 'e_puffcap', { w: 40, h: 40, shape: 'cap', r: 13,    body: GROVE.puffcap, edge: GROVE.puffcapEdge, accent: GROVE.puffcapCap, eye: { gap: 4.5, r: 1.7, dy: 5, style: 'surprised' }, mouth: 'open' });
   makeEnemy(scene, 'e_roller',  { w: 38, h: 42, shape: 'cone', r: 13,   body: GROVE.roller, edge: GROVE.rollerEdge, eye: { gap: 4.5, r: 1.8, dy: -4 } });
+  // M15 自爆菇（exploder）：暖红警示配色 = 高威胁专属描边（剪影规范）
+  makeEnemy(scene, 'e_bombcap', { w: 40, h: 42, shape: 'cap', r: 13,    body: GROVE.bombcap, edge: GROVE.bombcapEdge, accent: GROVE.bombcapCap, eye: { gap: 4.5, r: 1.8, dy: 5, style: 'surprised' }, mouth: 'open' });
 
   // 精英：大菇王（宽盖三斑 + 苔藓披肩）
   makeTex(scene, 'e_eldercap', 108, 104, (ctx) => {
@@ -1237,6 +1239,8 @@ function createLavenderAssets(scene: Phaser.Scene): void {
   makeEnemy(scene, 'e_snippy',  { w: 38, h: 38, shape: 'leaf', r: 12,   body: LAVENDER.snippy, edge: LAVENDER.snippyEdge, eye: { gap: 4, r: 1.7, dy: -1, style: 'angry' } });
   makeEnemy(scene, 'e_pompon',  { w: 36, h: 36, shape: 'spiky', r: 11,  body: LAVENDER.pompon, edge: LAVENDER.pomponEdge, eye: { gap: 4, r: 1.7 }, mouth: 'smile' });
   makeEnemy(scene, 'e_briar',   { w: 36, h: 36, shape: 'round', r: 12.5, body: LAVENDER.briar, edge: LAVENDER.briarEdge, eye: { gap: 4.5, r: 1.8, style: 'angry' }, mouth: 'pout' });
+  // M15 蜂巢芽（summoner）：蜜檀配色条纹蜂身 = 高威胁专属描边（剪影规范）
+  makeEnemy(scene, 'e_hivebud', { w: 42, h: 44, shape: 'bee', r: 14,    body: LAVENDER.hivebud, edge: LAVENDER.hivebudEdge, accent: LAVENDER.hivebudComb, eye: { gap: 5, r: 1.9, dy: -4, style: 'angry' }, mouth: 'open' });
 
   // 精英：蜂后大人（大蜂 + 小金冠 + 四翅）
   makeTex(scene, 'e_queenbee', 104, 108, (ctx) => {
@@ -1528,6 +1532,8 @@ function createBrambleAssets(scene: Phaser.Scene): void {
   makeEnemy(scene, 'e_magpie',    { w: 42, h: 32, shape: 'winged', r: 10.5, body: BRAMBLE.magpie, edge: BRAMBLE.magpieEdge, accent: BRAMBLE.magpieBeak, eye: { gap: 4, r: 1.8 } });
   makeEnemy(scene, 'e_cubby',     { w: 44, h: 46, shape: 'eared', r: 14,    body: BRAMBLE.cubby, edge: BRAMBLE.cubbyEdge, accent: BRAMBLE.cubbyMuzzle, eye: { gap: 5, r: 1.9 }, mouth: 'open' });
   makeEnemy(scene, 'e_gourd',     { w: 38, h: 38, shape: 'round', r: 13.5,  body: BRAMBLE.gourd, edge: BRAMBLE.gourdEdge, eye: { gap: 5, r: 1.8, style: 'surprised' }, mouth: 'open' });
+  // M15 果壳卫（shielder）：厚壳配色 = 高威胁专属描边（剪影规范）
+  makeEnemy(scene, 'e_husker',    { w: 46, h: 42, shape: 'shelled', r: 14,  body: BRAMBLE.husker, edge: BRAMBLE.huskerEdge, accent: BRAMBLE.huskerShell, mouth: 'pout' });
 
   // 精英：大莓王（巨莓 + 叶冠 + 满身籽点）
   makeTex(scene, 'e_bigberry', 104, 108, (ctx) => {
@@ -1781,6 +1787,8 @@ function createNocturneAssets(scene: Phaser.Scene): void {
   makeEnemy(scene, 'e_lunaling',  { w: 34, h: 34, shape: 'crescent', r: 12,  body: NOCTURNE.lunaling, edge: NOCTURNE.lunalingEdge, accent: NOCTURNE.lunalingMoon, eye: { gap: 4.2, r: 1.7, dy: 1 }, mouth: 'pout' });
   makeEnemy(scene, 'e_owlet',     { w: 36, h: 38, shape: 'eared', r: 11.5,   body: NOCTURNE.owlet, edge: NOCTURNE.owletEdge, accent: NOCTURNE.owletBeak, eye: { gap: 4.5, r: 2, style: 'surprised' }, mouth: 'pout' });
   makeEnemy(scene, 'e_sparkler',  { w: 40, h: 40, shape: 'starlet', r: 12,   body: NOCTURNE.sparkler, edge: NOCTURNE.sparklerEdge, eye: { gap: 4.2, r: 1.7, style: 'angry' }, mouth: 'open' });
+  // M15 星爆尘（exploder）：橙红警示配色 = 高威胁专属描边（剪影规范）
+  makeEnemy(scene, 'e_novamote',  { w: 32, h: 32, shape: 'starlet', r: 9.5,  body: NOCTURNE.novamote, edge: NOCTURNE.novamoteEdge, eye: { gap: 3.5, r: 1.6, style: 'surprised' }, mouth: 'open' });
 
   // 精英：大彗星（拖尾巨星核）
   makeTex(scene, 'e_cometlord', 116, 100, (ctx) => {
@@ -1990,6 +1998,9 @@ function createSummitAssets(scene: Phaser.Scene): void {
   makeEnemy(scene, 'e_nightbloom', { w: 42, h: 44, shape: 'cap', r: 13.5,     body: SUMMIT.nightbloom, edge: SUMMIT.nightbloomEdge, accent: SUMMIT.nightbloomCap, eye: { gap: 4.5, r: 1.8, dy: 6, style: 'surprised' }, mouth: 'open' });
   makeEnemy(scene, 'e_eclipse',    { w: 40, h: 40, shape: 'crescent', r: 14,  body: SUMMIT.eclipse, edge: SUMMIT.eclipseEdge, accent: SUMMIT.eclipseRim, eye: { gap: 4.5, r: 1.8, dy: 1, style: 'angry' } });
   makeEnemy(scene, 'e_lurker',     { w: 38, h: 38, shape: 'round', r: 13,     body: SUMMIT.lurker, edge: SUMMIT.lurkerEdge, eye: { gap: 5, r: 1.9, style: 'angry' }, mouth: 'pout' });
+  // M15 暗幕守（shielder）/ 影隙口（summoner）：极深紫描边 = 高威胁专属描边（剪影规范）
+  makeEnemy(scene, 'e_duskward',   { w: 46, h: 42, shape: 'shelled', r: 14,   body: SUMMIT.duskward, edge: SUMMIT.duskwardEdge, accent: SUMMIT.duskwardShell, mouth: 'pout' });
+  makeEnemy(scene, 'e_shadowmaw',  { w: 42, h: 40, shape: 'wisp', r: 13.5,    body: SUMMIT.shadowmaw, edge: SUMMIT.shadowmawEdge, accent: SUMMIT.shadowmawMaw, eye: { gap: 5, r: 2, style: 'angry' }, mouth: 'open' });
 
   // 精英：大夜影（罩袍影团 + 冷光内眸）
   makeTex(scene, 'e_shadelord', 108, 108, (ctx) => {

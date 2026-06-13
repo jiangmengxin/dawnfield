@@ -29,7 +29,9 @@ export type EnemyId =
   // 星语夜原（M7）
   | 'moonmote' | 'twinkle' | 'nightmoth' | 'lunaling' | 'owlet' | 'sparkler' | 'cometlord' | 'starelk'
   // 破晓之巅（M7）
-  | 'shade' | 'gloom' | 'umbra' | 'glint' | 'nightbloom' | 'eclipse' | 'lurker' | 'shadelord' | 'nightowl';
+  | 'shade' | 'gloom' | 'umbra' | 'glint' | 'nightbloom' | 'eclipse' | 'lurker' | 'shadelord' | 'nightowl'
+  // M15 新行为敌人（图 4–8 后段波次插入：自爆 / 护盾光环 / 召唤）
+  | 'bombcap' | 'hivebud' | 'husker' | 'novamote' | 'duskward' | 'shadowmaw';
 
 /** 角色（M4 批次 A：8 个；M6：12 个；M7：16 个全量） */
 export type CharacterId =
@@ -40,12 +42,16 @@ export type CharacterId =
 /** 地图（M7：8 张全量） */
 export type MapId = 'meadow' | 'pond' | 'hills' | 'grove' | 'lavender' | 'bramble' | 'nocturne' | 'summit';
 
-/** 敌人移动行为模板（M7 起 16 种） */
+/** 敌人移动行为模板（M7 起 16 种；M15 起 19 种） */
 export type BehaviorId =
   | 'chase' | 'wobble' | 'strafeShoot' | 'dash'
   | 'drift' | 'hop' | 'orbit' | 'swoop' | 'blink' | 'pulse' | 'turret' | 'zigzag'
   | 'spiral' | 'ambush'
-  | 'burrow' | 'phase';
+  | 'burrow' | 'phase'
+  | 'exploder' | 'shielder' | 'summoner';
+
+/** 精英词缀（M15）：狂暴 II 全部精英 / 无尽第 2 轮起精英随机携带 1 个（调参在 content/affixes.ts） */
+export type AffixId = 'swift' | 'bulwark' | 'splitting' | 'gravitic' | 'volley';
 
 /** 角色专属机制 trait（M14：5 个后期角色，复用 M13 RunModifier 钩子体系） */
 export type TraitId = 'flicker' | 'sweettooth' | 'fanfare' | 'collector' | 'resonance';
@@ -82,4 +88,6 @@ export type AchievementId =
   | 'hyperClear1' | 'hyperAll' | 'endless3' | 'endless6'
   // M13（结构性挑战，顶替 7 个纯计数）
   | 'flawlessBoss' | 'fiveCharWins' | 'noPassiveClear' | 'untouchable10'
-  | 'evolveRush' | 'soloWeaponClear' | 'arcanaTrio';
+  | 'evolveRush' | 'soloWeaponClear' | 'arcanaTrio'
+  // M15（精英词缀）
+  | 'affixSlayer' | 'graviticEscape';

@@ -63,6 +63,10 @@ export class RunState {
   firstHurtAt = Infinity;
   firstEvolveAt = Infinity;
   bossHit = false;
+  // M15 词缀埋点：词缀精英击杀（affixSlayer 累计）+ 引力精英出现/命中（graviticEscape）
+  affixKills = 0;
+  gravSeen = false;
+  gravHit = false;
   /** 地图升级节奏乘子（M12，= MapSpec.xpK；GameScene.create 写入） */
   mapXpK = 1;
   difficultyHp = 1;

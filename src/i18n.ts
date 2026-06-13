@@ -278,6 +278,7 @@ const D: Dict = {
   en_galecrow: ['风暴鸦', 'Galecrow'],
   // 敌人名称 — 萤暮林地
   en_shroom: ['菇菇点', 'Capling'],
+  en_bombcap: ['孢爆菇', 'Bombcap'],
   en_glimmer: ['萤虫虫', 'Glowmite'],
   en_mottle: ['暮色蛾', 'Duskmoth'],
   en_snapcap: ['害羞菇', 'Shycap'],
@@ -292,6 +293,7 @@ const D: Dict = {
   en_snippy: ['剪剪虫', 'Snipbug'],
   en_pompon: ['绒球球', 'Pompuff'],
   en_briar: ['刺莓莓', 'Briarberry'],
+  en_hivebud: ['蜂巢芽', 'Hivebud'],
   en_queenbee: ['蜂后大人', 'Queen Bumble'],
   en_flutterqueen: ['紫蝶女王', 'Duskwing Queen'],
   // 敌人名称 — 莓果灌丛
@@ -301,6 +303,7 @@ const D: Dict = {
   en_magpie: ['蓝鹊鹊', 'Magpip'],
   en_cubby: ['莓爪崽', 'Cubby'],
   en_gourd: ['浆果炮', 'Gourdling'],
+  en_husker: ['果壳卫', 'Husker'],
   en_bigberry: ['大莓王', 'Grand Berry'],
   en_bramblebear: ['莓刺熊王', 'Bramble Bear'],
   // 敌人名称 — 星语夜原
@@ -310,6 +313,7 @@ const D: Dict = {
   en_lunaling: ['月相灵', 'Lunaling'],
   en_owlet: ['小枭枭', 'Owlet'],
   en_sparkler: ['星火花', 'Sparkler'],
+  en_novamote: ['星爆尘', 'Novamote'],
   en_cometlord: ['大彗星', 'Grand Comet'],
   en_starelk: ['星角鹿王', 'Starlit Elk'],
   // 敌人名称 — 破晓之巅
@@ -320,8 +324,17 @@ const D: Dict = {
   en_nightbloom: ['夜昙昙', 'Nightbloom'],
   en_eclipse: ['蚀月轮', 'Eclipser'],
   en_lurker: ['影伏伏', 'Lurky'],
+  en_duskward: ['暗幕守', 'Duskward'],
+  en_shadowmaw: ['影隙口', 'Shadowmaw'],
   en_shadelord: ['大夜影', 'Grand Shade'],
   en_nightowl: ['永夜枭', 'Evernight Owl'],
+
+  // 精英词缀（M15）：头顶浮签名
+  affix_swift: ['迅捷', 'Swift'],
+  affix_bulwark: ['壁垒', 'Bulwark'],
+  affix_splitting: ['裂变', 'Splitting'],
+  affix_gravitic: ['引力', 'Gravitic'],
+  affix_volley: ['弹幕', 'Volley'],
 
   // 通用 UI
   ui_back: ['返回', 'Back'],
@@ -607,6 +620,11 @@ const D: Dict = {
   ach_soloWeaponClear_d: ['全程只持 1 把武器通关任意地图', 'Clear any map holding only one weapon'],
   ach_arcanaTrio: ['三卡同辉', 'Triple Arcana'],
   ach_arcanaTrio_d: ['同一局持有 3 张规则卡', 'Hold 3 arcana cards in one run'],
+  // M15 精英词缀
+  ach_affixSlayer: ['词缀猎手', 'Affix Hunter'],
+  ach_affixSlayer_d: ['累计击杀 20 只词缀精英', 'Defeat 20 affixed elites in total'],
+  ach_graviticEscape: ['挣脱引力', 'Slip the Pull'],
+  ach_graviticEscape_d: ['通关任意狂暴 II，且全程未被引力精英碰到', 'Clear any Hyper II run without being touched by a gravitic elite'],
   ach_rewardArc: ['解锁规则卡：{a}', 'Unlocks arcana: {a}'],
   ach_legacy: ['往昔成就', 'Legacy Feats'],
 

@@ -366,8 +366,10 @@ export const MAPS: MapSpec[] = [
       { from: 430,  interval: 0.72, burst: 4, maxAlive: 140, types: [['snapcap', 1.7], ['roller', 1.6], ['puffcap', 1.2], ['mottle', 1.8], ['shroom', 1.4]] },
       { from: 545,  interval: 0.65, burst: 4, maxAlive: 165, types: [['roller', 1.8], ['puffcap', 1.4], ['snapcap', 1.9], ['mottle', 2], ['glimmer', 1.7]] },
       { from: 665,  interval: 0.6,  burst: 4, maxAlive: 190, types: [['puffcap', 1.6], ['snapcap', 2.1], ['roller', 2], ['mottle', 2.2]] },
-      { from: 810,  interval: 0.55, burst: 5, maxAlive: 215, types: [['snapcap', 2.2], ['roller', 2.2], ['puffcap', 1.8], ['mottle', 2.4], ['glimmer', 2]] },
-      { from: 970,  interval: 0.5,  burst: 5, maxAlive: 240, types: [['roller', 2.4], ['puffcap', 2], ['snapcap', 2.4], ['mottle', 2.6], ['shroom', 2]] },
+      // M15 后段新面孔：t=700（56%）起自爆菇入池（A1：后 75% 无新刺激）
+      { from: 700,  interval: 0.6,  burst: 4, maxAlive: 190, types: [['puffcap', 1.6], ['snapcap', 2.1], ['roller', 2], ['mottle', 2.2], ['bombcap', 1]] },
+      { from: 810,  interval: 0.55, burst: 5, maxAlive: 215, types: [['snapcap', 2.2], ['roller', 2.2], ['puffcap', 1.8], ['mottle', 2.4], ['glimmer', 2], ['bombcap', 1.1]] },
+      { from: 970,  interval: 0.5,  burst: 5, maxAlive: 240, types: [['roller', 2.4], ['puffcap', 2], ['snapcap', 2.4], ['mottle', 2.6], ['shroom', 2], ['bombcap', 1.2]] },
       { from: 1200, interval: 1.0,  burst: 2, maxAlive: 70,  types: [['glimmer', 2], ['shroom', 1.5], ['mottle', 1]] }, // Boss 阶段轻刷
     ],
     events: [
@@ -419,9 +421,11 @@ export const MAPS: MapSpec[] = [
       { from: 350,  interval: 0.55, burst: 4, maxAlive: 170, types: [['snippy', 1.7], ['briar', 1.3], ['flutter', 2], ['pompon', 1.8], ['bumble', 1.8]] },
       { from: 450,  interval: 0.5,  burst: 4, maxAlive: 195, types: [['briar', 1.5], ['snippy', 1.9], ['pompon', 2], ['flutter', 2.2], ['budling', 1.4]] },
       { from: 565,  interval: 0.48, burst: 5, maxAlive: 220, types: [['snippy', 2.1], ['briar', 1.7], ['flutter', 2.4], ['pompon', 2.2], ['bumble', 2]] },
-      { from: 700,  interval: 0.45, burst: 5, maxAlive: 245, types: [['briar', 1.9], ['snippy', 2.3], ['flutter', 2.6], ['pompon', 2.4]] },
-      { from: 850,  interval: 0.42, burst: 6, maxAlive: 265, types: [['snippy', 2.5], ['briar', 2.1], ['flutter', 2.8], ['bumble', 2.4], ['budling', 2]] },
-      { from: 1015, interval: 0.4,  burst: 6, maxAlive: 285, types: [['briar', 2.3], ['snippy', 2.7], ['flutter', 3], ['pompon', 2.6]] },
+      // M15 后段新面孔：t=680（47%）起蜂巢芽入池（召唤者，权重克制）
+      { from: 680,  interval: 0.48, burst: 5, maxAlive: 220, types: [['snippy', 2.1], ['briar', 1.7], ['flutter', 2.4], ['pompon', 2.2], ['bumble', 2], ['hivebud', 0.8]] },
+      { from: 700,  interval: 0.45, burst: 5, maxAlive: 245, types: [['briar', 1.9], ['snippy', 2.3], ['flutter', 2.6], ['pompon', 2.4], ['hivebud', 0.9]] },
+      { from: 850,  interval: 0.42, burst: 6, maxAlive: 265, types: [['snippy', 2.5], ['briar', 2.1], ['flutter', 2.8], ['bumble', 2.4], ['budling', 2], ['hivebud', 1]] },
+      { from: 1015, interval: 0.4,  burst: 6, maxAlive: 285, types: [['briar', 2.3], ['snippy', 2.7], ['flutter', 3], ['pompon', 2.6], ['hivebud', 1]] },
       { from: 1200, interval: 0.9,  burst: 3, maxAlive: 85,  types: [['bumble', 2], ['budling', 1.5], ['flutter', 1]] }, // Boss 阶段轻刷
     ],
     events: [
@@ -478,9 +482,11 @@ export const MAPS: MapSpec[] = [
       { from: 440,  interval: 0.58, burst: 4, maxAlive: 195, types: [['cubby', 1.9], ['gourd', 1.5], ['mole', 1.9], ['bristle', 2], ['magpie', 2]] },
       { from: 540,  interval: 0.54, burst: 5, maxAlive: 220, types: [['gourd', 1.7], ['cubby', 2.1], ['mole', 2.1], ['bristle', 2.2]] },
       { from: 655,  interval: 0.5,  burst: 5, maxAlive: 245, types: [['cubby', 2.3], ['gourd', 1.9], ['mole', 2.3], ['magpie', 2.4], ['berryling', 2]] },
-      { from: 785,  interval: 0.46, burst: 6, maxAlive: 268, types: [['gourd', 2.1], ['cubby', 2.5], ['bristle', 2.6], ['mole', 2.5]] },
-      { from: 925,  interval: 0.44, burst: 6, maxAlive: 288, types: [['cubby', 2.7], ['gourd', 2.3], ['magpie', 2.8], ['mole', 2.7], ['berryling', 2.2]] },
-      { from: 1060, interval: 0.42, burst: 6, maxAlive: 300, types: [['gourd', 2.5], ['cubby', 2.9], ['bristle', 3], ['mole', 2.9]] },
+      // M15 后段新面孔：t=700（45%）起果壳卫入池（护盾光环，先点名击杀）
+      { from: 700,  interval: 0.5,  burst: 5, maxAlive: 245, types: [['cubby', 2.3], ['gourd', 1.9], ['mole', 2.3], ['magpie', 2.4], ['berryling', 2], ['husker', 0.9]] },
+      { from: 785,  interval: 0.46, burst: 6, maxAlive: 268, types: [['gourd', 2.1], ['cubby', 2.5], ['bristle', 2.6], ['mole', 2.5], ['husker', 1]] },
+      { from: 925,  interval: 0.44, burst: 6, maxAlive: 288, types: [['cubby', 2.7], ['gourd', 2.3], ['magpie', 2.8], ['mole', 2.7], ['berryling', 2.2], ['husker', 1.1]] },
+      { from: 1060, interval: 0.42, burst: 6, maxAlive: 300, types: [['gourd', 2.5], ['cubby', 2.9], ['bristle', 3], ['mole', 2.9], ['husker', 1.2]] },
       { from: 1200, interval: 0.95, burst: 3, maxAlive: 85,  types: [['berryling', 2], ['magpie', 1.5], ['bristle', 1]] }, // Boss 阶段轻刷
     ],
     events: [
@@ -536,10 +542,12 @@ export const MAPS: MapSpec[] = [
       { from: 495,  interval: 0.6,  burst: 4, maxAlive: 172, types: [['twinkle', 1.7], ['lunaling', 1.7], ['sparkler', 1.3], ['nightmoth', 1.9], ['owlet', 1.9]] },
       { from: 620,  interval: 0.56, burst: 4, maxAlive: 196, types: [['lunaling', 1.9], ['sparkler', 1.5], ['twinkle', 1.9], ['owlet', 2.1], ['nightmoth', 2]] },
       { from: 770,  interval: 0.52, burst: 5, maxAlive: 220, types: [['sparkler', 1.7], ['lunaling', 2.1], ['twinkle', 2.1], ['owlet', 2.2]] },
-      { from: 945,  interval: 0.48, burst: 5, maxAlive: 245, types: [['lunaling', 2.3], ['sparkler', 1.9], ['nightmoth', 2.5], ['twinkle', 2.3], ['moonmote', 2]] },
-      { from: 1135, interval: 0.45, burst: 6, maxAlive: 268, types: [['sparkler', 2.1], ['lunaling', 2.5], ['owlet', 2.6], ['twinkle', 2.5]] },
-      { from: 1340, interval: 0.43, burst: 6, maxAlive: 288, types: [['lunaling', 2.7], ['sparkler', 2.3], ['nightmoth', 2.9], ['owlet', 2.8], ['moonmote', 2.2]] },
-      { from: 1565, interval: 0.41, burst: 6, maxAlive: 305, types: [['sparkler', 2.5], ['lunaling', 2.9], ['twinkle', 2.9], ['owlet', 3]] },
+      // M15 后段新面孔：t=880（52%）起星爆尘入池（自爆，与流星雨同享敌我同伤趣味）
+      { from: 880,  interval: 0.52, burst: 5, maxAlive: 220, types: [['sparkler', 1.7], ['lunaling', 2.1], ['twinkle', 2.1], ['owlet', 2.2], ['novamote', 1]] },
+      { from: 945,  interval: 0.48, burst: 5, maxAlive: 245, types: [['lunaling', 2.3], ['sparkler', 1.9], ['nightmoth', 2.5], ['twinkle', 2.3], ['moonmote', 2], ['novamote', 1.1]] },
+      { from: 1135, interval: 0.45, burst: 6, maxAlive: 268, types: [['sparkler', 2.1], ['lunaling', 2.5], ['owlet', 2.6], ['twinkle', 2.5], ['novamote', 1.2]] },
+      { from: 1340, interval: 0.43, burst: 6, maxAlive: 288, types: [['lunaling', 2.7], ['sparkler', 2.3], ['nightmoth', 2.9], ['owlet', 2.8], ['moonmote', 2.2], ['novamote', 1.2]] },
+      { from: 1565, interval: 0.41, burst: 6, maxAlive: 305, types: [['sparkler', 2.5], ['lunaling', 2.9], ['twinkle', 2.9], ['owlet', 3], ['novamote', 1.2]] },
       { from: 1800, interval: 0.9,  burst: 3, maxAlive: 90,  types: [['moonmote', 2], ['nightmoth', 1.5], ['owlet', 1]] }, // Boss 阶段轻刷
     ],
     events: [
@@ -596,11 +604,12 @@ export const MAPS: MapSpec[] = [
       { from: 450,  interval: 0.56, burst: 4, maxAlive: 178, types: [['umbra', 1.8], ['lurker', 1.7], ['nightbloom', 1.3], ['eclipse', 1.1], ['gloom', 1.7]] },
       { from: 570,  interval: 0.52, burst: 4, maxAlive: 202, types: [['lurker', 1.9], ['nightbloom', 1.5], ['eclipse', 1.3], ['umbra', 2], ['glint', 1.8]] },
       { from: 700,  interval: 0.5,  burst: 5, maxAlive: 226, types: [['nightbloom', 1.7], ['eclipse', 1.5], ['lurker', 2.1], ['umbra', 2.2]] },
-      { from: 860,  interval: 0.47, burst: 5, maxAlive: 250, types: [['eclipse', 1.7], ['nightbloom', 1.9], ['lurker', 2.3], ['gloom', 2.2], ['shade', 2]] },
-      { from: 1040, interval: 0.44, burst: 6, maxAlive: 272, types: [['nightbloom', 2.1], ['eclipse', 1.9], ['umbra', 2.6], ['lurker', 2.5]] },
-      { from: 1230, interval: 0.42, burst: 6, maxAlive: 292, types: [['eclipse', 2.1], ['nightbloom', 2.3], ['lurker', 2.7], ['glint', 2.6], ['shade', 2.2]] },
-      { from: 1430, interval: 0.4,  burst: 7, maxAlive: 308, types: [['nightbloom', 2.5], ['eclipse', 2.3], ['umbra', 3], ['lurker', 2.9]] },
-      { from: 1620, interval: 0.38, burst: 7, maxAlive: 320, types: [['eclipse', 2.5], ['lurker', 3.1], ['nightbloom', 2.7], ['gloom', 2.6], ['glint', 2.8]] },
+      // M15 后段新面孔：t=860（48%）起暗幕守入池；t=1230（68%）影隙口再添一张新面孔
+      { from: 860,  interval: 0.47, burst: 5, maxAlive: 250, types: [['eclipse', 1.7], ['nightbloom', 1.9], ['lurker', 2.3], ['gloom', 2.2], ['shade', 2], ['duskward', 0.9]] },
+      { from: 1040, interval: 0.44, burst: 6, maxAlive: 272, types: [['nightbloom', 2.1], ['eclipse', 1.9], ['umbra', 2.6], ['lurker', 2.5], ['duskward', 1]] },
+      { from: 1230, interval: 0.42, burst: 6, maxAlive: 292, types: [['eclipse', 2.1], ['nightbloom', 2.3], ['lurker', 2.7], ['glint', 2.6], ['shade', 2.2], ['duskward', 1], ['shadowmaw', 0.8]] },
+      { from: 1430, interval: 0.4,  burst: 7, maxAlive: 308, types: [['nightbloom', 2.5], ['eclipse', 2.3], ['umbra', 3], ['lurker', 2.9], ['duskward', 1.1], ['shadowmaw', 0.9]] },
+      { from: 1620, interval: 0.38, burst: 7, maxAlive: 320, types: [['eclipse', 2.5], ['lurker', 3.1], ['nightbloom', 2.7], ['gloom', 2.6], ['glint', 2.8], ['duskward', 1.1], ['shadowmaw', 0.9]] },
       { from: 1800, interval: 0.85, burst: 3, maxAlive: 95,  types: [['shade', 2], ['glint', 1.5], ['gloom', 1]] }, // Boss 阶段轻刷
     ],
     events: [

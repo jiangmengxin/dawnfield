@@ -130,8 +130,14 @@ export class PlayerSystem implements RunSystem {
     // 体积即碰撞：大块头更容易被蹭到
     ctx.grid.queryCircle(ctx.player.x, ctx.player.y, ctx.run.char.radius, queryOut);
     let worst = 0;
-    for (const e of queryOut) worst = Math.max(worst, e.dmg);
-    if (worst > 0) ctx.damagePlayer(worst);
+    let src: Enemy | undefined;
+    for (const e of queryOut) {
+      if (e.dmg > worst) {
+        worst = e.dmg;
+        src = e;
+      }
+    }
+    if (worst > 0) ctx.damagePlayer(worst, src);
   }
 
   /** 倒下：隐藏玩家与血条 */

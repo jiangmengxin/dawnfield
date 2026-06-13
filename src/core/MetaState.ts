@@ -188,7 +188,7 @@ class MetaStateImpl {
   recordRun(r: {
     win: boolean; time: number; kills: number; coins: number;
     mapId?: string; mode?: 'normal' | 'endless'; diff?: 0 | 1 | 2; cycle?: number;
-    charId?: string;
+    charId?: string; affixKills?: number;
   }): boolean {
     const st = this.save.stats;
     st.runs++;
@@ -196,6 +196,7 @@ class MetaStateImpl {
     // M13：各角色通关计数（fiveCharWins 消费；v2 搭车字段，中途退出不计胜）
     if (r.win && r.charId) st.winsByChar[r.charId] = (st.winsByChar[r.charId] ?? 0) + 1;
     st.kills += r.kills;
+    st.affixKills += Math.round(r.affixKills ?? 0); // M15 affixSlayer 累计
     st.playSeconds += Math.round(r.time);
     st.bestSurvival = Math.max(st.bestSurvival, Math.round(r.time));
     let newBest = false;

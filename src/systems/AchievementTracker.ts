@@ -53,6 +53,8 @@ export class AchievementTracker implements RunSystem {
         firstHurtAt: run.firstHurtAt,
         firstEvolveAt: run.firstEvolveAt,
         arcana: run.arcana.length,
+        gravSeen: run.gravSeen,
+        gravHit: run.gravHit,
       },
       // 累计类并入当前局进度，避免要再开一局才能解锁
       stats: {
@@ -60,6 +62,7 @@ export class AchievementTracker implements RunSystem {
         kills: st.kills + run.kills,
         coinsEarned: st.coinsEarned + Math.floor(run.coins),
         charWins: Object.keys(st.winsByChar).length,
+        affixKills: st.affixKills + run.affixKills,
       },
       hyper: Meta.save.hyper,
     };

@@ -98,6 +98,10 @@ export interface RunResult {
   bossNoHit: boolean; // Boss 战期间未受伤（flawlessBoss）
   firstHurtAt: number; // 首次受伤时刻（秒；未受伤 = Infinity）
   firstEvolveAt: number; // 首次进化时刻（秒；未进化 = Infinity）
+  // M15 词缀成就埋点
+  affixKills: number; // 本局词缀精英击杀数（affixSlayer 累计入档）
+  gravSeen: boolean; // 本局是否出现过引力词缀精英（graviticEscape 前提）
+  gravHit: boolean; // 本局是否被引力词缀精英碰到过
 }
 
 /** 局内系统统一接口：GameScene 持有 systems: RunSystem[] 按序 update */
@@ -124,7 +128,8 @@ export interface CombatContext {
   /** 伤害归账（M8 武器 DPS 统计；调试面板显示） */
   dmgLog(src: string, dmg: number): void;
   onEnemyKilled(e: Enemy): void;
-  damagePlayer(d: number): void;
+  /** src = 伤害来源敌人（M15 引力词缀成就埋点；弹幕/区域伤害可缺省） */
+  damagePlayer(d: number, src?: Enemy): void;
   hitStop(sec: number): void;
   addZone(z: ZoneSpec): void;
   slowAt(x: number, y: number): boolean;
