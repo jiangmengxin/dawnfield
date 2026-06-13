@@ -93,12 +93,14 @@ class MetaStateImpl {
   }
 
   codexLit(cat: CodexCat, id: string): boolean {
+    if (this.save.settings.unlockAll) return true; // 调试「解锁全部内容」：图鉴全点亮（不写存档，关闭即恢复）
     return this.lit(cat).has(id);
   }
 
   /** 点亮但未浏览 → New 角标 */
   codexIsNew(cat: CodexCat, id: string): boolean {
-    return this.codexLit(cat, id) && !this.save.codex.seen[cat].includes(id);
+    if (this.save.settings.unlockAll) return false; // 调试全解锁时不刷满屏 New 角标
+    return this.lit(cat).has(id) && !this.save.codex.seen[cat].includes(id);
   }
 
   /** 浏览该分类后调用：清除整类 New 角标 */
@@ -116,13 +118,19 @@ class MetaStateImpl {
 
   // ---------- 成就 ----------
 
+  /** 成就是否达成（调试「解锁全部内容」时一律视为达成；仅用于展示与解锁判定，不写存档） */
   hasAch(id: string): boolean {
+    return this.save.settings.unlockAll || this.hasAchStored(id);
+  }
+
+  /** 真实存档中的成就（不受调试开关影响）；成就评估、落档、解锁追授一律用此 */
+  hasAchStored(id: string): boolean {
     return this.save.achievements.includes(id);
   }
 
   /** 返回是否为新解锁；同时应用成就携带的角色/地图解锁与金币奖励 */
   unlockAch(id: string): boolean {
-    if (this.hasAch(id)) return false;
+    if (this.hasAchStored(id)) return false;
     this.save.achievements.push(id);
     const spec = ACHIEVEMENTS.find((a) => a.id === id);
     if (spec?.unlockChar) this.unlock('chars', spec.unlockChar);
@@ -159,7 +167,7 @@ class MetaStateImpl {
   /** 启动时补同步：旧档已有成就 → 应用其角色/地图解锁（成就表后补解锁字段时也能追授） */
   syncAchUnlocks(): void {
     for (const a of ACHIEVEMENTS) {
-      if (!this.hasAch(a.id)) continue;
+      if (!this.hasAchStored(a.id)) continue;
       if (a.unlockChar) this.unlock('chars', a.unlockChar);
       if (a.unlockMap) this.unlock('maps', a.unlockMap);
     }

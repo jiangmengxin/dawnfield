@@ -13,7 +13,7 @@ import type { WeaponManager } from './weapons';
 export function evalAchievements(view: AchView): AchievementId[] {
   const out: AchievementId[] = [];
   for (const a of ACHIEVEMENTS) {
-    if (Meta.hasAch(a.id)) continue;
+    if (Meta.hasAchStored(a.id)) continue; // 调试全解锁期间仍按真实进度评估/落档
     if (a.check(view)) {
       Meta.unlockAch(a.id);
       out.push(a.id);
