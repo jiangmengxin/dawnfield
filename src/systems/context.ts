@@ -143,6 +143,8 @@ export interface CombatContext {
   readonly fx: Effects;
   readonly isMobile: boolean;
   readonly enemyCapMul: number;
+  /** 当前持有武器数（M21 constellation 众星拱月：每把武器全员增伤；statMods 读取） */
+  readonly weaponCount: number;
   /** 返回实际结算伤害（含浮动/暴击；目标已死/无效返回 0）——DPS 统计据此归账 */
   hitEnemy(e: Enemy, dmg: number, opts?: HitOpts): number;
   /** M17 施放反馈：玩家小幅 pop + 武器主题色环（GameScene 内 0.15s 节流，6 武器齐射不闪疯） */
@@ -197,6 +199,8 @@ export interface CombatContext {
   rng(): number;
   /** 拾取金币时转发（M13 onCoinPicked 钩子；value 为拾取面值，乘区前） */
   notifyCoinPicked(value: number): void;
+  /** 拾取经验光珠时转发（M21 onGemPicked 钩子；value 为光珠经验值，乘区前） */
+  notifyGemPicked(value: number): void;
   /** 武器进化时转发（M13 onEvolve 钩子 + firstEvolveAt 埋点；唯一入口 WeaponManager.evolve） */
   notifyEvolve(id: WeaponId): void;
 }
@@ -216,8 +220,9 @@ export interface RunModifier {
   /** 每帧 */
   onTick?(dt: number, ctx: CombatContext): void;
   // ---------- M13 新钩子（全部可选，零卡持有时零开销） ----------
-  /** 武器伤害结算完成后（applied>0）；钩子衍生伤害带 noHook + GameScene inOnHit 守卫防递归 */
-  onWeaponHit?(e: Enemy, applied: number, ctx: CombatContext): void;
+  /** 武器伤害结算完成后（applied>0）；钩子衍生伤害带 noHook + GameScene inOnHit 守卫防递归。
+   *  crit = 本次是否暴击（M21 thornlace 暴击流血用） */
+  onWeaponHit?(e: Enemy, applied: number, ctx: CombatContext, crit: boolean): void;
   /** 玩家实际扣血后、败北判定前（raw=护甲前，applied=实扣） */
   onPlayerDamaged?(raw: number, applied: number, ctx: CombatContext): void;
   /** 玩家受伤结算前改写（返回 ≤0 = 完全免疫，不扣血不进 iframe；闪避类机制用）。
@@ -225,6 +230,8 @@ export interface RunModifier {
   modifyPlayerDamage?(d: number, ctx: CombatContext, src?: Enemy): number;
   /** 拾取金币时 */
   onCoinPicked?(value: number, ctx: CombatContext): void;
+  /** 拾取经验光珠时（M21 harvest 经验复制用） */
+  onGemPicked?(value: number, ctx: CombatContext): void;
   /** 武器进化时 */
   onEvolve?(id: WeaponId, ctx: CombatContext): void;
 }

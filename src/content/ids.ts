@@ -59,12 +59,15 @@ export type AffixId = 'swift' | 'bulwark' | 'splitting' | 'gravitic' | 'volley';
 export type TraitId = 'flicker' | 'sweettooth' | 'fanfare' | 'collector' | 'resonance'
   | 'bouncy' | 'comet';
 
-/** 规则卡 Arcana（M9：10 张基础卡；M13：6 张机制卡，成就解锁后入池） */
+/** 规则卡 Arcana（M9：10 张基础卡；M13：6 张机制卡；M21：扩至 24 张全机制化） */
 export type ArcanaId =
   | 'petaltide' | 'tailwind' | 'thornlace' | 'goldbell' | 'starpop'
   | 'moonheart' | 'dewspring' | 'fireflyway' | 'compass' | 'onepath'
   // M13 机制卡（tier=mechanic，拿了之后整局打法都变）
-  | 'splinter' | 'thorncore' | 'vow' | 'allin' | 'slowburn' | 'dawnfield';
+  | 'splinter' | 'thorncore' | 'vow' | 'allin' | 'slowburn' | 'dawnfield'
+  // M21 扩展（全机制化）：2 张常驻 + 6 张解锁
+  | 'frost' | 'harvest'
+  | 'starfall' | 'constellation' | 'daynight' | 'rooted' | 'everbloom' | 'knell';
 
 /** 商店永久强化（金币唯一用途，可全额重置） */
 export type PowerUpId =

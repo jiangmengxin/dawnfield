@@ -76,7 +76,8 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
     check: (v) => (v.run?.passives ?? 0) >= 6 },
   { id: 'meadowClear', icon: 'e_boss',       unlockChar: 'pebble', unlockMap: 'pond',
     check: (v) => v.run?.win === true && v.run.mapId === 'meadow' },
-  { id: 'kills1000',   icon: 'e_splitter',  rewardCoins: 150, check: (v) => v.stats.kills >= 1000 },
+  { id: 'kills1000',   icon: 'e_splitter',  rewardCoins: 150, unlockArcana: 'knell', // M21 密集命中 → 钟鸣
+    check: (v) => v.stats.kills >= 1000 },
   { id: 'coins500',    icon: 'coin',        unlockChar: 'fluff',  check: (v) => v.stats.coinsEarned >= 500 },
   { id: 'firstBuy',    icon: 'icon_greed',  rewardCoins: 100, check: (v) => v.stats.purchases >= 1 },
   { id: 'pondClear',   icon: 'e_bubbleking', unlockMap: 'hills',
@@ -103,18 +104,18 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
     check: (v) => v.stats.coinsEarned >= 2000 },
   { id: 'wins5',       icon: 'chest',        unlockChar: 'wisp', // M7：悠悠挂既有成就
     check: (v) => v.stats.wins >= 3 },
-  { id: 'fullHouse',   icon: 'icon_gold',    rewardCoins: 200,
+  { id: 'fullHouse',   icon: 'icon_gold',    rewardCoins: 200, unlockArcana: 'constellation', // M21 贪多流压舱
     check: (v) => (v.run?.weapons ?? 0) >= 6 && (v.run?.passives ?? 0) >= 6 },
   { id: 'maxPassive',  icon: 'icon_honey',   unlockArcana: 'slowburn',
     check: (v) => v.run?.maxPassive === true },
   // ---------- M7 ----------
   { id: 'brambleClear',  icon: 'e_bramblebear', unlockMap: 'nocturne',
     check: (v) => v.run?.win === true && v.run.mapId === 'bramble' },
-  { id: 'nocturneClear', icon: 'e_starelk',     unlockMap: 'summit',
+  { id: 'nocturneClear', icon: 'e_starelk',     unlockMap: 'summit', unlockArcana: 'starfall', // M21 夜系点题
     check: (v) => v.run?.win === true && v.run.mapId === 'nocturne' },
   { id: 'summitClear',   icon: 'e_nightowl', rewardCoins: 300,
     check: (v) => v.run?.win === true && v.run.mapId === 'summit' },
-  { id: 'survive20',   icon: 'icon_vine',    unlockChar: 'ivy',
+  { id: 'survive20',   icon: 'icon_vine',    unlockChar: 'ivy', unlockArcana: 'daynight', // M21 久战见昼夜
     check: (v) => (v.run?.time ?? 0) >= 1200 },
   { id: 'kills500',    icon: 'e_leafy',      unlockChar: 'toot',
     check: (v) => (v.run?.kills ?? 0) >= 500 },
@@ -125,7 +126,7 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
   { id: 'wins10',      icon: 'chest',        unlockArcana: 'dawnfield', // 招牌点题卡压轴
     check: (v) => v.stats.wins >= 10 },
   // ---------- M11（无尽与狂暴；win 类天然安全——无尽永不产生 win:true） ----------
-  { id: 'hyperClear1', icon: 'e_shadelord',
+  { id: 'hyperClear1', icon: 'e_shadelord', unlockArcana: 'everbloom', // M21 高难兜底
     check: (v) => v.run?.win === true && v.run.difficulty >= 1 },
   { id: 'hyperAll',    icon: 'sd_ray',
     check: (v) => MAPS.every((m) => (v.hyper?.[m.id] ?? 0) >= 1) },
@@ -144,7 +145,7 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
     check: (v) => (v.run?.time ?? 0) >= 600 && (v.run?.firstHurtAt ?? 0) >= 600 },
   { id: 'evolveRush',      icon: 'icon_skip',
     check: (v) => (v.run?.firstEvolveAt ?? Infinity) <= 480 },
-  { id: 'soloWeaponClear', icon: 'icon_mallet',
+  { id: 'soloWeaponClear', icon: 'icon_mallet', unlockArcana: 'rooted', // M21 硬核驻守
     check: (v) => v.run?.win === true && v.run.weapons === 1 },
   { id: 'arcanaTrio',      icon: 'icon_arc_petaltide',
     check: (v) => (v.run?.arcana ?? 0) >= 3 },

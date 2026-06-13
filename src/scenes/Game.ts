@@ -251,6 +251,7 @@ export class GameScene extends Phaser.Scene {
       get fx() { return g.fx; },
       get isMobile() { return g.isMobile; },
       get enemyCapMul() { return g.enemyCapMul * g.dynCapMul; },
+      get weaponCount() { return g.weapons.list.length; },
       hitEnemy: (e, dmg, opts) => g.hitEnemy(e, dmg, opts),
       castFx: (id) => g.castFx(id),
       get windVec() { return g.wind; },
@@ -286,6 +287,9 @@ export class GameScene extends Phaser.Scene {
       rng: () => Math.random(),
       notifyCoinPicked: (v) => {
         for (const m of g.modifiers) m.onCoinPicked?.(v, g.ctx);
+      },
+      notifyGemPicked: (v) => {
+        for (const m of g.modifiers) m.onGemPicked?.(v, g.ctx);
       },
       notifyEvolve: (id) => {
         if (g.run.firstEvolveAt === Infinity) g.run.firstEvolveAt = g.run.elapsed;
@@ -431,7 +435,7 @@ export class GameScene extends Phaser.Scene {
     if (final > 0 && !opts.noHook && !this.inOnHit) {
       this.inOnHit = true;
       try {
-        for (const m of this.modifiers) m.onWeaponHit?.(e, final, this.ctx);
+        for (const m of this.modifiers) m.onWeaponHit?.(e, final, this.ctx, crit);
       } finally {
         this.inOnHit = false;
       }

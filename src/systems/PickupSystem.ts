@@ -163,6 +163,7 @@ export class PickupSystem implements RunSystem {
           g.img.setVisible(false);
           if (kind === 'gem') {
             ctx.run.addXp(g.value);
+            ctx.notifyGemPicked(g.value); // M21 onGemPicked 钩子（harvest 经验复制）
             this.pickCombo++;
             this.pickComboT = 0.7;
             SFX.pickup(this.pickCombo);

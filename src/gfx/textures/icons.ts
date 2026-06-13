@@ -1523,4 +1523,197 @@ export function createIcons(scene: Phaser.Scene): void {
       ctx.stroke();
     }
   });
+
+  // ---------- 规则卡 Arcana（M21）：8 张扩展卡 ----------
+
+  // 晨霜：六向雪花
+  makeTex(scene, 'icon_arc_frost', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = '#7FBCD8';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(20, 20);
+      ctx.lineTo(20 + Math.cos(a) * 13, 20 + Math.sin(a) * 13);
+      ctx.stroke();
+      for (const t of [0.55, 0.8]) {
+        const bx = 20 + Math.cos(a) * 13 * t;
+        const by = 20 + Math.sin(a) * 13 * t;
+        for (const s of [-1, 1]) {
+          ctx.beginPath();
+          ctx.moveTo(bx, by);
+          ctx.lineTo(bx + Math.cos(a + s * 0.9) * 4, by + Math.sin(a + s * 0.9) * 4);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.beginPath();
+    ctx.arc(20, 20, 2.4, 0, Math.PI * 2);
+    ctx.fillStyle = '#E8F6FF';
+    ctx.fill();
+  });
+
+  // 丰收时节：麦穗
+  makeTex(scene, 'icon_arc_harvest', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = cssOf(PAL.honeyDeep);
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(20, 33);
+    ctx.lineTo(20, 14);
+    ctx.stroke();
+    ctx.fillStyle = cssOf(PAL.xp);
+    ctx.lineWidth = 1.4;
+    for (let i = 0; i < 4; i++) {
+      const y = 15 + i * 4.5;
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.ellipse(20 + s * 4.5, y + 1.5, 3.4, 2, s * -0.7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+    ctx.beginPath();
+    ctx.ellipse(20, 11, 2.6, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  });
+
+  // 坠星之约：坠落的星
+  makeTex(scene, 'icon_arc_starfall', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = 'rgba(159,176,232,0.7)';
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(10, 9);
+    ctx.lineTo(22, 22);
+    ctx.stroke();
+    star(ctx, 24, 25, 5, 8.5, 3.8, '#C8D0F8', cssOf(PAL.rainDeep));
+  });
+
+  // 众星拱月：星座连线
+  makeTex(scene, 'icon_arc_constellation', 40, 40, (ctx) => {
+    bg(ctx);
+    const pts: Array<[number, number]> = [[12, 14], [21, 11], [27, 19], [18, 24], [26, 29]];
+    ctx.strokeStyle = 'rgba(152,120,184,0.8)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+    for (const [x, y] of pts) star(ctx, x, y, 4, 3.4, 1.4, '#EFE0F8', '#9878B8');
+  });
+
+  // 昼夜更迭：半日半月
+  makeTex(scene, 'icon_arc_daynight', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.beginPath();
+    ctx.arc(20, 20, 11, Math.PI / 2, Math.PI * 1.5);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(PAL.xp);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(20, 20, 11, -Math.PI / 2, Math.PI / 2);
+    ctx.closePath();
+    ctx.fillStyle = '#6E7EA8';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = cssOf(PAL.ink);
+    ctx.beginPath();
+    ctx.arc(20, 20, 11, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = cssOf(PAL.honeyDeep);
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const a = Math.PI * 0.75 + (i / 2) * Math.PI * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(20 + Math.cos(a) * 12, 20 + Math.sin(a) * 12);
+      ctx.lineTo(20 + Math.cos(a) * 15.5, 20 + Math.sin(a) * 15.5);
+      ctx.stroke();
+    }
+    star(ctx, 26, 15, 4, 2.6, 1.1, '#FFFFFF');
+  });
+
+  // 生根：抽芽 + 下扎的根
+  makeTex(scene, 'icon_arc_rooted', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = cssOf(PAL.grassDark);
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(20, 23);
+    ctx.lineTo(20, 13);
+    ctx.stroke();
+    ctx.fillStyle = cssOf(PAL.grass);
+    ctx.lineWidth = 1.6;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(20 + s * 5, 13, 5, 2.8, s * -0.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.strokeStyle = '#A88858';
+    ctx.lineWidth = 2;
+    for (const s of [-1, 0, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(20, 23);
+      ctx.quadraticCurveTo(20 + s * 6, 28, 20 + s * 8, 33);
+      ctx.stroke();
+    }
+  });
+
+  // 不凋之花：八瓣繁花
+  makeTex(scene, 'icon_arc_everbloom', 40, 40, (ctx) => {
+    bg(ctx);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * Math.PI * 2;
+      petalShape(ctx, 20 + Math.cos(a) * 9, 20 + Math.sin(a) * 9, 10, 4, a + Math.PI / 2, '#F6B8C8', '#E07898');
+    }
+    softGlow(ctx, 20, 20, 6, 'rgba(255,240,200,0.9)');
+    ctx.beginPath();
+    ctx.arc(20, 20, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(PAL.xp);
+    ctx.fill();
+  });
+
+  // 暮鼓晨钟：钟与声波
+  makeTex(scene, 'icon_arc_knell', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.beginPath();
+    ctx.moveTo(14, 24);
+    ctx.quadraticCurveTo(14, 12, 20, 12);
+    ctx.quadraticCurveTo(26, 12, 26, 24);
+    ctx.lineTo(28, 27);
+    ctx.lineTo(12, 27);
+    ctx.closePath();
+    ctx.fillStyle = '#E0C060';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(PAL.honeyDeep);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(20, 29.5, 2.2, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(PAL.honeyDeep);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(20, 11, 2.2, Math.PI, Math.PI * 2);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(224,192,96,0.85)';
+    ctx.lineWidth = 1.6;
+    for (const s of [-1, 1]) {
+      for (const r of [4, 7]) {
+        ctx.beginPath();
+        if (s < 0) ctx.arc(7, 18, r, -0.6, 0.6);
+        else ctx.arc(33, 18, r, Math.PI - 0.6, Math.PI + 0.6);
+        ctx.stroke();
+      }
+    }
+  });
 }
