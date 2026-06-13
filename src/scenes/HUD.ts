@@ -254,6 +254,16 @@ export class HUDScene extends Phaser.Scene {
 
   update(): void {
     if (!this.gs || !this.gs.player) return;
+    // 模态覆盖层（升级/规则卡/宝箱/暂停）期间隐藏游戏内 HUD chrome：否则状态条/计时/武器栏/
+    // 击杀金币会透过半透明幕布与覆盖层自身的标题·构筑栏·放逐提示叠压成糊（见反馈截图）。
+    // 覆盖层自带构筑栏展示当前 build，HUD 令牌行此时纯属冗余；关闭覆盖层后随即恢复。
+    const modal = this.overlayMode !== 'none';
+    this.setChromeVisible(!modal);
+    if (modal) {
+      this.bars.clear();
+      this.dropChipBar.clear();
+      return;
+    }
     const safe = this.vp.safe;
     const w = this.vp.w;
     const g = this.bars;
@@ -403,6 +413,25 @@ export class HUDScene extends Phaser.Scene {
       g.fillStyle(e.color, 1);
       if (e.k > 0.02) g.fillRoundedRect(bx, by, bw * e.k, 4, 2);
     });
+  }
+
+  /** 游戏内 HUD chrome 总开关：模态覆盖层打开时整体隐藏，避免透幕叠压（见 update 注释）。
+   *  Boss 名仅在确有 Boss 时随之显示。bars/dropChipBar 由 update 在隐藏帧 clear。 */
+  private setChromeVisible(v: boolean): void {
+    this.bars.setVisible(v);
+    this.dropChipBar.setVisible(v);
+    this.timerText.setVisible(v);
+    this.killIcon.setVisible(v);
+    this.killText.setVisible(v);
+    this.coinIcon.setVisible(v);
+    this.coinText.setVisible(v);
+    this.levelText.setVisible(v);
+    this.hpText.setVisible(v);
+    this.pauseBtn.setVisible(v);
+    this.speedBtn.setVisible(v);
+    this.bossName.setVisible(v && this.bossVisible);
+    this.iconRow.forEach((o) => (o as Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Visible).setVisible(v));
+    this.dropChips.forEach((o) => o.setVisible(v));
   }
 
   // ---------- 武器/被动图标栏 ----------
@@ -591,6 +620,7 @@ export class HUDScene extends Phaser.Scene {
   // ---------- 升级三选一 / 规则卡三选一 ----------
 
   private pendingOffers: Offer[] = [];
+  private pickTitle: Phaser.GameObjects.Text | null = null; // 选卡标题引用：放逐模式换成「点选要放逐的卡牌」
   // 规则卡分页选择器状态（B3）：点选预览高亮 + 下方规则描述 + 选择确认 + 翻页
   private arcanaPick: {
     page: number;
@@ -664,7 +694,7 @@ export class HUDScene extends Phaser.Scene {
     return { cx: w / 2 + (i - (n - 1) / 2) * (L.cw + L.cardGap), cy: L.cy, cw: L.cw, ch: L.ch, portrait: false };
   }
 
-  /** 选卡标题（升级与规则卡共用）：cy 由布局给定，整组居中的一部分 */
+  /** 选卡标题（升级与规则卡共用）：cy 由布局给定，整组居中的一部分。存引用供放逐模式换文案。 */
   private addPickTitle(text: string, cy: number): void {
     const w = this.vp.w;
     const title = this.add.text(w / 2, cy, text, {
@@ -673,6 +703,7 @@ export class HUDScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(101).setScale(0.5);
     this.tweens.add({ targets: title, scale: 1, duration: 280, ease: 'Back.easeOut' });
     this.overlay.push(title);
+    this.pickTitle = title;
   }
 
   /** 选卡构筑栏（M12）：6+6 微缩令牌 + 精华计数；topY 由布局给定 */
@@ -742,15 +773,15 @@ export class HUDScene extends Phaser.Scene {
     const step = bw + gap;
     const reroll = new UIButton(this, cx - step, y, {
       w: bw, h: bh, label: t('lvl_reroll').replace('{n}', String(run.rerolls)),
-      fontSize: fs, onTap: () => this.doReroll(),
+      fontSize: fs, icon: 'reroll', onTap: () => this.doReroll(),
     });
     const banish = new UIButton(this, cx, y, {
       w: bw, h: bh, label: t('lvl_banish').replace('{n}', String(run.banishes)),
-      fontSize: fs, onTap: () => this.toggleBanish(),
+      fontSize: fs, icon: 'banish', onTap: () => this.toggleBanish(),
     });
     const skip = new UIButton(this, cx + step, y, {
       w: bw, h: bh, label: t('lvl_skip').replace('{n}', String(run.skips)),
-      fontSize: fs, onTap: () => this.doSkip(),
+      fontSize: fs, icon: 'skip', onTap: () => this.doSkip(),
     });
     // 精华三选一（M12）不可重抽（重抽对永续成长卡无意义）；skip 照常可用
     const hasEssence = this.pendingOffers.some((o) => o.kind === 'essence');
@@ -789,22 +820,15 @@ export class HUDScene extends Phaser.Scene {
     this.applyBanishVisuals();
   }
 
-  /** 模式视觉：可放逐卡盖红 ✕ 角章脉动 + 不可放逐卡减淡；按钮变「取消」；标题行换提示 */
+  /** 模式视觉：可放逐卡盖红 ✕ 角章脉动 + 不可放逐卡减淡；按钮变「取消」；标题换放逐提示 */
   private applyBanishVisuals(): void {
     this.banishMarks.forEach((o) => o.destroy());
     this.banishMarks = [];
     const run = this.gs.run;
     if (this.banishMode) {
-      this.banishBtn?.setLabel(t('lvl_banishCancel'));
-      // 提示行放在卡组上缘（按钮行与卡底间隙不足 16px，会压住卡片描边）
-      const firstGeom = this.pickCardGeom(0, this.pickCards.length);
-      const hint = this.add.text(this.vp.w / 2, firstGeom.cy - firstGeom.ch / 2 - 20, t('banishPick'), {
-        fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: '#C06870',
-        stroke: '#FFFFFF', strokeThickness: 5,
-      }).setOrigin(0.5).setDepth(102).setAlpha(0);
-      this.tweens.add({ targets: hint, alpha: 1, duration: 180 });
-      this.overlay.push(hint);
-      this.banishMarks.push(hint);
+      this.banishBtn?.setLabel(t('lvl_banishCancel')).setIcon('cancel');
+      // 提示直接替换标题文案（原浮动提示行落在构筑栏上、间距不足会叠压——B 反馈）
+      this.pickTitle?.setText(t('banishPick')).setColor('#C06870');
       for (const p of this.pickCards) {
         if (!p.banishable) {
           p.card.setAlpha(0.4);
@@ -821,7 +845,8 @@ export class HUDScene extends Phaser.Scene {
         this.banishMarks.push(mark);
       }
     } else {
-      this.banishBtn?.setLabel(t('lvl_banish').replace('{n}', String(run.banishes)));
+      this.banishBtn?.setLabel(t('lvl_banish').replace('{n}', String(run.banishes))).setIcon('banish');
+      this.pickTitle?.setText(t('levelUpTitle')).setColor(PAL.inkCss);
       for (const p of this.pickCards) p.card.setAlpha(1);
     }
   }
@@ -1225,24 +1250,35 @@ export class HUDScene extends Phaser.Scene {
     draw(false);
     const parts: Phaser.GameObjects.GameObject[] = [g];
     if (portrait) {
-      const icon = this.add.image(-cw / 2 + 38, 0, info.icon).setScale(1.3);
-      const name = this.add.text(-cw / 2 + 72, -ch / 2 + 16, info.name, {
+      // 横排条卡：图标在左，名称+描述作为一个块与图标一同**垂直居中**（旧版名称/描述顶贴、
+      // 图标却居中 → 错位且下半空荡，B 反馈）。tag 角标随名称同一行右对齐，进化提示固定卡底。
+      const textX = -cw / 2 + 72;
+      const hasEvo = !!(info.evoHint && ch >= 96);
+      const padTop = 10;
+      const padBot = hasEvo ? 24 : 10;
+      const contentCy = (-ch / 2 + padTop + (ch / 2 - padBot)) / 2; // 图标+文字块的垂直中心
+      const icon = this.add.image(-cw / 2 + 38, contentCy, info.icon).setScale(1.3);
+      const name = this.add.text(textX, 0, info.name, {
         fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: PAL.inkCss,
-      });
-      const tag = this.add.text(cw / 2 - 14, -ch / 2 + 16, info.tag, {
+      }).setOrigin(0, 0);
+      const desc = this.add.text(textX, 0, info.desc, {
+        fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft,
+        wordWrap: { width: cw - 96 },
+      }).setOrigin(0, 0);
+      const gap = 5;
+      const blockH = name.height + gap + desc.height;
+      name.setY(contentCy - blockH / 2);
+      desc.setY(name.y + name.height + gap);
+      const tag = this.add.text(cw / 2 - 14, name.y, info.tag, {
         fontFamily: FONT, fontSize: '14px', fontStyle: 'bold',
         color: info.tagColor,
       }).setOrigin(1, 0);
-      const desc = this.add.text(-cw / 2 + 72, -ch / 2 + 44, info.desc, {
-        fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft,
-        wordWrap: { width: cw - 96 },
-      });
       parts.push(icon, name, tag, desc);
-      // M14 进化角标：desc 下方 12px 一行（极矮条卡 <96 省略，与 showDesc 同门槛思路）
-      if (info.evoHint && ch >= 96) {
-        parts.push(this.add.text(-cw / 2 + 72, ch / 2 - 7, info.evoHint.text, {
-          fontFamily: FONT, fontSize: '12px', fontStyle: info.evoHint.ready ? 'bold' : 'normal',
-          color: info.evoHint.ready ? '#C8902A' : '#A89F8E',
+      // M14 进化角标：卡底一行（极矮条卡 <96 省略，与 showDesc 同门槛思路）
+      if (hasEvo) {
+        parts.push(this.add.text(textX, ch / 2 - 9, info.evoHint!.text, {
+          fontFamily: FONT, fontSize: '12px', fontStyle: info.evoHint!.ready ? 'bold' : 'normal',
+          color: info.evoHint!.ready ? '#C8902A' : '#A89F8E',
           wordWrap: { width: cw - 96 },
         }).setOrigin(0, 1));
       }
@@ -1704,6 +1740,7 @@ export class HUDScene extends Phaser.Scene {
     this.banishBtn = null;
     this.banishMarks = [];
     this.pickCards = [];
+    this.pickTitle = null;
     this.arcanaPick = null;
     this.buildIconRow();
   }

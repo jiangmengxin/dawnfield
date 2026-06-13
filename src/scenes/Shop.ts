@@ -34,27 +34,30 @@ export class ShopScene extends UIScene {
     const content = this.buildHeader(t('scn_shop'));
     const vp = this.vp;
 
-    // 重置按钮移到右上角（对称左上角返回按钮，同一 header 行）——C4
+    // 重置按钮移到右上角，与左上角返回按钮等宽对称——原 min(120, w*0.3) 过宽、视觉过重显突兀，
+    // 改用与返回同一公式 max(hitMin, s(64))，两侧按钮镜像等大。——C4
     const headH = Math.max(THEME.hitMin, vp.s(52));
     const reset = new UIButton(this, 0, vp.safe.y + THEME.gapSm + headH / 2, {
-      w: Math.min(120, vp.safe.w * 0.3), h: THEME.hitMin,
+      w: Math.max(THEME.hitMin, vp.s(64)), h: THEME.hitMin,
       label: t('shop_reset'), fontSize: vp.fs(15),
       onTap: () => this.openResetConfirm(),
     });
     reset.setX(vp.safe.x + vp.safe.w - THEME.gapMd - reset.width / 2);
     if (Meta.powerUpSpent() <= 0) reset.setEnabled(false);
 
-    // 金币余额（内容区左上） + 说明行
-    this.add.image(content.x + 14, content.y + 14, 'coin').setScale(1.2);
-    this.add.text(content.x + 28, content.y + 14, String(Math.floor(Meta.coins)), {
+    // 金币余额 + 说明行（内容区左上）：原图标↔数字仅 ~3px 太挤、说明又整宽居中与左对齐的余额抢位，
+    // 整体拥挤。改为：按图标实际显示宽给数字留 8px 间距、说明左对齐与余额同列、整段拉开竖向间距。
+    const rowCy = content.y + 20; // 余额行垂直中线
+    const coinImg = this.add.image(content.x + 2, rowCy, 'coin').setScale(1.2).setOrigin(0, 0.5);
+    this.add.text(content.x + 2 + coinImg.displayWidth + 8, rowCy, String(Math.floor(Meta.coins)), {
       fontFamily: FONT, fontSize: vp.fs(22) + 'px', fontStyle: 'bold', color: '#C8902A',
       stroke: '#FFFFFF', strokeThickness: 5,
     }).setOrigin(0, 0.5);
-    const hint = this.add.text(content.x + content.w / 2, content.y + 38, t('shop_hint'), {
+    const hint = this.add.text(content.x + 2, rowCy + coinImg.displayHeight / 2 + THEME.gapSm, t('shop_hint'), {
       fontFamily: FONT, fontSize: vp.fs(13) + 'px', color: PAL.inkSoft,
-      align: 'center', wordWrap: { width: content.w - 24 },
-    }).setOrigin(0.5, 0);
-    const top = content.y + 38 + hint.height + THEME.gapSm;
+      align: 'left', wordWrap: { width: content.w - 4 },
+    }).setOrigin(0, 0);
+    const top = hint.y + hint.height + THEME.gapMd;
 
     this.panel = new ScrollPanel(this, { x: content.x, y: top, w: content.w, h: content.y + content.h - top });
     const panel = this.panel;

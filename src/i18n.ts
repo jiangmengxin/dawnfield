@@ -53,12 +53,13 @@ const D: Dict = {
   st_magnet: ['磁吸', 'Magnet'],
   st_armor: ['护甲', 'Armor'],
 
-  // 构筑操控（M10）：重抽 / 放逐 / 跳过
-  lvl_reroll: ['↻ 重抽 ×{n}', '↻ Reroll ×{n}'],
-  lvl_skip: ['▸ 跳过 ×{n}', '▸ Skip ×{n}'],
+  // 构筑操控（M10）：重抽 / 放逐 / 跳过（前导图标改为 UIButton 矢量绘制，文案不再含字形，
+  // 避免 ↻▸✕↩ 这类符号在各平台字体回退不一致——与暂停图标走 Graphics 同理）
+  lvl_reroll: ['重抽 ×{n}', 'Reroll ×{n}'],
+  lvl_skip: ['跳过 ×{n}', 'Skip ×{n}'],
   // M16.5 放逐改版：从卡面 ✕ 角标改为与重抽/跳过同排的按钮（点击进入选卡放逐模式）
-  lvl_banish: ['✕ 放逐 ×{n}', '✕ Banish ×{n}'],
-  lvl_banishCancel: ['↩ 取消放逐', '↩ Cancel'],
+  lvl_banish: ['放逐 ×{n}', 'Banish ×{n}'],
+  lvl_banishCancel: ['取消放逐', 'Cancel'],
   banishPick: ['点选要放逐的卡牌', 'Tap a card to banish it'],
   banishToast: ['已放逐：本局不再出现', 'Banished: gone for the rest of this run'],
 
