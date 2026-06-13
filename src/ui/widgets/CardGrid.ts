@@ -3,6 +3,10 @@ import { Card, CardOpts } from './Card';
 import { ScrollPanel } from './ScrollPanel';
 import { THEME } from '../theme';
 
+/** 网格内容四周留白：防卡片描边/阴影贴 ScrollPanel mask 被裁（左/上=描边余量，
+ *  右=描边+阴影(3)+滚动条(5) 余量）。所有用 ScrollPanel 网格的页面统一复用。 */
+export const GRID_PAD = { l: 6, t: 6, r: 12 } as const;
+
 export type CardGridItem = Omit<CardOpts, 'w' | 'h' | 'layout'> & {
   /** 揭示动效（M16 隐藏角色首次亮相）：卡片翻转入场 + 星屑迸发 */
   reveal?: boolean;
@@ -13,13 +17,16 @@ export interface CardGridOpts {
   minCellW: number;
   aspect: number; // 高/宽
   gap?: number;
+  /** 卡片布局（默认 column）；地图卡传 'banner' 走顶部色带版式（CARD1） */
+  layout?: 'column' | 'banner';
 }
 
 /** 向 ScrollPanel 填充网格卡片；onTap 自动套拖动守卫 */
 export function buildCardGrid(panel: ScrollPanel, opts: CardGridOpts): void {
   const gap = opts.gap ?? THEME.gapSm;
-  const cols = Math.max(1, Math.floor((panel.view.w - 10 + gap) / (opts.minCellW + gap)));
-  const cw = (panel.view.w - 10 - gap * (cols - 1)) / cols;
+  const avail = panel.view.w - GRID_PAD.l - GRID_PAD.r;
+  const cols = Math.max(1, Math.floor((avail + gap) / (opts.minCellW + gap)));
+  const cw = (avail - gap * (cols - 1)) / cols;
   const ch = cw * opts.aspect;
 
   panel.setContent((add) => {
@@ -28,13 +35,13 @@ export function buildCardGrid(panel: ScrollPanel, opts: CardGridOpts): void {
       const row = Math.floor(i / cols);
       const { reveal, ...rest } = item;
       const onTap = rest.onTap;
-      const cx = col * (cw + gap) + cw / 2;
-      const cy = row * (ch + gap) + ch / 2;
+      const cx = GRID_PAD.l + col * (cw + gap) + cw / 2;
+      const cy = GRID_PAD.t + row * (ch + gap) + ch / 2;
       const card = new Card(panel.scene, cx, cy, {
         ...rest,
         w: cw,
         h: ch,
-        layout: 'column',
+        layout: opts.layout ?? 'column',
         onTap: onTap ? () => { if (!panel.dragMoved) onTap(); } : undefined,
       });
       add(card);
@@ -62,6 +69,6 @@ export function buildCardGrid(panel: ScrollPanel, opts: CardGridOpts): void {
       }
     });
     const rows = Math.ceil(opts.items.length / cols);
-    return rows * ch + (rows - 1) * gap + THEME.gapMd;
+    return GRID_PAD.t + rows * ch + (rows - 1) * gap + THEME.gapMd;
   });
 }

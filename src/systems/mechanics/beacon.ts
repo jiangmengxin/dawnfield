@@ -97,6 +97,7 @@ export class BeaconMechanic implements Mechanic {
     ctx.fx.ring(p.x, p.y, 0xfff2c0, 7, 1);
     ctx.fx.burst(p.x, p.y, { tex: 'p_star', color: SUMMIT.pillar, count: 20, speed: 220, life: 0.8, scale: 1.1, spin: true });
     SFX.heal();
+    ctx.spawnMapDrop(p.x, p.y); // M19 点燃奖励：本图专属道具（内部按掉率随机）
     emitEvent(ctx.scene.game, 'hud:warn', 'beaconLit');
   }
 

@@ -11,13 +11,15 @@ import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { Card } from '../ui/widgets/Card';
 import { Modal } from '../ui/widgets/Modal';
 import { UIButton } from '../ui/widgets/UIButton';
+import { showToast } from '../ui/widgets/Toast';
+import { GRID_PAD } from '../ui/widgets/CardGrid';
 import { THEME } from '../ui/theme';
 
 // M12 商店分组（纯展示层，不动数据）：局内操控 / 战斗 / 资源
 const SHOP_GROUPS: Array<{ key: string; ids: PowerUpId[] }> = [
   { key: 'shop_grpControl', ids: ['revive', 'reroll', 'banish', 'skip'] },
   { key: 'shop_grpCombat', ids: ['power', 'vitality', 'haste', 'area', 'speed', 'armor', 'regen', 'luck'] },
-  { key: 'shop_grpEconomy', ids: ['magnet', 'growth', 'greed'] },
+  { key: 'shop_grpEconomy', ids: ['magnet', 'growth', 'greed', 'fortune'] },
 ];
 
 export class ShopScene extends UIScene {
@@ -32,65 +34,95 @@ export class ShopScene extends UIScene {
     const content = this.buildHeader(t('scn_shop'));
     const vp = this.vp;
 
-    // 顶栏：金币余额（左） + 重置按钮（右）
-    const barH = Math.max(THEME.hitMin, vp.s(48));
-    const barCy = content.y + barH / 2;
-    this.add.image(content.x + 14, barCy, 'coin').setScale(1.2);
-    this.add.text(content.x + 28, barCy, String(Math.floor(Meta.coins)), {
-      fontFamily: FONT, fontSize: vp.fs(22) + 'px', fontStyle: 'bold', color: '#C8902A',
-      stroke: '#FFFFFF', strokeThickness: 5,
-    }).setOrigin(0, 0.5);
-    const resetBtn = new UIButton(this, content.x + content.w - 60, barCy, {
-      w: Math.min(120, content.w * 0.3), h: Math.min(THEME.hitMin, barH),
+    // 重置按钮移到右上角（对称左上角返回按钮，同一 header 行）——C4
+    const headH = Math.max(THEME.hitMin, vp.s(52));
+    const reset = new UIButton(this, 0, vp.safe.y + THEME.gapSm + headH / 2, {
+      w: Math.min(120, vp.safe.w * 0.3), h: THEME.hitMin,
       label: t('shop_reset'), fontSize: vp.fs(15),
       onTap: () => this.openResetConfirm(),
     });
-    resetBtn.setX(content.x + content.w - resetBtn.width / 2);
-    if (Meta.powerUpSpent() <= 0) resetBtn.setEnabled(false);
+    reset.setX(vp.safe.x + vp.safe.w - THEME.gapMd - reset.width / 2);
+    if (Meta.powerUpSpent() <= 0) reset.setEnabled(false);
 
-    // 说明行
-    const hint = this.add.text(content.x + content.w / 2, content.y + barH + 4, t('shop_hint'), {
+    // 金币余额（内容区左上） + 说明行
+    this.add.image(content.x + 14, content.y + 14, 'coin').setScale(1.2);
+    this.add.text(content.x + 28, content.y + 14, String(Math.floor(Meta.coins)), {
+      fontFamily: FONT, fontSize: vp.fs(22) + 'px', fontStyle: 'bold', color: '#C8902A',
+      stroke: '#FFFFFF', strokeThickness: 5,
+    }).setOrigin(0, 0.5);
+    const hint = this.add.text(content.x + content.w / 2, content.y + 38, t('shop_hint'), {
       fontFamily: FONT, fontSize: vp.fs(13) + 'px', color: PAL.inkSoft,
       align: 'center', wordWrap: { width: content.w - 24 },
     }).setOrigin(0.5, 0);
-    const top = content.y + barH + 4 + hint.height + THEME.gapSm;
+    const top = content.y + 38 + hint.height + THEME.gapSm;
 
     this.panel = new ScrollPanel(this, { x: content.x, y: top, w: content.w, h: content.y + content.h - top });
-
-    // M12 三分组小节头 + 网格（沿用 CardGrid 的列宽算法；onTap 套拖动守卫）
     const panel = this.panel;
     const fontScale = vp.bp === 'compact' ? 0.9 : 1;
-    const gap = THEME.gapSm;
-    const minCellW = vp.bp === 'compact' ? 150 : 175;
-    const cols = Math.max(1, Math.floor((panel.view.w - 10 + gap) / (minCellW + gap)));
-    const cw = (panel.view.w - 10 - gap * (cols - 1)) / cols;
-    const ch = cw * 1.08;
+    const landscape = vp.w > vp.h && panel.view.w >= 620;
+
+    // 分类小节头（重设计 C4）：金色左饰条 + 加粗墨色标题；返回其高度
+    const sectionLabel = (add: (o: Phaser.GameObjects.GameObject) => void, x: number, y: number, key: string): number => {
+      const txt = this.add.text(x + 10, y, t(key), {
+        fontFamily: FONT, fontSize: vp.fs(15) + 'px', fontStyle: 'bold', color: PAL.inkCss,
+      }).setOrigin(0, 0);
+      const g = this.add.graphics();
+      g.fillStyle(0xe2b452, 1);
+      g.fillRoundedRect(x, y + 2, 4, Math.max(12, txt.height - 4), 2);
+      add(g);
+      add(txt);
+      return txt.height;
+    };
+    const addShopCard = (add: (o: Phaser.GameObjects.GameObject) => void, x: number, y: number, w: number, h: number, spec: PowerUpSpec): void => {
+      const lv = Meta.powerUpLevel(spec.id);
+      const maxed = lv >= spec.max;
+      const price = powerUpPrice(spec, lv);
+      add(new Card(this, x + w / 2, y + h / 2, {
+        w, h, layout: 'column',
+        icon: spec.icon,
+        title: t('pu_' + spec.id),
+        desc: t('pu_' + spec.id + '_d'),
+        pips: { value: lv, max: spec.max }, // 等级圆点替代 Lv 数字（更直观）
+        subDesc: maxed ? t('shop_max') : t('shop_price') + ' ' + price,
+        subColor: '#C8902A',
+        color: lv > 0 ? 0xe2b452 : undefined,
+        fontScale,
+        onTap: () => { if (!panel.dragMoved) this.tryBuy(spec); },
+      }));
+    };
+
     panel.setContent((add) => {
-      let y = 2;
-      for (const grp of SHOP_GROUPS) {
-        const header = this.add.text(4, y, t(grp.key), {
-          fontFamily: FONT, fontSize: vp.fs(14) + 'px', fontStyle: 'bold', color: PAL.inkSoft,
+      if (landscape) {
+        // 横屏：三大组各一竖列（操控 / 战斗 / 资源）
+        const colGap = 16;
+        const colW = (panel.view.w - GRID_PAD.l - GRID_PAD.r - colGap * 2) / 3;
+        const cardH = Math.min(190, colW * 0.74);
+        let maxBottom: number = GRID_PAD.t;
+        SHOP_GROUPS.forEach((grp, gi) => {
+          const colX = GRID_PAD.l + gi * (colW + colGap);
+          let y = GRID_PAD.t;
+          y += sectionLabel(add, colX, y, grp.key) + 8;
+          grp.ids.forEach((id) => {
+            addShopCard(add, colX, y, colW, cardH, POWERUPS.find((s) => s.id === id)!);
+            y += cardH + colGap;
+          });
+          maxBottom = Math.max(maxBottom, y);
         });
-        add(header);
-        y += header.height + 8;
+        return maxBottom + GRID_PAD.t;
+      }
+      // 竖屏：分组堆叠，组内网格
+      const gap = THEME.gapSm;
+      const minCellW = vp.bp === 'compact' ? 150 : 175;
+      const avail = panel.view.w - GRID_PAD.l - GRID_PAD.r;
+      const cols = Math.max(1, Math.floor((avail + gap) / (minCellW + gap)));
+      const cw = (avail - gap * (cols - 1)) / cols;
+      const ch = cw * 1.18;
+      let y = GRID_PAD.t;
+      for (const grp of SHOP_GROUPS) {
+        y += sectionLabel(add, GRID_PAD.l, y, grp.key) + 8;
         const specs = grp.ids.map((id) => POWERUPS.find((s) => s.id === id)!);
         specs.forEach((spec, i) => {
-          const lv = Meta.powerUpLevel(spec.id);
-          const maxed = lv >= spec.max;
-          const price = powerUpPrice(spec, lv);
-          const col = i % cols;
-          const row = Math.floor(i / cols);
-          add(new Card(this, col * (cw + gap) + cw / 2, y + row * (ch + gap) + ch / 2, {
-            w: cw, h: ch, layout: 'column',
-            icon: spec.icon,
-            title: t('pu_' + spec.id),
-            desc: t('pu_' + spec.id + '_d') + '\n' + (maxed ? t('shop_max') : t('shop_price') + ' ' + price),
-            tag: 'Lv ' + lv + '/' + spec.max,
-            tagColor: maxed ? '#C8902A' : undefined,
-            color: lv > 0 ? 0xe2b452 : undefined,
-            fontScale,
-            onTap: () => { if (!panel.dragMoved) this.tryBuy(spec); },
-          }));
+          addShopCard(add, GRID_PAD.l + (i % cols) * (cw + gap), y + Math.floor(i / cols) * (ch + gap), cw, ch, spec);
         });
         const rows = Math.ceil(specs.length / cols);
         y += rows * ch + (rows - 1) * gap + THEME.gapMd;
@@ -146,21 +178,8 @@ export class ShopScene extends UIScene {
     });
   }
 
-  /** 轻量提示横幅（余额不足 / 成就达成） */
+  /** 轻量提示横幅（余额不足 / 成就达成）——统一走公共 Toast（U3） */
   private toast(msg: string, color: string): void {
-    const safe = this.vp.safe;
-    const txt = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.18, msg, {
-      fontFamily: FONT, fontSize: this.vp.fs(18) + 'px', fontStyle: 'bold', color,
-      stroke: '#FFFFFF', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(600).setAlpha(0);
-    this.tweens.add({
-      targets: txt, alpha: 1, duration: 180,
-      onComplete: () => {
-        this.tweens.add({
-          targets: txt, alpha: 0, delay: 1300, duration: 300,
-          onComplete: () => txt.destroy(),
-        });
-      },
-    });
+    showToast(this, msg, { color, yRatio: 0.18 });
   }
 }

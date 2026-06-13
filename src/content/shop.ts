@@ -29,6 +29,8 @@ export const POWERUPS: PowerUpSpec[] = [
   { id: 'armor',    icon: 'icon_armor',   max: 3, base: 15 },
   { id: 'regen',    icon: 'icon_regen',   max: 3, base: 15 },
   { id: 'luck',     icon: 'icon_luck',    max: 8, base: 12 },
+  // M19 掉落道具掉率（资源组）：提升击杀/场景物/地图机制三类随机来源的出现概率
+  { id: 'fortune',  icon: 'chest',        max: 5, base: 25, costs: [25, 50, 90, 140, 200] },
 ];
 
 /** 第 lv 级（0 起）→ lv+1 级的价格：显式价格表优先；
@@ -52,6 +54,7 @@ export const POWERUP_FX = {
   armor: 1,       // 受到伤害 -1/级
   regen: 0.3,     // 每秒回复 +0.3/级
   luck: 0.02,     // 暴击率 +2%/级
+  fortune: 0.2,   // M19 掉落道具掉率 +20%/级（击杀/场景物/地图机制来源）
 };
 
 /** 永久强化聚合加成（RunState.computeStats 消费） */
@@ -67,6 +70,7 @@ export interface PowerUpBonus {
   armor: number; // 减伤（平减）
   regen: number; // 每秒回复
   crit: number; // 暴击率增量
+  dropRate: number; // M19 掉落道具掉率增量（dropRateMul = 1 + dropRate）
 }
 
 export function powerUpBonus(levels: Partial<Record<PowerUpId, number>>): PowerUpBonus {
@@ -83,5 +87,6 @@ export function powerUpBonus(levels: Partial<Record<PowerUpId, number>>): PowerU
     armor: POWERUP_FX.armor * lv('armor'),
     regen: POWERUP_FX.regen * lv('regen'),
     crit: POWERUP_FX.luck * lv('luck'),
+    dropRate: POWERUP_FX.fortune * lv('fortune'),
   };
 }

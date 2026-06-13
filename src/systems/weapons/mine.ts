@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import { W_MINE } from '../../content/weapons';
 import { PAL } from '../../gfx/palette';
 import { SFX } from '../../audio/sound';
-import { getSettings } from '../../core/settings';
+import { shakeCam } from '../../gfx/shake';
 import { Weapon, queryOut } from './base';
 
 interface Mine {
@@ -72,7 +72,7 @@ export class MineWeapon extends Weapon {
     ctx.fx.ring(x, y, PAL.mine, r / 42, 0.4);
     ctx.fx.burst(x, y, { tex: 'p_star', color: PAL.mine, count: this.evolved ? 16 : 10, speed: 200, life: 0.55, scale: 1.1, spin: true });
     ctx.fx.burst(x, y, { tex: 'p_dot', color: 0xffffff, count: 6, speed: 120, life: 0.3 });
-    if (getSettings().shake) ctx.scene.cameras.main.shake(120, 0.0035);
+    shakeCam(ctx.scene, 120, 0.0035);
     ctx.grid.queryCircle(x, y, r, queryOut);
     for (const e of queryOut) {
       const ea = Math.atan2(e.y - y, e.x - x);

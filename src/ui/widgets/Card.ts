@@ -14,11 +14,14 @@ export interface CardOpts {
   desc?: string;
   tag?: string;
   tagColor?: string;
+  /** 等级圆点（商店等级可视化）：value 个点亮 + (max-value) 个灰点，column 布局标题下方居中一行 */
+  pips?: { value: number; max: number; color?: number };
   /** 卡底附加行（M14 角色 trait）：金色短句，钉在卡片底缘（仅 column 布局） */
   subDesc?: string;
   subColor?: string;
   color?: number;
-  layout: 'row' | 'column';
+  /** banner：顶部大色带托预览图（地图卡专用，与角色"肖像卡"结构性区分——CARD1） */
+  layout: 'row' | 'column' | 'banner';
   locked?: boolean;
   selected?: boolean;
   fontScale?: number;
@@ -48,7 +51,49 @@ export class Card extends Phaser.GameObjects.Container {
       img.setScale(Math.min(want, maxDim / Math.max(1, tex)));
     };
 
-    if (opts.layout === 'row') {
+    if (opts.layout === 'banner') {
+      // 地图卡（CARD1）：顶部大色带托预览图标 + 角标信息 + 下方名称/描述，
+      // 与角色"肖像卡"（图标小、上中下三段）形成结构性差异，一眼可分。
+      // 无描述时色带更高（更多预览图）、名称在信息条内垂直居中，避免大片空白
+      const bandH = opts.h * (opts.desc ? 0.56 : 0.64);
+      const bandTop = -opts.h / 2;
+      const bc = opts.color ?? PAL.cardEdge;
+      const band = scene.add.graphics();
+      band.fillStyle(bc, locked ? 0.16 : 0.28);
+      band.fillRoundedRect(-opts.w / 2, bandTop, opts.w, bandH,
+        { tl: THEME.radiusLg, tr: THEME.radiusLg, bl: 0, br: 0 });
+      this.add(band);
+      const iconCY = bandTop + bandH / 2;
+      if (opts.icon && !locked) {
+        const img = scene.add.image(0, iconCY, opts.icon);
+        fitIcon(img, Math.min(opts.w * 0.6, bandH * 0.82));
+        this.add(img);
+      } else {
+        this.add(scene.add.text(0, iconCY, locked ? '🔒' : '', {
+          fontFamily: FONT, fontSize: Math.round(30 * k) + 'px',
+        }).setOrigin(0.5).setAlpha(0.5));
+      }
+      // 角标（时长 / 无尽纪录 / 锁定）：钉在色带右上，叠在预览图上
+      if (opts.tag) {
+        this.add(scene.add.text(opts.w / 2 - 9, bandTop + 8, opts.tag, {
+          fontFamily: FONT, fontSize: Math.round(12.5 * k) + 'px', fontStyle: 'bold',
+          color: opts.tagColor ?? '#B8924A', stroke: '#FFFFFF', strokeThickness: 3,
+        }).setOrigin(1, 0));
+      }
+      // 信息条：名称（无描述时垂直居中）+ 描述（锁定卡描述即解锁条件）
+      const infoMid = bandTop + bandH + (opts.h / 2 - (bandTop + bandH)) / 2;
+      const titleTxt = scene.add.text(0, opts.desc ? bandTop + bandH + 9 * k : infoMid, title, {
+        fontFamily: FONT, fontSize: Math.round(19 * k) + 'px', fontStyle: 'bold',
+        color: inkColor, align: 'center', wordWrap: { width: opts.w - 18 },
+      }).setOrigin(0.5, opts.desc ? 0 : 0.5);
+      this.add(titleTxt);
+      if (opts.desc) {
+        this.add(scene.add.text(0, titleTxt.y + titleTxt.height + 4 * k, opts.desc, {
+          fontFamily: FONT, fontSize: Math.round(12 * k) + 'px', color: PAL.inkSoft,
+          align: 'center', wordWrap: { width: opts.w - 20, useAdvancedWrap: true },
+        }).setOrigin(0.5, 0));
+      }
+    } else if (opts.layout === 'row') {
       // 横排：图标在左，文字在右（竖屏选卡 / 列表行）
       const iconX = -opts.w / 2 + Math.min(44, opts.h / 2);
       if (opts.icon && !locked) {
@@ -97,6 +142,30 @@ export class Card extends Phaser.GameObjects.Container {
         color: inkColor, align: 'center', wordWrap: { width: opts.w - 18 },
       }).setOrigin(0.5, 0));
       let nextY = titleY + 26 * k;
+      // 等级圆点（商店）：标题下方居中一行，点亮=已购等级 / 灰点=未购
+      if (opts.pips) {
+        const { value, max } = opts.pips;
+        const pc = opts.pips.color ?? 0xe2b452;
+        const r = Math.max(2.4, Math.min(4, (opts.w - 26) / (max * 2.7)));
+        const step = r * 2.7;
+        const totalW = (max - 1) * step;
+        const pg = scene.add.graphics();
+        const cyP = nextY + r;
+        for (let i = 0; i < max; i++) {
+          const px = -totalW / 2 + i * step;
+          if (i < value) {
+            pg.fillStyle(pc, 1);
+            pg.fillCircle(px, cyP, r);
+            pg.lineStyle(1, 0xffffff, 0.9);
+            pg.strokeCircle(px, cyP, r);
+          } else {
+            pg.fillStyle(0xcfc6b4, 0.5);
+            pg.fillCircle(px, cyP, r);
+          }
+        }
+        this.add(pg);
+        nextY += r * 2 + 10 * k;
+      }
       if (opts.tag) {
         this.add(scene.add.text(0, nextY, opts.tag, {
           fontFamily: FONT, fontSize: Math.round(13 * k) + 'px', fontStyle: 'bold',
@@ -131,6 +200,8 @@ export class Card extends Phaser.GameObjects.Container {
     }
 
     this.setSize(opts.w, opts.h);
+    // 锁定占位卡整体减淡：与已解锁卡拉开层级，避免满屏 ??? 喧宾夺主（C2/M2）
+    if (locked) this.setAlpha(0.78);
     if (opts.onTap) {
       this.setInteractive({ useHandCursor: !locked });
       this.on('pointerover', () => this.draw(true));

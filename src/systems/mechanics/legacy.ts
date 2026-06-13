@@ -7,7 +7,7 @@ import { dmgScale, hpScale } from '../../content/enemies';
 import { BRAMBLE, GROVE, HILLS, NOCTURNE, SUMMIT } from '../../gfx/palette';
 import { SFX } from '../../audio/sound';
 import { emitEvent } from '../../core/events';
-import { getSettings } from '../../core/settings';
+import { shakeCam } from '../../gfx/shake';
 import type { CombatContext } from '../context';
 import { queryOut } from '../weapons/base';
 import { aroundPlayer, effMin, Mechanic, Patch } from './types';
@@ -143,7 +143,7 @@ export class StormMechanic implements Mechanic {
       this.stormLeft = spec.dur;
       this.stormAngle = Math.random() * Math.PI * 2;
       this.gustSfxT = 0;
-      if (getSettings().shake) ctx.scene.cameras.main.shake(280, 0.0035);
+      shakeCam(ctx.scene, 280, 0.0035);
     }
   }
   private spawnStreaks(dt: number, cos: number, sin: number): void {
@@ -265,7 +265,7 @@ export class StarfallMechanic implements Mechanic {
     SFX.boom();
     ctx.fx.ring(x, y, NOCTURNE.starGlow, r / 42, 0.5);
     ctx.fx.burst(x, y, { tex: 'p_star', color: NOCTURNE.starShot, count: 14, speed: 220, life: 0.5, scale: 1, spin: true });
-    if (getSettings().shake) ctx.scene.cameras.main.shake(120, 0.004);
+    shakeCam(ctx.scene, 120, 0.004);
     ctx.grid.queryCircle(x, y, r, queryOut);
     for (const e of queryOut) {
       const ea = Math.atan2(e.y - y, e.x - x);

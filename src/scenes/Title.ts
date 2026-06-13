@@ -25,41 +25,56 @@ export class TitleScene extends UIScene {
     const cx = safe.x + safe.w / 2;
     const compact = safe.h < 620;
 
-    // 草甸装饰
+    // 草甸装饰（H2）：限制在左右边缘带，避开中央标题/角色/按钮安全列，数量随屏宽自适应
     const rnd = Phaser.Math.FloatBetween;
     const pool = ['d_grass0', 'd_grass1', 'd_grass2', 'd_flower0', 'd_flower1', 'd_flower2', 'd_pebble0'];
-    for (let i = 0; i < 26; i++) {
-      this.add.image(rnd(0, vp.w), rnd(0, vp.h), pool[Math.floor(rnd(0, pool.length))])
+    const decoN = Math.round(Phaser.Math.Clamp(vp.w / 26, 10, 22));
+    for (let i = 0; i < decoN; i++) {
+      const onLeft = Math.random() < 0.5;
+      const x = onLeft ? rnd(0, vp.w * 0.2) : rnd(vp.w * 0.8, vp.w);
+      this.add.image(x, rnd(safe.y, safe.y + safe.h), pool[Math.floor(rnd(0, pool.length))])
         .setAlpha(0.7).setScale(rnd(0.8, 1.4)).setDepth(0);
     }
 
-    // 标题
-    const titleZh = this.add.text(cx, safe.y + safe.h * 0.17, getLang() === 'zh' ? '晨 露 之 野' : 'DAWNFIELD', {
+    // 居中两栏布局（C1）：以「标题区 + 按钮区」为主体，二者间留可调缓冲带，整组在安全区垂直居中
+    const landscape = safe.w > safe.h;
+    const startH = Math.max(THEME.hitMin, vp.s(64));
+    const menuBtnH = Math.max(THEME.hitMin, vp.s(48));
+    const menuTotalW = Math.min(safe.w - 32, 460);
+    const oneRow = menuTotalW / 4 >= 96;
+    const menuH = oneRow ? menuBtnH : menuBtnH * 2 + THEME.gapSm;
+    const titleH = vp.s(compact ? 96 : 128);
+    const buffer = landscape ? vp.s(36) : vp.s(compact ? 66 : 140); // 标题↔按钮缓冲带（含小主角）
+    const gapStartMenu = vp.s(18);
+    const group = titleH + buffer + startH + gapStartMenu + menuH;
+    const top = safe.y + Math.max(vp.s(12), (safe.h - group) / 2);
+    const bufferY = top + titleH;
+    const startY = bufferY + buffer + startH / 2;
+    const menuY = startY + startH / 2 + gapStartMenu;
+
+    // 标题（H3：主/副标题用同一缩放系数，避免窄屏比例错位）
+    const titleY = top + titleH * 0.42;
+    const titleZh = this.add.text(cx, titleY, getLang() === 'zh' ? '晨 露 之 野' : 'DAWNFIELD', {
       fontFamily: FONT, fontSize: vp.fs(compact ? 54 : 72) + 'px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 8,
     }).setOrigin(0.5).setShadow(0, 4, 'rgba(90,82,72,0.18)', 8).setDepth(2);
-    if (titleZh.width > safe.w - 44) titleZh.setScale((safe.w - 44) / titleZh.width);
-    this.add.text(cx, titleZh.y + vp.s(compact ? 44 : 58), getLang() === 'zh' ? 'D A W N F I E L D' : 'a morning-meadow survivors', {
+    const ts = titleZh.width > safe.w - 44 ? (safe.w - 44) / titleZh.width : 1;
+    titleZh.setScale(ts);
+    this.add.text(cx, titleY + vp.s(compact ? 42 : 54) * ts, getLang() === 'zh' ? 'D A W N F I E L D' : 'a morning-meadow survivors', {
       fontFamily: FONT, fontSize: vp.fs(18) + 'px', fontStyle: 'bold', color: '#B8A878',
-    }).setOrigin(0.5).setDepth(2);
+    }).setOrigin(0.5).setScale(ts).setDepth(2);
 
-    // 主角飘浮 + 小怪溜达
-    const heroY = safe.y + safe.h * 0.42;
-    this.add.image(cx, heroY + 34, 'shadow').setScale(1.6, 1.2).setAlpha(0.7).setDepth(1);
-    const hero = this.add.image(cx, heroY, 'player').setScale(2.2).setDepth(2);
-    this.tweens.add({ targets: hero, y: '-=12', duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    ['e_blob', 'e_midge', 'e_splitter'].forEach((tex, i) => {
-      const blob = this.add.image(
-        cx + (i - 1) * Math.min(180, safe.w * 0.28),
-        heroY + 60 + (i % 2) * 20, tex,
-      ).setAlpha(0.9).setDepth(1);
-      this.tweens.add({ targets: blob, y: '-=6', duration: 900 + i * 240, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
-    });
+    // 小主角（弱化为缓冲带里的轻装饰）：竖屏小幅浮动，横屏隐藏（C1）
+    if (!landscape && buffer >= vp.s(60)) {
+      const heroY = bufferY + buffer / 2;
+      this.add.image(cx, heroY + vp.s(22), 'shadow').setScale(1.1, 0.9).setAlpha(0.5).setDepth(1);
+      const hero = this.add.image(cx, heroY, 'player').setScale(1.5).setDepth(2);
+      this.tweens.add({ targets: hero, y: '-=8', duration: 1500, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    }
 
     // 开始（主按钮）
-    const startY = safe.y + safe.h * (compact ? 0.62 : 0.64);
     new UIButton(this, cx, startY, {
-      w: Math.min(280, safe.w - 48), h: Math.max(THEME.hitMin, vp.s(64)),
+      w: Math.min(280, safe.w - 48), h: startH,
       label: t('start'), fontSize: vp.fs(26),
       onTap: () => {
         SFX.unlock();
@@ -74,12 +89,9 @@ export class TitleScene extends UIScene {
       [t('menu_ach'), () => this.goto('achievements'), false],
       [t('menu_settings'), () => this.goto('settings'), false],
     ];
-    const rowY = startY + vp.s(60);
-    const btnH = Math.max(THEME.hitMin, vp.s(48));
-    const totalW = Math.min(safe.w - 32, 460);
-    if (totalW / 4 >= 96) {
+    if (oneRow) {
       // 一行四个
-      const cells = hstack(rect(cx - totalW / 2, rowY, totalW, btnH), THEME.gapSm, ['flex', 'flex', 'flex', 'flex']);
+      const cells = hstack(rect(cx - menuTotalW / 2, menuY, menuTotalW, menuBtnH), THEME.gapSm, ['flex', 'flex', 'flex', 'flex']);
       entries.forEach(([label, fn, badge], i) => {
         const c = cells[i];
         new UIButton(this, c.x + c.w / 2, c.y + c.h / 2, {
@@ -89,7 +101,7 @@ export class TitleScene extends UIScene {
     } else {
       // 2×2 网格（窄竖屏）
       const gw = Math.min(safe.w - 40, 340);
-      const cells = gridCells(rect(cx - gw / 2, rowY, gw, btnH * 2 + THEME.gapSm), 2, 2, THEME.gapSm);
+      const cells = gridCells(rect(cx - gw / 2, menuY, gw, menuBtnH * 2 + THEME.gapSm), 2, 2, THEME.gapSm);
       entries.forEach(([label, fn, badge], i) => {
         const c = cells[i];
         new UIButton(this, c.x + c.w / 2, c.y + c.h / 2, {

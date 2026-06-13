@@ -1,6 +1,6 @@
 // 11. 松果锤 / 山摇撼（melee：朝身前抡起重锤狠砸，高伤大击退；进化后砸出震波）
 import { W_MALLET } from '../../content/weapons';
-import { getSettings } from '../../core/settings';
+import { shakeCam } from '../../gfx/shake';
 import { SFX } from '../../audio/sound';
 import { Weapon, queryOut } from './base';
 
@@ -49,7 +49,7 @@ export class MalletWeapon extends Weapon {
     const r = W_MALLET.radius * ctx.stats.area;
     SFX.boom(this.evolved);
     ctx.hitStop(0.03);
-    if (getSettings().shake) ctx.scene.cameras.main.shake(110, 0.004);
+    shakeCam(ctx.scene, 110, 0.004);
     ctx.fx.ring(x, y, MALLET_COLOR, r / 42, 0.4);
     ctx.fx.burst(x, y, { tex: 'p_dot', color: 0xe8d0a8, count: 8, speed: 150, life: 0.4, scale: 0.8, grav: 200 });
     ctx.grid.queryCircle(x, y, r, queryOut);

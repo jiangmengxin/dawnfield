@@ -71,11 +71,14 @@ export class ResultScene extends Phaser.Scene {
     const w = vp.w;
     const h = vp.h;
     const cx = w / 2;
+    // R1：长屏（平板/桌面）把整组锚在居中的 780pt 带内，减少上部堆叠 + 底部大留白
+    const vh = Math.min(h, 780);
+    const vy = (ratio: number): number => (h - vh) / 2 + vh * ratio;
 
     if (r.win) {
       // 旋转阳光
       const rays = this.add.graphics().setDepth(0);
-      rays.setPosition(cx, h * 0.2);
+      rays.setPosition(cx, vy(0.2));
       for (let i = 0; i < 12; i++) {
         const a0 = (i / 12) * Math.PI * 2;
         rays.fillStyle(0xf7dd8a, 0.18);
@@ -108,10 +111,14 @@ export class ResultScene extends Phaser.Scene {
       ? t('endlessTitle').replace('{n}', String(r.cycle))
       : r.win ? t('victory') : t('defeat');
     const titleFs = endless ? 40 : 46;
-    // 居中校正：尾随全角标点（「胜 利 ！」的 ！/「倒下了…」的 …）字面右侧大半是空白，
-    // 文本框居中时墨迹视觉中心偏左——按字号右移补偿
-    const tailPad = /！$/.test(titleText) ? 0.27 : /…$/.test(titleText) ? 0.16 : 0;
-    const title = this.add.text(cx + titleFs * tailPad, h * 0.16, titleText, {
+    // C8：去掉「胜利！」感叹号后无需右移补偿；仅失败词尾「…」仍按字号轻补偿视觉居中
+    const tailPad = /…$/.test(titleText) ? 0.16 : 0;
+    // 横屏：左角色 / 右数据两栏；竖屏：居中纵列（C8）
+    const landscape = w > h;
+    const heroCx = landscape ? w * 0.3 : cx;
+    const dataCx = landscape ? w * 0.67 : cx;
+    const titleY = landscape ? vy(0.13) : vy(0.15);
+    const title = this.add.text(cx + titleFs * tailPad, titleY, titleText, {
       fontFamily: FONT, fontSize: titleFs + 'px', fontStyle: 'bold',
       color: r.win || endless ? '#C8902A' : PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 8,
@@ -123,19 +130,20 @@ export class ResultScene extends Phaser.Scene {
     const subText = r.mode === 'endless'
       ? t('map_' + r.mapId) + diffNote
       : (r.win ? t('map_' + r.mapId + '_win') : t('defeatSub')) + (r.win ? diffNote : '');
-    this.add.text(cx, h * 0.16 + 46, subText, {
+    this.add.text(cx, titleY + 46, subText, {
       fontFamily: FONT, fontSize: '16px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(2);
     if (this.newEndlessBest) {
-      this.add.text(cx, h * 0.16 + 70, '★ ' + t('newRecord'), {
+      this.add.text(cx, titleY + 70, '★ ' + t('newRecord'), {
         fontFamily: FONT, fontSize: '17px', fontStyle: 'bold', color: '#C8902A',
         stroke: '#FFFFFF', strokeThickness: 4,
       }).setOrigin(0.5).setDepth(2);
     }
 
-    // 主角谢幕（本局角色）
+    // 主角谢幕（本局角色）：竖屏居中上方 / 横屏左栏居中
     const heroTex = getCharacter(r.charId).tex;
-    const hero = this.add.image(cx, h * 0.33, heroTex).setScale(1.25).setDepth(2); // M17 纹理 ×1.45 后补偿
+    const heroY = landscape ? vy(0.56) : vy(0.34);
+    const hero = this.add.image(heroCx, heroY, heroTex).setScale(landscape ? 1.6 : 1.25).setDepth(2);
     if (!r.win) hero.setAlpha(0.55).setAngle(14);
     else this.tweens.add({ targets: hero, y: '-=10', duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
@@ -154,15 +162,16 @@ export class ResultScene extends Phaser.Scene {
       ...(r.essence > 0 ? [[t('statEssence'), '✦×' + r.essence] as [string, string]] : []),
       [t('statCoins'), '+' + r.coins],
     ];
-    const rowGap = 30;
+    const rowGap = landscape ? 34 : 32; // C8：行距略放宽，缓解拥挤
+    const statsY0 = landscape ? vy(0.3) : vy(0.46);
     const rowObjs: Array<{ label: Phaser.GameObjects.Text; value: Phaser.GameObjects.Text; icon?: Phaser.GameObjects.Image }> = [];
     rows.forEach(([k, v], i) => {
-      const y = h * 0.44 + i * rowGap;
+      const y = statsY0 + i * rowGap;
       const gold = i === rows.length - 1;
-      const label = this.add.text(cx - 16, y, k, {
+      const label = this.add.text(dataCx - 16, y, k, {
         fontFamily: FONT, fontSize: '17px', color: PAL.inkSoft,
       }).setOrigin(1, 0.5).setDepth(2);
-      const value = this.add.text(cx + 16, y, v, {
+      const value = this.add.text(dataCx + 16, y, v, {
         fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: gold ? '#C8902A' : PAL.inkCss,
       }).setOrigin(0, 0.5).setDepth(2);
       const icon = gold ? this.add.image(value.x + value.width + 20, y, 'coin').setDepth(2) : undefined;
@@ -180,14 +189,14 @@ export class ResultScene extends Phaser.Scene {
     }
 
     // 武器构成
-    const buildLabelY = h * 0.44 + rows.length * rowGap + 6;
-    this.add.text(cx, buildLabelY, t('statBuild'), {
+    const buildLabelY = statsY0 + rows.length * rowGap + 10;
+    this.add.text(dataCx, buildLabelY, t('statBuild'), {
       fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(2);
     const bw = r.build.length * 46;
     const iconY = buildLabelY + 30;
     r.build.forEach((b, i) => {
-      const x = cx - bw / 2 + 23 + i * 46;
+      const x = dataCx - bw / 2 + 23 + i * 46;
       const meta = WEAPON_META.find((m) => m.id === b.id)!;
       this.add.image(x, iconY, meta.icon).setDepth(2);
       this.add.text(x + 11, iconY + 11, b.evolved ? '★' : String(b.level), {
@@ -197,20 +206,27 @@ export class ResultScene extends Phaser.Scene {
     });
 
     // 本局新达成的成就
+    let flowBottom = iconY + 24;
     if (this.newAch.length > 0) {
       const lines = this.newAch.map((id) => '★ ' + t('achUnlocked') + ' ' + t('ach_' + id));
-      this.add.text(cx, iconY + 30, lines.join('\n'), {
+      const achTxt = this.add.text(dataCx, iconY + 30, lines.join('\n'), {
         fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#C8902A', align: 'center',
         stroke: '#FFFFFF', strokeThickness: 4,
       }).setOrigin(0.5, 0).setDepth(2);
+      flowBottom = iconY + 30 + achTxt.height;
     }
 
-    const retry = makeButton(this, cx, h * 0.82, THEME.btnW, THEME.btnH, t('retry'), () => {
+    // 按钮：竖屏锚底、横屏接数据栏下方（均与内容拉开间距，避免拥挤）
+    const bGap = 64;
+    const byBtn = landscape
+      ? flowBottom + 24 + THEME.btnH / 2
+      : Math.max(vy(0.82), flowBottom + 24 + THEME.btnH / 2);
+    const retry = makeButton(this, dataCx, byBtn, THEME.btnW, THEME.btnH, t('retry'), () => {
       this.cleanup();
       // 同角色同图再来一局；M11 起沿用模式与狂暴档位
       this.scene.start('game', { charId: r.charId, mapId: r.mapId, mode: r.mode, diff: r.diff });
     }, { fontSize: THEME.btnFs });
-    const menu = makeButton(this, cx, h * 0.82 + 68, THEME.btnW, THEME.btnH, t('quit'), () => {
+    const menu = makeButton(this, dataCx, byBtn + bGap, THEME.btnW, THEME.btnH, t('quit'), () => {
       this.cleanup();
       this.scene.start('title');
     }, { fontSize: THEME.btnFs });

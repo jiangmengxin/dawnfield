@@ -69,6 +69,7 @@ export class ThornwallMechanic implements Mechanic {
     this.walls.push({ segs, t: spec.dur });
     ctx.fx.ring(cx, cy, BRAMBLE.thornDecor, spec.dist / 30, 0.6);
     SFX.warning();
+    ctx.spawnMapDrop(cx, cy); // M19 荆棘生长奖励：本图专属道具（内部按掉率随机）
   }
 
   destroy(): void {

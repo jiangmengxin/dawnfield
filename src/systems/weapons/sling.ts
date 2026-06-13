@@ -1,7 +1,7 @@
 // 14. 莓果弹弓 / 果酱风暴（炮射：抛物线弹出莓果，落地范围爆炸；进化留黏滞果酱减速区）
 import Phaser from 'phaser';
 import { W_SLING } from '../../content/weapons';
-import { getSettings } from '../../core/settings';
+import { shakeCam } from '../../gfx/shake';
 import { SFX } from '../../audio/sound';
 import type { CombatContext } from '../context';
 import { nearestK, Weapon, queryOut } from './base';
@@ -97,7 +97,7 @@ export class SlingWeapon extends Weapon {
     if (!ctx.run.running) return;
     const r = this.blastR();
     SFX.boom();
-    if (getSettings().shake) ctx.scene.cameras.main.shake(90, 0.003);
+    shakeCam(ctx.scene, 90, 0.003);
     ctx.fx.ring(x, y, BERRY_COLOR, r / 42, 0.45);
     ctx.fx.burst(x, y, { tex: 'p_dot', color: BERRY_COLOR, count: 10, speed: 170, life: 0.45, scale: 0.9, grav: 160 });
     const dmg = this.dmg();

@@ -56,6 +56,7 @@ export class NightfallMechanic implements Mechanic {
         ctx.fx.ring(s.x, s.y, NOCTURNE.starGlow, 6, 0.7);
         ctx.fx.burst(s.x, s.y, { tex: 'p_star', color: NOCTURNE.starShot, count: 12, speed: 200, life: 0.6, scale: 1, spin: true });
         SFX.heal();
+        ctx.spawnMapDrop(s.x, s.y); // M19 拾星奖励：本图专属道具（内部按掉率随机）
         s.img.destroy();
         this.stars.splice(i, 1);
       } else if (s.t <= 0) {

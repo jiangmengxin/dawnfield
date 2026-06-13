@@ -9,6 +9,7 @@ import { Meta } from '../core/MetaState';
 import { UIScene } from '../ui/UIScene';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { Card } from '../ui/widgets/Card';
+import { GRID_PAD } from '../ui/widgets/CardGrid';
 import { THEME } from '../ui/theme';
 
 export class AchievementsScene extends UIScene {
@@ -31,20 +32,20 @@ export class AchievementsScene extends UIScene {
 
     const panel = new ScrollPanel(this, { x: content.x, y: top, w: content.w, h: content.y + content.h - top });
     const rowH = Math.max(64, this.vp.s(72));
-    const rowW = panel.view.w - 10;
     const gap = THEME.gapSm;
     const fontScale = this.vp.bp === 'compact' ? 0.9 : 1;
+    // C7：横屏改两列「宽扁横条卡」，竖屏保持单列列表
+    const cols = this.vp.w > this.vp.h && panel.view.w >= 620 ? 2 : 1;
+    const cardW = (panel.view.w - GRID_PAD.l - GRID_PAD.r - gap * (cols - 1)) / cols;
 
     // M13 legacy 区：被替换的纯计数成就仅当已解锁才渲染（永不回收，不可再达成）
     const legacy = LEGACY_ACHIEVEMENTS.filter((a) => Meta.hasAch(a.id));
 
     panel.setContent((add) => {
-      let y = 0;
-      const addRow = (spec: AchievementSpec): void => {
+      const makeCard = (spec: AchievementSpec, cx: number, cy: number): void => {
         const unlocked = Meta.hasAch(spec.id);
         // M16 隐藏成就：未达成时连条件/奖励都不剧透（标题 ？？？ 由 Card locked 态统一渲染）
         const hiddenLocked = spec.hidden === true && !unlocked;
-        // 附带解锁奖励的成就：描述里点明（角色名达成前不剧透显示 ???；地图/规则卡名直接显示当目标）
         let reward = '';
         if (spec.unlockChar) {
           reward += ' · ' + t('ach_reward').replace('{c}', unlocked ? t('char_' + spec.unlockChar) : '???');
@@ -58,8 +59,8 @@ export class AchievementsScene extends UIScene {
         if (spec.rewardCoins) {
           reward += ' · ' + t('ach_rewardCoins').replace('{n}', String(spec.rewardCoins));
         }
-        const card = new Card(this, rowW / 2, y + rowH / 2, {
-          w: rowW, h: rowH,
+        add(new Card(this, cx, cy, {
+          w: cardW, h: rowH,
           layout: 'row',
           icon: spec.icon,
           title: t('ach_' + spec.id),
@@ -69,20 +70,26 @@ export class AchievementsScene extends UIScene {
           color: unlocked ? 0xe2b452 : undefined,
           locked: !unlocked,
           fontScale,
-        });
-        add(card as unknown as Phaser.GameObjects.GameObject);
-        y += rowH + gap;
+        }) as unknown as Phaser.GameObjects.GameObject);
       };
-      ACHIEVEMENTS.forEach(addRow);
+      const addGrid = (specs: AchievementSpec[], startY: number): number => {
+        specs.forEach((spec, i) => {
+          const cx = GRID_PAD.l + (i % cols) * (cardW + gap) + cardW / 2;
+          const cy = startY + Math.floor(i / cols) * (rowH + gap) + rowH / 2;
+          makeCard(spec, cx, cy);
+        });
+        return startY + Math.ceil(specs.length / cols) * (rowH + gap);
+      };
+      let y = addGrid([...ACHIEVEMENTS], GRID_PAD.t);
       if (legacy.length > 0) {
-        const header = this.add.text(rowW / 2, y + 14, '— ' + t('ach_legacy') + ' —', {
+        const header = this.add.text(GRID_PAD.l + (panel.view.w - GRID_PAD.l - GRID_PAD.r) / 2, y + 14, '— ' + t('ach_legacy') + ' —', {
           fontFamily: FONT, fontSize: this.vp.fs(14) + 'px', fontStyle: 'bold', color: PAL.inkSoft,
         }).setOrigin(0.5, 0);
         add(header);
         y += 14 + header.height + THEME.gapSm;
-        legacy.forEach(addRow);
+        y = addGrid(legacy, y);
       }
-      return y;
+      return y + GRID_PAD.t;
     });
   }
 }

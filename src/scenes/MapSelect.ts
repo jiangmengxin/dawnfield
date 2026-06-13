@@ -12,8 +12,9 @@ import { resetStack } from '../core/router';
 import { UIScene } from '../ui/UIScene';
 import { THEME } from '../ui/theme';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
-import { Tabs } from '../ui/widgets/Tabs';
+import { UIButton } from '../ui/widgets/UIButton';
 import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
+import { showToast } from '../ui/widgets/Toast';
 import type { MapId } from '../content/ids';
 import type { RunLaunchData, RunMode } from '../systems/context';
 
@@ -48,36 +49,53 @@ export class MapSelectScene extends UIScene {
     const content = this.buildHeader(t('scn_mapSelect'));
     const compact = this.vp.bp === 'compact';
     const fontScale = compact ? 0.9 : 1;
-    const rowH = Math.max(38, this.vp.s(42));
-    const wide = content.w >= 540;
 
-    // 模式 + 难度开关（rebuild 全量重建，选中态由场景字段保持）：宽屏并排 / 窄屏两行
-    const modeW = wide ? content.w * 0.36 : content.w;
-    const diffW = wide ? content.w * 0.6 : content.w;
-    new Tabs(this, { x: content.x, y: content.y, w: modeW, h: rowH }, [
-      { id: 'normal', label: t('tab_normal') },
-      { id: 'endless', label: t('tab_endless') },
-    ], (id) => {
-      this.tab = id as RunMode;
-      this.rebuild();
-    }, this.tab);
-    const diffY = wide ? content.y : content.y + rowH + THEME.gapXs;
-    new Tabs(this, { x: content.x + (wide ? content.w - diffW : 0), y: diffY, w: diffW, h: rowH }, [
-      { id: '0', label: t('diff_normal') },
-      { id: '1', label: t('diff_hyper1') },
-      { id: '2', label: t('diff_hyper2') },
-    ], (id) => {
-      this.diff = Number(id) as 0 | 1 | 2;
-      this.rebuild();
-    }, String(this.diff));
+    // 模式/难度改为一横排独立勾选开关（C3，预留扩展）：无尽 / 狂暴 / 狂暴II（II 需先开狂暴）
+    const chipFs = this.vp.fs(15);
+    const chipH = Math.max(THEME.hitMin, this.vp.s(44));
+    const chips: Array<{ label: string; on: boolean; enabled?: boolean; toggle: () => void }> = [
+      {
+        label: t('tab_endless'), on: this.tab === 'endless',
+        toggle: () => { this.tab = this.tab === 'endless' ? 'normal' : 'endless'; this.rebuild(); },
+      },
+      {
+        label: t('diff_hyper1'), on: this.diff >= 1,
+        toggle: () => { this.diff = this.diff >= 1 ? 0 : 1; this.rebuild(); },
+      },
+      {
+        label: t('diff_hyper2'), on: this.diff === 2, enabled: this.diff >= 1,
+        toggle: () => { this.diff = this.diff === 2 ? 1 : 2; this.rebuild(); },
+      },
+    ];
+    const measure = (s: string): number => {
+      const t0 = this.add.text(0, 0, s, { fontFamily: FONT, fontSize: chipFs + 'px', fontStyle: 'bold' });
+      const wd = t0.width;
+      t0.destroy();
+      return wd;
+    };
+    const labels = chips.map((c) => (c.on ? '✓ ' : '') + c.label);
+    const widths = labels.map((s) => measure(s) + 34);
+    const totalW = widths.reduce((a, b) => a + b, 0) + THEME.gapSm * (chips.length - 1);
+    let chx = content.x + content.w / 2 - totalW / 2;
+    const chipY = content.y + chipH / 2;
+    chips.forEach((c, i) => {
+      const wd = widths[i];
+      const btn = new UIButton(this, chx + wd / 2, chipY, {
+        w: wd, h: chipH, label: labels[i], fontSize: chipFs,
+        fill: c.on ? 0xffeec0 : undefined, edge: c.on ? 0xe2b452 : undefined,
+        onTap: c.toggle,
+      });
+      if (c.enabled === false) btn.setEnabled(false);
+      chx += wd + THEME.gapSm;
+    });
 
-    // 当前难度一行小字说明（取代 M11 难度弹窗的信息位，页面保持清爽）
+    // 当前难度说明（开关行下方居中一行）
     const diffKey = this.diff === 0 ? 'diff_normal_d' : this.diff === 1 ? 'diff_hyper1_d' : 'diff_hyper2_d';
-    const togglesH = (wide ? rowH : rowH * 2 + THEME.gapXs) + 6;
-    const hint = this.add.text(content.x + content.w / 2, content.y + togglesH, t(diffKey), {
-      fontFamily: FONT, fontSize: this.vp.fs(13) + 'px', color: PAL.inkSoft,
+    const hint = this.add.text(content.x + content.w / 2, content.y + chipH + 8, t(diffKey), {
+      fontFamily: FONT, fontSize: this.vp.fs(13) + 'px', color: PAL.inkSoft, align: 'center',
+      wordWrap: { width: content.w - 20 },
     }).setOrigin(0.5, 0);
-    const top = content.y + togglesH + hint.height + THEME.gapSm;
+    const top = content.y + chipH + 8 + hint.height + THEME.gapSm;
 
     const panel = new ScrollPanel(this, {
       x: content.x, y: top, w: content.w, h: content.y + content.h - top,
@@ -115,7 +133,8 @@ export class MapSelectScene extends UIScene {
         icon: m.icon,
         iconScale: m.iconScale,
         title: t('map_' + m.id),
-        desc: lockMsg ?? (compact ? undefined : t('map_' + m.id + '_d')),
+        // C3：地图卡下方不再显示描述文字，只留名称 + 时长/纪录角标（锁定时显示解锁条件）
+        desc: lockMsg ?? undefined,
         tag,
         tagColor: lockMsg ? '#C06870' : this.tab === 'endless' && rec ? '#C8902A' : undefined,
         color: m.color,
@@ -130,10 +149,13 @@ export class MapSelectScene extends UIScene {
       items.push({ title: '', desc: t('ui_lockedHint'), locked: true, fontScale });
     }
 
+    // CARD1：banner 版式；C3：大屏卡片放大（minCellW↑ + 大间距），标准约一行四个
     buildCardGrid(panel, {
       items,
-      minCellW: compact ? 160 : 210,
-      aspect: 0.92,
+      minCellW: compact ? 160 : 230,
+      aspect: compact ? 0.86 : 0.82,
+      gap: compact ? undefined : 16,
+      layout: 'banner',
     });
   }
 
@@ -143,22 +165,9 @@ export class MapSelectScene extends UIScene {
     this.scene.start('game', data);
   }
 
-  /** 轻量提示横幅（点击未解锁约束的地图时说明条件） */
+  /** 轻量提示横幅（点击未解锁约束的地图时说明条件）——统一走公共 Toast（U3） */
   private toast(msg: string): void {
-    const safe = this.vp.safe;
-    const txt = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.16, msg, {
-      fontFamily: FONT, fontSize: this.vp.fs(17) + 'px', fontStyle: 'bold', color: '#C06870',
-      stroke: '#FFFFFF', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(600).setAlpha(0);
-    this.tweens.add({
-      targets: txt, alpha: 1, duration: 180,
-      onComplete: () => {
-        this.tweens.add({
-          targets: txt, alpha: 0, delay: 1200, duration: 300,
-          onComplete: () => txt.destroy(),
-        });
-      },
-    });
+    showToast(this, msg);
   }
 }
 

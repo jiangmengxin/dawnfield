@@ -52,12 +52,25 @@ export class HUDScene extends Phaser.Scene {
   private overlayMode: 'none' | 'levelup' | 'chest' | 'arcana' | 'pause' = 'none';
   private bossVisible = false;
   private hurtShakeT = 0; // M17 受击血条抖动剩余秒数
+  // M19 掉落道具持续效果芯片（图标 + 倒计时条）：bar 每帧重绘，icon 仅在集合变化时重建
+  private dropChipBar!: Phaser.GameObjects.Graphics;
+  private dropChips: Phaser.GameObjects.Image[] = [];
+  private dropChipSig = '';
 
   constructor() {
     super('hud');
   }
 
   private vp!: Viewport;
+
+  /** 暂停/倍速固定触控尺寸（HUD 通用规范：触控目标 ≥44） */
+  private static readonly HUD_BTN = 44;
+
+  /** 屏边安全留白：所有边缘元素的统一内缩，≥16px（gapMd），大屏随 vp.s() 略增。
+   *  注意是"下限"而非"缩放内缩"——绝不因小屏缩放把元素推到更贴边。 */
+  private edgeGutter(): number {
+    return Math.max(THEME.gapMd, this.vp.s(THEME.gapMd));
+  }
 
   /** 竖屏精简形态：只常驻 生命/经验/时间/暂停，构筑详情进暂停面板 */
   private get compactHud(): boolean {
@@ -77,13 +90,17 @@ export class HUDScene extends Phaser.Scene {
     this.toastBusy = false;
 
     this.bars = this.add.graphics().setDepth(10);
+    this.dropChipBar = this.add.graphics().setDepth(12); // M19 掉落道具倒计时条
+    this.dropChips = [];
+    this.dropChipSig = '';
     this.timerText = this.add.text(0, 0, '00:00', {
       fontFamily: FONT, fontSize: '30px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 6,
     }).setOrigin(0.5, 0).setDepth(11);
-    this.killIcon = this.add.image(0, 0, 'e_blob').setScale(0.62).setDepth(11);
+    // 击杀图标改用骷髅（与金币同为 18px 源，layout 中统一显示尺寸）
+    this.killIcon = this.add.image(0, 0, 'icon_kill').setDepth(11);
     this.killText = this.add.text(0, 0, '0', {
-      fontFamily: FONT, fontSize: '18px', fontStyle: 'bold', color: PAL.inkCss,
+      fontFamily: FONT, fontSize: '17px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 4,
     }).setOrigin(0, 0.5).setDepth(11);
     this.coinIcon = this.add.image(0, 0, 'coin').setDepth(11);
@@ -148,6 +165,7 @@ export class HUDScene extends Phaser.Scene {
       onEvent(this.game, 'hud:revive', (n) => this.queueToast(t('reviveBanner').replace('{n}', String(n)))),
       onEvent(this.game, 'hud:achievement', (id) => this.queueAchToast(id)),
       onEvent(this.game, 'hud:tip', (text) => this.queueToast(text, 3500)), // M14 引导停留更久
+      onEvent(this.game, 'hud:drop', (name, color) => this.showDropToast(name, color)), // M19 道具拾取提示
       onEvent(this.game, 'hud:hurt', () => { this.hurtShakeT = 0.25; }),
       onEvent(this.game, 'hud:refresh', () => this.buildIconRow()),
       onEvent(this.game, 'hud:togglepause', () => this.togglePause()),
@@ -180,33 +198,49 @@ export class HUDScene extends Phaser.Scene {
     const safe = this.vp.safe;
     const cx = safe.x + safe.w / 2;
     const compact = this.compactHud;
+    // 屏边安全留白（HUD 通用规范）：所有边缘元素至少留 gut（≥16px），
+    // 固定尺寸触控按钮按"外缘贴 gut"定位（而非中心套缩放内缩，避免越缩越贴边）
+    const gut = this.edgeGutter();
+    const rightEdge = safe.x + safe.w - gut;
+    const BTN = HUDScene.HUD_BTN; // 暂停/倍速固定 44 触控尺寸
 
     if (compact) {
       // 竖屏精简：XP 通栏下方一条对齐的状态行（HP | 计时 | 倍速+暂停 同一中线）
-      // 行中线下移，让按钮与经验条之间留出呼吸空隙
-      const rowY = safe.y + 9 + 29;
+      const rowY = safe.y + 40;
       this.timerText.setOrigin(0.5, 0.5).setFontSize(22).setPosition(cx, rowY);
-      this.pauseBtn.setPosition(safe.x + safe.w - 34, rowY);
-      this.speedBtn.setPosition(safe.x + safe.w - 90, rowY);
+      this.pauseBtn.setPosition(rightEdge - BTN / 2, rowY);
+      this.speedBtn.setPosition(rightEdge - BTN / 2 - BTN - THEME.gapSm, rowY);
       this.bossName.setPosition(cx, safe.y + 142);
     } else {
       this.timerText.setOrigin(0.5, 0).setFontSize(30).setPosition(cx, safe.y + 14);
-      this.pauseBtn.setPosition(safe.x + safe.w - 36, safe.y + 64);
-      this.speedBtn.setPosition(safe.x + safe.w - 36, safe.y + 116);
+      this.pauseBtn.setPosition(rightEdge - BTN / 2, safe.y + 64);
+      this.speedBtn.setPosition(rightEdge - BTN / 2, safe.y + 116);
       this.bossName.setPosition(cx, safe.y + 122); // 金币行（y+92）下方，避免遮挡
     }
-    this.killIcon.setPosition(cx - 24, safe.y + 64).setVisible(!compact);
-    this.killText.setPosition(cx - 8, safe.y + 64).setVisible(!compact);
-    this.coinIcon.setPosition(cx - 23, safe.y + 92).setVisible(!compact);
-    this.coinText.setPosition(cx - 8, safe.y + 92).setVisible(!compact);
-    // M12 HUD 打磨：竖屏也常显等级（右缘按钮下方小号），不再只进暂停面板
+    // 击杀/金币图标统一显示尺寸（同源 18px，等比缩放保证两者等大）
+    const iconScale = (compact ? 13 : 15) / 18;
+    this.killIcon.setScale(iconScale).setVisible(true);
+    this.coinIcon.setScale(iconScale).setVisible(true);
+    this.killText.setVisible(true);
+    this.coinText.setVisible(true);
     if (compact) {
-      this.levelText.setOrigin(1, 0).setFontSize(13).setPosition(safe.x + safe.w - 12, safe.y + 64).setVisible(true);
+      // 竖屏：右侧竖排迷你统计 等级 / 击杀 / 金币（在按钮行下方、避开左侧令牌，统一右缘对齐）
+      const iconX = rightEdge - 42;
+      this.levelText.setOrigin(1, 0).setFontSize(13).setPosition(rightEdge, safe.y + 66).setVisible(true);
+      this.killIcon.setPosition(iconX, safe.y + 92);
+      this.killText.setOrigin(1, 0.5).setFontSize(13).setPosition(rightEdge, safe.y + 92);
+      this.coinIcon.setPosition(iconX, safe.y + 114);
+      this.coinText.setOrigin(1, 0.5).setFontSize(13).setPosition(rightEdge, safe.y + 114);
     } else {
-      this.levelText.setOrigin(1, 0).setFontSize(16).setPosition(safe.x + safe.w - 14, safe.y + 12).setVisible(true);
+      // 横屏：计时下方中列 击杀/金币（图标在左、数字紧随，两图标等大）；等级右上
+      this.killIcon.setPosition(cx - 26, safe.y + 64);
+      this.killText.setOrigin(0, 0.5).setFontSize(17).setPosition(cx - 12, safe.y + 64);
+      this.coinIcon.setPosition(cx - 26, safe.y + 92);
+      this.coinText.setOrigin(0, 0.5).setFontSize(17).setPosition(cx - 12, safe.y + 92);
+      this.levelText.setOrigin(1, 0).setFontSize(16).setPosition(rightEdge, safe.y + 14).setVisible(true);
     }
     this.warnText.setPosition(cx, safe.y + safe.h * 0.3);
-    this.debugText.setPosition(safe.x + 10, safe.y + safe.h - 8);
+    this.debugText.setPosition(safe.x + gut, safe.y + safe.h - 8);
     this.buildIconRow();
     if (this.overlayMode !== 'none') {
       // 重新布局开销大，直接关闭重开
@@ -227,10 +261,11 @@ export class HUDScene extends Phaser.Scene {
     // XP 条（安全区顶部通栏）
     const run = this.gs.run;
     const xpK = Phaser.Math.Clamp(run.xp / run.xpNeed, 0, 1);
+    const xpH = 9; // 顶部通栏经验条（固定高，与 layout 行位一致）
     g.fillStyle(PAL.xpBack, 0.9);
-    g.fillRect(0, safe.y, w, 9);
+    g.fillRect(0, safe.y, w, xpH);
     g.fillStyle(PAL.xp, 1);
-    g.fillRect(0, safe.y, w * xpK, 9);
+    g.fillRect(0, safe.y, w * xpK, xpH);
     // HP 条（左上；竖屏与计时/按钮同一中线）；受击时随 hurtShakeT 衰减抖动（M17）
     let shX = 0;
     let shY = 0;
@@ -241,32 +276,35 @@ export class HUDScene extends Phaser.Scene {
       shY = (Math.random() - 0.5) * 5 * k;
     }
     const compact = this.compactHud;
-    const hpX = safe.x + (compact ? 12 : 14) + shX;
-    const hpY = safe.y + (compact ? 30 : 16) + shY;
-    // 桌面 HP 条与下方 6 格技能区等宽
+    const gut = this.edgeGutter(); // 左缘统一安全留白（与 layout 同）
+    const hpH = 16;
+    const hpR = 8;
+    const hpX = safe.x + gut + shX;
+    const hpY = safe.y + (compact ? 32 : 16) + shY; // 竖屏与状态行(40)同中线
+    // 桌面 HP 条与下方 6 格技能区等宽（与 buildIconRow 固定尺寸一致）
     const slotRowW = MAX_WEAPONS * (32 + 7) - 7;
-    const hpW = compact ? Math.min(130, safe.w * 0.32) : Math.min(slotRowW, safe.w * 0.35);
+    const hpW = compact ? Math.min(132, safe.w * 0.32) : Math.min(slotRowW, safe.w * 0.35);
     const hpK = Phaser.Math.Clamp(run.hp / run.stats.maxHp, 0, 1);
     g.fillStyle(0x5a5248, 0.08);
-    g.fillRoundedRect(hpX, hpY, hpW, 16, 8);
+    g.fillRoundedRect(hpX, hpY, hpW, hpH, hpR);
     g.fillStyle(PAL.hp, 1);
-    if (hpK > 0.03) g.fillRoundedRect(hpX, hpY, Math.max(12, hpW * hpK), 16, 8);
+    if (hpK > 0.03) g.fillRoundedRect(hpX, hpY, Math.max(12, hpW * hpK), hpH, hpR);
     g.lineStyle(2, 0xe0d4bc, 1);
-    g.strokeRoundedRect(hpX, hpY, hpW, 16, 8);
+    g.strokeRoundedRect(hpX, hpY, hpW, hpH, hpR);
     // M12 HUD 打磨：低血（<30%）红描边呼吸脉冲提示
     if (hpK < 0.3) {
       g.lineStyle(2.5, 0xe05060, 0.4 + 0.4 * Math.abs(Math.sin(run.elapsed * 5)));
-      g.strokeRoundedRect(hpX - 2.5, hpY - 2.5, hpW + 5, 21, 10);
+      g.strokeRoundedRect(hpX - 2.5, hpY - 2.5, hpW + 5, hpH + 5, hpR + 2);
     }
-    this.hpText.setPosition(hpX + 6, hpY + 8).setText(Math.ceil(run.hp) + ' / ' + run.stats.maxHp);
+    this.hpText.setPosition(hpX + 6, hpY + hpH / 2).setText(Math.ceil(run.hp) + ' / ' + run.stats.maxHp);
     // M14 wisp 闪避就绪点：HP 条右侧小圆点（就绪 = 角色主题色实心；冷却 = 灰点变淡）
     if (run.char.trait === 'flicker') {
       const ready = run.flickerCdLeft <= 0;
       g.fillStyle(ready ? 0x76b896 : 0xc8bca4, ready ? 1 : 0.45);
-      g.fillCircle(hpX + hpW + 12, hpY + 8, 5);
+      g.fillCircle(hpX + hpW + 12, hpY + hpH / 2, 5);
       if (ready) {
         g.lineStyle(1.5, 0xffffff, 0.9);
-        g.strokeCircle(hpX + hpW + 12, hpY + 8, 5);
+        g.strokeCircle(hpX + hpW + 12, hpY + hpH / 2, 5);
       }
     }
 
@@ -311,19 +349,57 @@ export class HUDScene extends Phaser.Scene {
     if (this.bossVisible) {
       const boss = this.gs.enemies.boss;
       if (boss && boss.active) {
+        // Boss 条居中（两侧 ≥40 留白），位置在 bossName 之下（compact 142 / full 122）
         const bw = Math.min(420, safe.w - 80);
         const bx = safe.x + safe.w / 2 - bw / 2;
         const by = safe.y + (compact ? 154 : 134);
+        const bh = 12;
+        const br = 6;
         const bk = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
         this.bossName.setText(t('en_' + this.gs.map.bossId));
         g.fillStyle(0x5a5248, 0.1);
-        g.fillRoundedRect(bx, by, bw, 12, 6);
+        g.fillRoundedRect(bx, by, bw, bh, br);
         g.fillStyle(DEATH_COLOR[this.gs.map.bossId], 1);
-        if (bk > 0.02) g.fillRoundedRect(bx, by, bw * bk, 12, 6);
+        if (bk > 0.02) g.fillRoundedRect(bx, by, bw * bk, bh, br);
         g.lineStyle(2, 0x5a6488, 0.8);
-        g.strokeRoundedRect(bx, by, bw, 12, 6);
+        g.strokeRoundedRect(bx, by, bw, bh, br);
       }
     }
+
+    this.drawDropChips(safe);
+  }
+
+  /** M19 掉落道具持续效果芯片：底部居中一行图标 + 倒计时条（仅持续型） */
+  private drawDropChips(safe: { x: number; y: number; w: number; h: number }): void {
+    const effects = this.gs.dropSys?.activeEffects ?? [];
+    const sig = effects.map((e) => e.id).join(',');
+    if (sig !== this.dropChipSig) {
+      this.dropChips.forEach((o) => o.destroy());
+      this.dropChips = effects.map((e) => this.add.image(0, 0, e.icon).setDepth(12));
+      this.dropChipSig = sig;
+    }
+    const g = this.dropChipBar;
+    g.clear();
+    if (effects.length === 0) return;
+    const size = 28;
+    const gap = 10;
+    const step = size + gap;
+    const cx = safe.x + safe.w / 2;
+    const y = safe.y + safe.h - 46;
+    const x0 = cx - (effects.length * step - gap) / 2 + size / 2;
+    effects.forEach((e, i) => {
+      const x = x0 + i * step;
+      const icon = this.dropChips[i];
+      if (icon) icon.setPosition(x, y).setScale(size / Math.max(icon.width, icon.height)).setVisible(true);
+      // 倒计时条（图标下方）
+      const bw = size;
+      const bx = x - bw / 2;
+      const by = y + size / 2 + 3;
+      g.fillStyle(0x5a5248, 0.18);
+      g.fillRoundedRect(bx, by, bw, 4, 2);
+      g.fillStyle(e.color, 1);
+      if (e.k > 0.02) g.fillRoundedRect(bx, by, bw * e.k, 4, 2);
+    });
   }
 
   // ---------- 武器/被动图标栏 ----------
@@ -373,9 +449,9 @@ export class HUDScene extends Phaser.Scene {
           g.lineStyle(2.5, 0xe2b452, 1);
           g.strokeCircle(cx, cy, r + 1);
         }
-        // 图标自带白底圆与描边，铺满槽位即是完整令牌
+        // 图标自带白底圆与描边，铺满槽位即是完整令牌；等比缩放杜绝非方形图标形变（HUD2）
         const icon = this.add.image(cx, cy, s.icon).setDepth(depth);
-        icon.setDisplaySize(size, size);
+        icon.setScale(size / Math.max(icon.width, icon.height));
         const lv = this.add.text(cx + r * 0.9, cy + r * 0.95, s.label, {
           fontFamily: FONT, fontSize: Math.max(10, Math.round(size * 0.34)) + 'px', fontStyle: 'bold',
           color: s.gold ? '#C8902A' : PAL.inkCss, stroke: '#FFFFFF', strokeThickness: 3,
@@ -397,11 +473,11 @@ export class HUDScene extends Phaser.Scene {
     this.iconRow = [];
     const safe = this.vp.safe;
     const compact = this.compactHud;
-    // 6+6 槽位常显：竖屏对齐 HP 条左缘、槽位更小更紧凑
+    // 6+6 槽位常显：左缘对齐 HP 条同一 gut 安全留白；竖屏槽位更小更紧凑
     const size = compact ? 26 : 32;
     const gap = compact ? 4 : 7;
-    const x0 = safe.x + (compact ? 12 : 14);
-    const y = safe.y + (compact ? 56 : 44);
+    const x0 = safe.x + this.edgeGutter();
+    const y = safe.y + (compact ? 58 : 44);
     this.iconRow.push(...this.drawSlotRow(x0, y, size, this.weaponSlots(), 11, gap));
     this.iconRow.push(...this.drawSlotRow(x0, y + size + gap, size, this.passiveSlots(), 11, gap));
     // 规则卡不在 HUD 常显，构筑详情见暂停面板（drawArcanaRow）
@@ -429,7 +505,7 @@ export class HUDScene extends Phaser.Scene {
       g.lineStyle(2, meta.color, 1);
       g.strokeRoundedRect(x, y, size, size, 7);
       const icon = this.add.image(x + size / 2, y + size / 2, meta.icon).setDepth(depth);
-      icon.setDisplaySize(size - 10, size - 10);
+      icon.setScale((size - 10) / Math.max(icon.width, icon.height)); // 等比缩放（HUD2）
       out.push(icon);
     });
     return out;
@@ -448,6 +524,23 @@ export class HUDScene extends Phaser.Scene {
         });
       },
     });
+  }
+
+  /** M19 掉落道具拾取提示：道具主题色短横幅（位置低于金色横幅，避免叠压） */
+  private showDropToast(name: string, color: number): void {
+    const safe = this.vp.safe;
+    const hex = '#' + (color & 0xffffff).toString(16).padStart(6, '0');
+    const txt = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.34, name, {
+      fontFamily: FONT, fontSize: this.vp.fs(20) + 'px', fontStyle: 'bold',
+      color: hex, stroke: '#FFFFFF', strokeThickness: 6,
+    }).setOrigin(0.5).setDepth(21).setAlpha(0).setScale(0.85);
+    this.tweens.add({
+      targets: txt, alpha: 1, scale: 1, y: txt.y - 16, duration: 240, ease: 'Back.easeOut',
+      onComplete: () => {
+        this.tweens.add({ targets: txt, alpha: 0, delay: 900, duration: 320, onComplete: () => txt.destroy() });
+      },
+    });
+    SFX.chime();
   }
 
   // ---------- 金色横幅 toast（成就达成 / 自动选卡获得规则卡），多个时排队 ----------
@@ -495,7 +588,14 @@ export class HUDScene extends Phaser.Scene {
   // ---------- 升级三选一 / 规则卡三选一 ----------
 
   private pendingOffers: Offer[] = [];
-  private pendingArcana: ArcanaId[] = [];
+  // 规则卡分页选择器状态（B3）：点选预览高亮 + 下方规则描述 + 选择确认 + 翻页
+  private arcanaPick: {
+    page: number;
+    selected: ArcanaId | null;
+    pickable: ArcanaId[];
+    onPick: (id: ArcanaId) => void;
+    objs: Phaser.GameObjects.GameObject[];
+  } | null = null;
   // 放逐改版（M16.5）：与重抽/跳过同排的按钮，点击进入「选卡放逐」模式
   private pickCards: Array<{ offer: Offer; card: Phaser.GameObjects.Container; banishable: boolean }> = [];
   private banishMode = false;
@@ -503,25 +603,68 @@ export class HUDScene extends Phaser.Scene {
   private banishBtn: UIButton | null = null;
   private banishMarks: Phaser.GameObjects.GameObject[] = [];
 
-  /** 选卡卡片几何（升级与规则卡共用）：竖屏纵排 / 横屏横排 */
-  private pickCardGeom(i: number, n: number): { cx: number; cy: number; cw: number; ch: number; portrait: boolean } {
+  /** 选卡整组布局（B2）：标题 + 构筑栏 + 卡片组 + 按钮行作为一个整体在安全区内**真正垂直居中**，
+   *  上下留白均衡；横屏卡片随屏放大并与按钮拉开间距。 */
+  private pickLayout(n: number): {
+    portrait: boolean; cw: number; ch: number; cardGap: number; bh: number;
+    titleY: number; buildBarY: number; hasBuildBar: boolean; cardsTop: number; cy: number; btnY: number;
+  } {
     const w = this.vp.w;
-    const h = this.vp.h;
-    const portrait = h > w;
+    const safe = this.vp.safe;
+    const portrait = this.vp.h > w;
+    const bh = Math.max(THEME.hitMin, Math.round(this.vp.s(portrait ? 48 : 50)));
+    const titleH = 38;
+    const topPad = 14;
     if (portrait) {
       const cw = Math.min(340, w - 40);
-      const ch = Math.min(120, (h * 0.6) / n - 14);
-      return { cx: w / 2, cy: h * 0.3 + i * (ch + 16), cw, ch, portrait };
+      const cardGap = 14;
+      const gapHeaderCards = 16;
+      const gapCardsBtn = 22;
+      const hasBuildBar = safe.h >= 560;
+      const buildBarH = hasBuildBar ? 30 : 0;
+      const headerH = titleH + (hasBuildBar ? buildBarH + 6 : 0);
+      const cap = safe.h >= 740 ? 142 : 124; // 高屏放宽卡高上限（T5）
+      const fixed = headerH + gapHeaderCards + gapCardsBtn + bh + (n - 1) * cardGap;
+      const maxCardsH = safe.h - topPad * 2 - fixed;
+      const ch = Math.max(82, Math.min(cap, maxCardsH / n));
+      const total = fixed + n * ch;
+      const top = safe.y + Math.max(topPad, (safe.h - total) / 2);
+      const titleY = top + titleH / 2;
+      const buildBarY = titleY + titleH / 2 + 4;
+      const cardsTop = top + headerH + gapHeaderCards;
+      const btnY = cardsTop + n * ch + (n - 1) * cardGap + gapCardsBtn + bh / 2;
+      return { portrait, cw, ch, cardGap, bh, titleY, buildBarY, hasBuildBar, cardsTop, cy: 0, btnY };
     }
-    const cw = Math.min(215, (w - 80) / n - 16);
-    const ch = 250;
-    return { cx: w / 2 + (i - (n - 1) / 2) * (cw + 18), cy: h * 0.52, cw, ch, portrait };
+    // 横屏：卡片随屏放大（不再固定 250）、整组居中、卡与按钮拉开间距
+    const cardGap = 18;
+    const gapHeaderCards = 16;
+    const gapCardsBtn = Math.max(20, this.vp.s(26));
+    const cw = Math.min(300, (w - w * 0.14) / n - cardGap);
+    const fixed = titleH + gapHeaderCards + gapCardsBtn + bh;
+    const maxCardH = safe.h - topPad * 2 - fixed;
+    const ch = Math.max(200, Math.min(maxCardH, cw * 1.35, 360));
+    const total = fixed + ch;
+    const top = safe.y + Math.max(topPad, (safe.h - total) / 2);
+    const titleY = top + titleH / 2;
+    const cy = top + titleH + gapHeaderCards + ch / 2;
+    const btnY = cy + ch / 2 + gapCardsBtn + bh / 2;
+    return { portrait, cw, ch, cardGap, bh, titleY, buildBarY: 0, hasBuildBar: false, cardsTop: 0, cy, btnY };
   }
 
-  /** 选卡标题（升级与规则卡共用） */
-  private addPickTitle(text: string): void {
+  /** 选卡卡片几何（升级与规则卡共用）：基于 pickLayout 的整组居中布局 */
+  private pickCardGeom(i: number, n: number): { cx: number; cy: number; cw: number; ch: number; portrait: boolean } {
     const w = this.vp.w;
-    const title = this.add.text(w / 2, this.vp.h * 0.14, text, {
+    const L = this.pickLayout(n);
+    if (L.portrait) {
+      return { cx: w / 2, cy: L.cardsTop + L.ch / 2 + i * (L.ch + L.cardGap), cw: L.cw, ch: L.ch, portrait: true };
+    }
+    return { cx: w / 2 + (i - (n - 1) / 2) * (L.cw + L.cardGap), cy: L.cy, cw: L.cw, ch: L.ch, portrait: false };
+  }
+
+  /** 选卡标题（升级与规则卡共用）：cy 由布局给定，整组居中的一部分 */
+  private addPickTitle(text: string, cy: number): void {
+    const w = this.vp.w;
+    const title = this.add.text(w / 2, cy, text, {
       fontFamily: FONT, fontSize: Math.min(30, w * 0.062) + 'px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 7,
     }).setOrigin(0.5).setDepth(101).setScale(0.5);
@@ -529,10 +672,8 @@ export class HUDScene extends Phaser.Scene {
     this.overlay.push(title);
   }
 
-  /** 选卡构筑栏（M12）：标题下一行 6+6 微缩令牌 + 精华计数；矮屏（<560）空间不足时省略 */
-  private addBuildBar(): void {
-    const h = this.vp.h;
-    if (h < 560) return;
+  /** 选卡构筑栏（M12）：6+6 微缩令牌 + 精华计数；topY 由布局给定 */
+  private addBuildBar(topY: number): void {
     const w = this.vp.w;
     const slots = [...this.weaponSlots(), ...this.passiveSlots()];
     const gap = 4;
@@ -542,10 +683,9 @@ export class HUDScene extends Phaser.Scene {
     const extraW = essN > 0 ? 44 : 0;
     const rowW = slots.length * (size + gap) - gap;
     const x0 = w / 2 - (rowW + extraW) / 2;
-    const y = h * 0.14 + 24;
-    this.overlay.push(...this.drawSlotRow(x0, y, size, slots, 101, gap));
+    this.overlay.push(...this.drawSlotRow(x0, topY, size, slots, 101, gap));
     if (essN > 0) {
-      const txt = this.add.text(x0 + rowW + 10, y + size / 2, '✦×' + essN, {
+      const txt = this.add.text(x0 + rowW + 10, topY + size / 2, '✦×' + essN, {
         fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#C8902A',
         stroke: '#FFFFFF', strokeThickness: 3,
       }).setOrigin(0, 0.5).setDepth(101);
@@ -567,8 +707,9 @@ export class HUDScene extends Phaser.Scene {
     this.banishAnim = false;
     this.banishMarks = [];
     this.overlay.push(this.addVeil());
-    this.addPickTitle(t('levelUpTitle'));
-    this.addBuildBar(); // M12 选卡构筑栏：当前持有一览，放逐/重抽决策有依据
+    const L = this.pickLayout(offers.length);
+    this.addPickTitle(t('levelUpTitle'), L.titleY);
+    if (L.hasBuildBar) this.addBuildBar(L.buildBarY); // M12 选卡构筑栏：当前持有一览，放逐/重抽决策有依据
     offers.forEach((offer, i) => {
       const banishable = offer.kind === 'weapon' || offer.kind === 'passive';
       const card = this.makePickCard(this.offerInfo(offer), i, this.pickCardGeom(i, offers.length), () => this.onCardTap(offer));
@@ -588,23 +729,24 @@ export class HUDScene extends Phaser.Scene {
    *  横屏卡下居中一行 / 竖屏条卡下三按钮均分条卡宽 */
   private addLevelUpActions(n: number): void {
     const run = this.gs.run;
-    const last = this.pickCardGeom(n - 1, n);
-    const y = last.cy + last.ch / 2 + 36;
-    const bw = last.portrait ? Math.min(118, last.cw * 0.32) : 140;
-    const gap = last.portrait ? Math.max(6, (last.cw - bw * 3) / 2) : 14;
-    const fs = last.portrait ? 14 : 15;
+    const L = this.pickLayout(n);
+    const y = L.btnY;
+    const bh = L.bh; // ≥44 命中区（T1）
+    const bw = L.portrait ? Math.min(118, L.cw * 0.32) : 140;
+    const gap = L.portrait ? Math.max(6, (L.cw - bw * 3) / 2) : 14;
+    const fs = this.vp.fs(L.portrait ? 14 : 15); // 过 vp.fs()（T1）；UIButton 超宽自动缩字兜底（T3）
     const cx = this.vp.w / 2;
     const step = bw + gap;
     const reroll = new UIButton(this, cx - step, y, {
-      w: bw, h: 40, label: t('lvl_reroll').replace('{n}', String(run.rerolls)),
+      w: bw, h: bh, label: t('lvl_reroll').replace('{n}', String(run.rerolls)),
       fontSize: fs, onTap: () => this.doReroll(),
     });
     const banish = new UIButton(this, cx, y, {
-      w: bw, h: 40, label: t('lvl_banish').replace('{n}', String(run.banishes)),
+      w: bw, h: bh, label: t('lvl_banish').replace('{n}', String(run.banishes)),
       fontSize: fs, onTap: () => this.toggleBanish(),
     });
     const skip = new UIButton(this, cx + step, y, {
-      w: bw, h: 40, label: t('lvl_skip').replace('{n}', String(run.skips)),
+      w: bw, h: bh, label: t('lvl_skip').replace('{n}', String(run.skips)),
       fontSize: fs, onTap: () => this.doSkip(),
     });
     // 精华三选一（M12）不可重抽（重抽对永续成长卡无意义）；skip 照常可用
@@ -665,10 +807,11 @@ export class HUDScene extends Phaser.Scene {
           p.card.setAlpha(0.4);
           continue;
         }
-        const mark = this.add.text(p.card.x + p.card.width / 2 - 16, p.card.y - p.card.height / 2 + 2, '✕', {
-          fontFamily: FONT, fontSize: '26px', fontStyle: 'bold', color: '#C06870',
-          stroke: '#FFFFFF', strokeThickness: 6,
-        }).setOrigin(0.5).setDepth(103).setScale(0);
+        // ✕ 角章移到卡片中央半透明覆盖（T4）：不再与右上角的 tag / 「新!」角标叠压
+        const mark = this.add.text(p.card.x, p.card.y, '✕', {
+          fontFamily: FONT, fontSize: '44px', fontStyle: 'bold', color: '#C06870',
+          stroke: '#FFFFFF', strokeThickness: 7,
+        }).setOrigin(0.5).setDepth(103).setScale(0).setAlpha(0.6);
         this.tweens.add({ targets: mark, scale: 1, duration: 200, ease: 'Back.easeOut' });
         this.tweens.add({ targets: mark, scale: 1.18, delay: 220, duration: 460, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
         this.overlay.push(mark);
@@ -736,125 +879,212 @@ export class HUDScene extends Phaser.Scene {
       return;
     }
     this.overlayMode = 'arcana';
-    this.pendingArcana = choices;
     this.overlay.push(this.addVeil());
-    this.addPickTitle(t('arcanaTitle'));
-    this.layoutArcanaGrid(choices, (id) => this.chooseArcana(id));
+    this.addPickTitle(t('arcanaTitle'), this.vp.safe.y + this.vp.safe.h * 0.06);
+    this.openArcanaPicker(choices, (id) => this.chooseArcana(id));
   }
 
-  /** 全卡池网格（开局选卡与宝箱规则卡件共用）：横屏 4 列 / 竖屏 2 列；末行不满时居中。
-   *  恒排满全部 16 卡（排版稳定不随持有数变化）：可选 / 已持有（置灰 ✓）/ 未解锁（M13 机制卡显示解锁条件） */
-  private layoutArcanaGrid(pickable: ArcanaId[], onPick: (id: ArcanaId) => void): void {
-    const w = this.vp.w;
-    const h = this.vp.h;
+  /** 每页规格：竖屏 2×3=6 / 横屏 4×2=8 */
+  private arcanaPageSpec(): { cols: number; rows: number; perPage: number } {
+    const portrait = this.vp.h > this.vp.w;
+    return portrait ? { cols: 2, rows: 3, perPage: 6 } : { cols: 4, rows: 2, perPage: 8 };
+  }
+
+  /** 规则卡分页选择器（B3，开局选卡与宝箱规则卡件共用）：点选预览高亮 + 下方规则描述 +
+   *  「选择」确认 + 翻页。pickable=本次可选，其余按已持有/未解锁置灰但仍可点选查看规则。 */
+  private openArcanaPicker(pickable: ArcanaId[], onPick: (id: ArcanaId) => void): void {
     const all = ARCANA_META.map((m) => m.id);
-    const portrait = h > w;
-    const cols = portrait ? 2 : 4;
-    const rows = Math.ceil(all.length / cols);
+    const first = pickable.length ? pickable[0] : all[0];
+    const { perPage } = this.arcanaPageSpec();
+    this.arcanaPick = {
+      page: Math.max(0, Math.floor(all.indexOf(first) / perPage)),
+      selected: first,
+      pickable,
+      onPick,
+      objs: [],
+    };
+    this.renderArcanaPage();
+  }
+
+  /** 某卡当前态：可选 / 已持有 / 未解锁 */
+  private arcanaState(id: ArcanaId): 'pick' | 'owned' | 'locked' {
+    if (this.arcanaPick?.pickable.includes(id)) return 'pick';
+    if (this.gs.run.arcana.includes(id) || Meta.isArcanaUnlocked(id)) return 'owned';
+    return 'locked';
+  }
+
+  /** 重绘当前页（翻页/改选时调用）：网格 + 规则描述区 + 选择/翻页控制 */
+  private renderArcanaPage(): void {
+    const st = this.arcanaPick;
+    if (!st) return;
+    st.objs.forEach((o) => o.destroy());
+    st.objs = [];
+    const push = <T extends Phaser.GameObjects.GameObject>(o: T): T => {
+      st.objs.push(o);
+      this.overlay.push(o);
+      return o;
+    };
+    const safe = this.vp.safe;
+    const cx = safe.x + safe.w / 2;
+    const all = ARCANA_META.map((m) => m.id);
+    const { cols, rows, perPage } = this.arcanaPageSpec();
+    const pageCount = Math.ceil(all.length / perPage);
+    st.page = Phaser.Math.Clamp(st.page, 0, pageCount - 1);
+
+    // 纵向分区：标题（已在 show 中加）→ 网格 → 规则描述区 → 翻页指示 → 控制行
+    const ctrlCy = safe.y + safe.h - 40;
+    const pageY = ctrlCy - 25 - 20;
+    const descBottom = pageY - 14;
+    const descH = this.vp.h > this.vp.w ? 92 : 78;
+    const descTop = descBottom - descH;
+    const gridTop = safe.y + safe.h * 0.13;
+    const gridBottom = descTop - 12;
+
     const gapX = 12;
     const gapY = 12;
-    const top = h * 0.2;
-    const areaH = h * 0.94 - top;
-    const cw = Math.min(portrait ? 200 : 224, (w - (portrait ? 28 : 80) - (cols - 1) * gapX) / cols);
-    const ch = Math.min(portrait ? 136 : 260, (areaH - (rows - 1) * gapY) / rows);
+    const sidePad = this.vp.h > this.vp.w ? 18 : 56;
+    const cw = Math.min(this.vp.h > this.vp.w ? 210 : 200, (safe.w - 2 * sidePad - (cols - 1) * gapX) / cols);
+    const ch = Math.min(this.vp.h > this.vp.w ? 158 : 188, (gridBottom - gridTop - (rows - 1) * gapY) / rows);
+    const gridW = cols * cw + (cols - 1) * gapX;
     const gridH = rows * ch + (rows - 1) * gapY;
-    const y0 = top + Math.max(0, (areaH - gridH) / 2);
-    all.forEach((id, i) => {
+    const gx0 = cx - gridW / 2;
+    const gy0 = gridTop + Math.max(0, (gridBottom - gridTop - gridH) / 2);
+
+    const pageItems = all.slice(st.page * perPage, st.page * perPage + perPage);
+    pageItems.forEach((id, i) => {
+      const col = i % cols;
       const row = Math.floor(i / cols);
-      const col = i - row * cols;
-      const inRow = Math.min(cols, all.length - row * cols);
-      const rowW = inRow * cw + (inRow - 1) * gapX;
-      const cx = w / 2 - rowW / 2 + col * (cw + gapX) + cw / 2;
-      const cy = y0 + row * (ch + gapY) + ch / 2;
-      const state = pickable.includes(id) ? 'pick'
-        : this.gs.run.arcana.includes(id) ? 'owned'
-        : Meta.isArcanaUnlocked(id) ? 'owned' : 'locked';
-      this.makeArcanaCard(id, i, cx, cy, cw, ch, () => onPick(id), state);
+      const tcx = gx0 + col * (cw + gapX) + cw / 2;
+      const tcy = gy0 + row * (ch + gapY) + ch / 2;
+      this.makeArcanaTile(id, tcx, tcy, cw, ch, st.selected === id).forEach(push);
     });
+
+    // 规则描述区
+    this.drawArcanaDesc(cx, descTop, safe.w - 2 * (this.vp.h > this.vp.w ? 16 : 44), descH, st.selected).forEach(push);
+
+    // 翻页指示
+    push(this.add.text(cx, pageY, (st.page + 1) + ' / ' + pageCount, {
+      fontFamily: FONT, fontSize: '13px', color: PAL.inkSoft, stroke: '#FFFFFF', strokeThickness: 3,
+    }).setOrigin(0.5).setDepth(102));
+
+    // 控制行：‹ 上一页 | 选择 | 下一页 ›
+    const gut = this.edgeGutter();
+    const selectable = st.selected !== null && st.pickable.includes(st.selected);
+    const selectBtn = new UIButton(this, cx, ctrlCy, {
+      w: Math.min(200, safe.w * 0.46), h: 50, label: t('arcSelect'), fontSize: 18,
+      fill: 0xffeec0, edge: 0xe2b452,
+      onTap: () => { if (st.selected && st.pickable.includes(st.selected)) st.onPick(st.selected); },
+    });
+    selectBtn.setDepth(102);
+    if (!selectable) selectBtn.setEnabled(false);
+    push(selectBtn);
+    const prev = new UIButton(this, safe.x + gut + 22, ctrlCy, {
+      w: 44, h: 44, label: '‹', fontSize: 24, onTap: () => { st.page--; this.renderArcanaPage(); },
+    });
+    prev.setDepth(102);
+    if (st.page <= 0) prev.setEnabled(false);
+    push(prev);
+    const next = new UIButton(this, safe.x + safe.w - gut - 22, ctrlCy, {
+      w: 44, h: 44, label: '›', fontSize: 24, onTap: () => { st.page++; this.renderArcanaPage(); },
+    });
+    next.setDepth(102);
+    if (st.page >= pageCount - 1) next.setEnabled(false);
+    push(next);
   }
 
-  /** 方形规则卡：白卡底 + 主题色描边 + 顶部色带托图标；尺寸自适应（极矮卡省略描述）。
-   *  state（M13 三态，排版完全一致）：pick 可选；owned 置灰 + ✓ 已持有；
-   *  locked 未解锁机制卡——描述替换为解锁条件（成就名），不可选 */
-  private makeArcanaCard(
-    id: ArcanaId,
-    idx: number,
-    cx: number,
-    cy: number,
-    cw: number,
-    ch: number,
-    onPick: () => void,
-    state: 'pick' | 'owned' | 'locked' = 'pick',
-  ): void {
+  /** 单张规则卡瓦片：顶部色带托图标 + 名称 + 状态角标；点选=预览高亮（任何卡都可点选查看规则） */
+  private makeArcanaTile(
+    id: ArcanaId, cx: number, cy: number, cw: number, ch: number, selected: boolean,
+  ): Phaser.GameObjects.GameObject[] {
     const meta = ARCANA_META.find((m) => m.id === id)!;
+    const state = this.arcanaState(id);
     const dim = state !== 'pick';
-    const big = ch >= 180; // 桌面大卡 / 竖屏小卡
-    const showDesc = ch >= 96;
-    const bandH = big ? ch * 0.38 : ch * 0.42;
+    const bandH = ch * 0.46;
     const edge = dim ? 0xc8bca4 : meta.color;
-    const g = this.add.graphics();
-    const draw = (over: boolean) => {
+    const out: Phaser.GameObjects.GameObject[] = [];
+    const g = this.add.graphics().setDepth(101);
+    const draw = (over: boolean): void => {
       g.clear();
       g.fillStyle(0x5a5248, 0.08);
-      g.fillRoundedRect(-cw / 2 + 2, -ch / 2 + 4, cw, ch, 10);
-      g.fillStyle(over ? 0xfffef8 : dim ? 0xf2ece0 : PAL.cardBg, 1);
-      g.fillRoundedRect(-cw / 2, -ch / 2, cw, ch, 10);
-      // 顶部色带（卡牌感；与升级卡的纯白底区分）
-      g.fillStyle(edge, over ? 0.4 : dim ? 0.18 : 0.26);
-      g.fillRoundedRect(-cw / 2, -ch / 2, cw, bandH, { tl: 10, tr: 10, bl: 0, br: 0 });
-      g.lineStyle(2.5, edge, dim ? 0.7 : 1);
-      g.strokeRoundedRect(-cw / 2, -ch / 2, cw, ch, 10);
+      g.fillRoundedRect(cx - cw / 2 + 2, cy - ch / 2 + 4, cw, ch, 10);
+      g.fillStyle(over || selected ? 0xfffef8 : dim ? 0xf2ece0 : PAL.cardBg, 1);
+      g.fillRoundedRect(cx - cw / 2, cy - ch / 2, cw, ch, 10);
+      g.fillStyle(edge, dim ? 0.18 : 0.26);
+      g.fillRoundedRect(cx - cw / 2, cy - ch / 2, cw, bandH, { tl: 10, tr: 10, bl: 0, br: 0 });
+      // 选中：金色粗描边高亮
+      g.lineStyle(selected ? 4 : 2.5, selected ? 0xe2b452 : edge, dim && !selected ? 0.7 : 1);
+      g.strokeRoundedRect(cx - cw / 2, cy - ch / 2, cw, ch, 10);
     };
     draw(false);
-    const icon = this.add.image(0, -ch / 2 + bandH / 2, meta.icon)
-      .setScale(big ? 1.5 : Math.max(0.8, bandH / 46));
-    const nameTxt = this.add.text(0, -ch / 2 + bandH + (big ? 12 : 6), t('arc_' + id), {
-      fontFamily: FONT, fontSize: (big ? 18 : 14) + 'px', fontStyle: 'bold', color: PAL.inkCss,
-      align: 'center', wordWrap: { width: cw - 16 },
-    }).setOrigin(0.5, 0);
-    const parts: Phaser.GameObjects.GameObject[] = [g, icon, nameTxt];
-    // M13 机制卡 ★ 角标（色带左上角，区别于基础卡）
+    out.push(g);
+    const icon = this.add.image(cx, cy - ch / 2 + bandH / 2, meta.icon)
+      .setScale(Math.max(0.9, bandH / 42)).setDepth(101);
+    if (dim) icon.setAlpha(0.5);
+    out.push(icon);
+    const nameTxt = this.add.text(cx, cy - ch / 2 + bandH + 5, t('arc_' + id), {
+      fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: PAL.inkCss,
+      align: 'center', wordWrap: { width: cw - 12 },
+    }).setOrigin(0.5, 0).setDepth(101);
+    if (dim) nameTxt.setAlpha(0.6);
+    out.push(nameTxt);
     if (meta.tier === 'mechanic') {
-      const starTag = this.add.text(-cw / 2 + 8, -ch / 2 + 5, '★ ' + t('arcMech'), {
-        fontFamily: FONT, fontSize: (big ? 12 : 10) + 'px', fontStyle: 'bold', color: '#C8902A',
-        stroke: '#FFFFFF', strokeThickness: 3,
-      }).setOrigin(0, 0);
-      parts.push(starTag);
+      out.push(this.add.text(cx - cw / 2 + 7, cy - ch / 2 + 5, '★', {
+        fontFamily: FONT, fontSize: '12px', color: '#C8902A', stroke: '#FFFFFF', strokeThickness: 3,
+      }).setOrigin(0, 0).setDepth(102));
     }
-    if (showDesc) {
-      // locked：描述替换为解锁条件（成就名）
-      const ach = state === 'locked' ? ACHIEVEMENTS.find((a) => a.unlockArcana === id) : undefined;
-      const descStr = ach
-        ? t('ui_unlockBy').replace('{a}', t('ach_' + ach.id))
-        : state === 'locked' ? t('ui_lockedHint') : t('arc_' + id + '_d');
-      const descTxt = this.add.text(0, nameTxt.y + nameTxt.height + (big ? 8 : 3), descStr, {
-        fontFamily: FONT, fontSize: (big ? 13 : 11) + 'px', color: PAL.inkSoft, align: 'center',
-        wordWrap: { width: cw - 18 },
-      }).setOrigin(0.5, 0);
-      parts.push(descTxt);
+    if (state === 'owned') {
+      out.push(this.add.text(cx + cw / 2 - 6, cy - ch / 2 + 5, '✓', {
+        fontFamily: FONT, fontSize: '13px', fontStyle: 'bold', color: '#76B896', stroke: '#FFFFFF', strokeThickness: 3,
+      }).setOrigin(1, 0).setDepth(102));
+    } else if (state === 'locked') {
+      out.push(this.add.text(cx + cw / 2 - 6, cy - ch / 2 + 5, '🔒', {
+        fontFamily: FONT, fontSize: '12px',
+      }).setOrigin(1, 0).setDepth(102).setAlpha(0.7));
     }
-    if (dim) {
-      // 内容整体减淡 + 底部角标（已持有 ✓ / 未解锁）
-      icon.setAlpha(0.45);
-      nameTxt.setAlpha(0.55);
-      const tagStr = state === 'owned' ? '✓ ' + t('arcOwned') : t('ui_locked');
-      const dimTag = this.add.text(0, ch / 2 - (big ? 14 : 10), tagStr, {
-        fontFamily: FONT, fontSize: (big ? 14 : 11) + 'px', fontStyle: 'bold', color: '#B8924A',
-      }).setOrigin(0.5, 1);
-      parts.push(dimTag);
-    }
-    const c = this.add.container(cx, cy, parts).setDepth(101).setAlpha(0).setScale(0.7);
-    c.setSize(cw, ch);
-    if (!dim) {
-      c.setInteractive({ useHandCursor: true });
-      c.on('pointerover', () => draw(true));
-      c.on('pointerout', () => draw(false));
-      c.on('pointerup', onPick);
-    }
-    this.tweens.add({
-      targets: c, alpha: dim ? 0.75 : 1, scale: 1, duration: 240, delay: 28 * idx, ease: 'Back.easeOut',
+    const zone = this.add.zone(cx, cy, cw, ch).setDepth(103).setInteractive({ useHandCursor: true });
+    zone.on('pointerover', () => { if (!selected) draw(true); });
+    zone.on('pointerout', () => draw(false));
+    zone.on('pointerup', () => {
+      if (!this.arcanaPick) return;
+      this.arcanaPick.selected = id;
+      SFX.uiClick();
+      this.renderArcanaPage();
     });
-    this.overlay.push(c);
+    out.push(zone);
+    return out;
+  }
+
+  /** 规则描述区：白底圆角框，显示选中卡名 + 规则文字（未解锁显示解锁条件） */
+  private drawArcanaDesc(
+    cx: number, top: number, boxW: number, boxH: number, selected: ArcanaId | null,
+  ): Phaser.GameObjects.GameObject[] {
+    const out: Phaser.GameObjects.GameObject[] = [];
+    const g = this.add.graphics().setDepth(101);
+    g.fillStyle(PAL.cardBg, 0.94);
+    g.fillRoundedRect(cx - boxW / 2, top, boxW, boxH, 12);
+    g.lineStyle(2, PAL.cardEdge, 1);
+    g.strokeRoundedRect(cx - boxW / 2, top, boxW, boxH, 12);
+    out.push(g);
+    if (!selected) {
+      out.push(this.add.text(cx, top + boxH / 2, t('arcPickHint'), {
+        fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft, align: 'center',
+      }).setOrigin(0.5).setDepth(102));
+      return out;
+    }
+    const meta = ARCANA_META.find((m) => m.id === selected)!;
+    const state = this.arcanaState(selected);
+    out.push(this.add.text(cx - boxW / 2 + 12, top + 9, (meta.tier === 'mechanic' ? '★ ' : '') + t('arc_' + selected), {
+      fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: PAL.inkCss,
+    }).setOrigin(0, 0).setDepth(102));
+    const ach = state === 'locked' ? ACHIEVEMENTS.find((a) => a.unlockArcana === selected) : undefined;
+    const descStr = ach
+      ? t('ui_unlockBy').replace('{a}', t('ach_' + ach.id))
+      : state === 'locked' ? t('ui_lockedHint') : t('arc_' + selected + '_d');
+    out.push(this.add.text(cx - boxW / 2 + 12, top + 33, descStr, {
+      fontFamily: FONT, fontSize: '13px', color: PAL.inkSoft,
+      wordWrap: { width: boxW - 24, useAdvancedWrap: true },
+    }).setOrigin(0, 0).setDepth(102));
+    return out;
   }
 
   private chooseArcana(id: ArcanaId): void {
@@ -976,16 +1206,19 @@ export class HUDScene extends Phaser.Scene {
         }).setOrigin(0, 1));
       }
     } else {
-      const icon = this.add.image(0, -ch / 2 + 56, info.icon).setScale(1.6);
-      const name = this.add.text(0, -ch / 2 + 104, info.name, {
-        fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: PAL.inkCss, align: 'center',
+      // 横屏竖卡：内容按卡高比例分布（卡随屏放大时不再上挤下空），图标随卡宽放大
+      const iconScale = Math.min(2.8, Math.max(1.55, cw / 120));
+      const icon = this.add.image(0, -ch / 2 + ch * 0.26, info.icon).setScale(iconScale);
+      const nameY = -ch / 2 + ch * 0.5;
+      const name = this.add.text(0, nameY, info.name, {
+        fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: PAL.inkCss, align: 'center',
         wordWrap: { width: cw - 20 },
       }).setOrigin(0.5, 0);
-      const tag = this.add.text(0, -ch / 2 + 132, info.tag, {
+      const tag = this.add.text(0, nameY + 28, info.tag, {
         fontFamily: FONT, fontSize: '14px', fontStyle: 'bold',
         color: info.tagColor,
       }).setOrigin(0.5, 0);
-      const desc = this.add.text(0, -ch / 2 + 158, info.desc, {
+      const desc = this.add.text(0, nameY + 52, info.desc, {
         fontFamily: FONT, fontSize: '14px', color: PAL.inkSoft, align: 'center',
         wordWrap: { width: cw - 26 },
       }).setOrigin(0.5, 0);
@@ -995,7 +1228,7 @@ export class HUDScene extends Phaser.Scene {
       parts.push(icon, name, tag, desc, num);
       // M14 进化角标：卡底居中一行
       if (info.evoHint) {
-        parts.push(this.add.text(0, ch / 2 - 10, info.evoHint.text, {
+        parts.push(this.add.text(0, ch / 2 - 12, info.evoHint.text, {
           fontFamily: FONT, fontSize: '12px', fontStyle: info.evoHint.ready ? 'bold' : 'normal',
           color: info.evoHint.ready ? '#C8902A' : '#A89F8E', align: 'center',
           wordWrap: { width: cw - 22, useAdvancedWrap: true },
@@ -1017,9 +1250,15 @@ export class HUDScene extends Phaser.Scene {
     if (this.overlayMode === 'levelup') {
       const offer = this.pendingOffers[i];
       if (offer) this.onCardTap(offer); // 放逐模式下数字键同样指放逐目标
-    } else if (this.overlayMode === 'arcana') {
-      const id = this.pendingArcana[i];
-      if (id) this.chooseArcana(id);
+    } else if (this.overlayMode === 'arcana' && this.arcanaPick) {
+      // 数字键预览当前页第 i 张（与点选一致，需再按「选择」确认）
+      const all = ARCANA_META.map((m) => m.id);
+      const { perPage } = this.arcanaPageSpec();
+      const id = all[this.arcanaPick.page * perPage + i];
+      if (id) {
+        this.arcanaPick.selected = id;
+        this.renderArcanaPage();
+      }
     }
   }
 
@@ -1046,15 +1285,16 @@ export class HUDScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '28px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 6,
     }).setOrigin(0.5).setDepth(101);
-    // 待开演出：地面光环呼吸 + 宝箱浮动
+    // 待开演出：地面光环呼吸 + 宝箱浮动；尺寸随 vp.s() 缩放，小屏不再过大（ART2）
+    const k = this.vp.s(1); // 全局缩放因子（0.85–1.2）
     const halo = this.add.image(cx, cy + 4, 'p_dot').setTint(0xf2cf6e).setAlpha(0.5)
-      .setDisplaySize(170, 170).setDepth(100);
-    const chest = this.add.image(cx, cy, 'chest').setScale(3).setDepth(101);
+      .setDisplaySize(170 * k, 170 * k).setDepth(100);
+    const chest = this.add.image(cx, cy, 'chest').setScale(3 * k).setDepth(101);
     const hint = this.add.text(cx, h * 0.62, t('chestOpen'), {
       fontFamily: FONT, fontSize: '17px', color: PAL.inkSoft,
     }).setOrigin(0.5).setDepth(101);
     this.tweens.add({
-      targets: halo, displayWidth: 210, displayHeight: 210, alpha: 0.28,
+      targets: halo, displayWidth: 210 * k, displayHeight: 210 * k, alpha: 0.28,
       duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
     });
     this.tweens.add({ targets: chest, y: cy - 7, duration: 850, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
@@ -1068,8 +1308,8 @@ export class HUDScene extends Phaser.Scene {
       hint.destroy();
       this.tweens.killTweensOf(chest);
       chest.setPosition(cx, cy);
-      // 蓄力摇晃 → 爆发
-      this.tweens.add({ targets: chest, scale: 3.35, duration: 400, ease: 'Cubic.easeIn' });
+      // 蓄力摇晃 → 爆发（缩放随 vp.s() 因子，与待开态一致）
+      this.tweens.add({ targets: chest, scale: 3.35 * this.vp.s(1), duration: 400, ease: 'Cubic.easeIn' });
       this.tweens.add({
         targets: chest, angle: { from: -7, to: 7 }, duration: 56, yoyo: true, repeat: 6, ease: 'Sine.easeInOut',
         onComplete: () => this.chestBurst(reward, chest, halo),
@@ -1149,10 +1389,11 @@ export class HUDScene extends Phaser.Scene {
       this.gs.levelUp.applyChest(reward, pick);
       this.scene.resume('game');
     };
-    // 单件规则卡：直接进全卡池选卡（与开局选卡同一版式）
+    // 单件规则卡：直接进分页选卡器（与开局选卡同一版式）；标题上移到顶部腾出网格区
     if (items.length === 1 && arc && !auto) {
-      this.chestTitle?.setText(t('chestArcanaPick'));
-      this.layoutArcanaGrid(arc.cards, (id) => {
+      this.chestTitle?.setText(t('chestArcanaPick'))
+        .setPosition(this.vp.safe.x + this.vp.safe.w / 2, this.vp.safe.y + this.vp.safe.h * 0.06);
+      this.openArcanaPicker(arc.cards, (id) => {
         if (this.overlayMode !== 'chest') return;
         SFX.uiClick();
         finish(id);
@@ -1273,8 +1514,9 @@ export class HUDScene extends Phaser.Scene {
         // 清单 → 全卡池选卡（其余件待选卡后一并入手）
         SFX.uiClick();
         revealObjs.forEach((o) => o.destroy());
-        this.chestTitle?.setText(t('chestArcanaPick'));
-        this.layoutArcanaGrid(arc.cards, (id) => {
+        this.chestTitle?.setText(t('chestArcanaPick'))
+          .setPosition(this.vp.safe.x + this.vp.safe.w / 2, this.vp.safe.y + this.vp.safe.h * 0.06);
+        this.openArcanaPicker(arc.cards, (id) => {
           if (this.overlayMode !== 'chest') return;
           SFX.uiClick();
           finish(id);
@@ -1302,65 +1544,94 @@ export class HUDScene extends Phaser.Scene {
 
   private showPauseMenu(): void {
     this.overlayMode = 'pause';
-    const w = this.vp.w;
-    const h = this.vp.h;
-    const veil = this.addVeil();
-    const title = this.add.text(w / 2, h * 0.18, t('pause'), {
-      fontFamily: FONT, fontSize: '36px', fontStyle: 'bold', color: PAL.inkCss,
-      stroke: '#FFFFFF', strokeThickness: 7,
-    }).setOrigin(0.5).setDepth(101);
+    const safe = this.vp.safe;
+    const cx = safe.x + safe.w / 2;
+    const portrait = this.vp.h > this.vp.w;
+    this.overlay.push(this.addVeil());
+    const bh = THEME.btnH;
 
-    // 构筑摘要：6+6 槽位 + 规则卡令牌行（与 HUD 同一渲染，竖屏形态的详情入口）
+    if (portrait) {
+      // 竖屏：标题 → 构筑摘要 → 四按钮，自上而下确定性堆叠（B4：摘要高度算清后再排按钮，杜绝重叠）
+      const title = this.add.text(cx, safe.y + safe.h * 0.1, t('pause'), {
+        fontFamily: FONT, fontSize: '34px', fontStyle: 'bold', color: PAL.inkCss,
+        stroke: '#FFFFFF', strokeThickness: 7,
+      }).setOrigin(0.5).setDepth(101);
+      this.overlay.push(title);
+      const summaryBottom = this.drawBuildSummary(cx, title.y + 30, safe.h >= 560);
+      const bw = THEME.btnW;
+      const by0 = summaryBottom + 26 + bh / 2;
+      const maxGap = (safe.y + safe.h - 14 - bh / 2 - by0) / 3;
+      const gap = Math.max(bh + 10, Math.min(68, maxGap));
+      this.makePauseButtons(cx, by0, gap, bw, bh);
+    } else {
+      // 横屏：标题居顶，左构筑摘要 / 右四按钮两栏
+      const title = this.add.text(cx, safe.y + safe.h * 0.12, t('pause'), {
+        fontFamily: FONT, fontSize: '32px', fontStyle: 'bold', color: PAL.inkCss,
+        stroke: '#FFFFFF', strokeThickness: 7,
+      }).setOrigin(0.5).setDepth(101);
+      this.overlay.push(title);
+      const leftCx = safe.x + safe.w * 0.3;
+      const rightCx = safe.x + safe.w * 0.72;
+      this.drawBuildSummary(leftCx, safe.y + safe.h * 0.28, true);
+      const bw = Math.min(THEME.btnW, safe.w * 0.42);
+      const gap = Math.min(bh + 16, (safe.h * 0.62) / 3);
+      const by0 = safe.y + safe.h * 0.5 - gap * 1.5;
+      this.makePauseButtons(rightCx, by0, gap, bw, bh);
+    }
+  }
+
+  /** 暂停面板构筑摘要：6+6 槽位 + 规则卡令牌行 + 可选属性总览；返回内容底部 y */
+  private drawBuildSummary(cx: number, top: number, showStats: boolean): number {
     const slotSize = 32;
     const rowW = MAX_WEAPONS * (slotSize + 7) - 7;
-    const sx = w / 2 - rowW / 2;
-    const rowY = h * 0.18 + 36;
-    this.overlay.push(...this.drawSlotRow(sx, rowY, slotSize, this.weaponSlots(), 101));
-    this.overlay.push(...this.drawSlotRow(sx, rowY + slotSize + 8, slotSize, this.passiveSlots(), 101));
-    let rowsBottom = rowY + (slotSize + 8) * 2;
+    const sx = cx - rowW / 2;
+    this.overlay.push(...this.drawSlotRow(sx, top, slotSize, this.weaponSlots(), 101));
+    this.overlay.push(...this.drawSlotRow(sx, top + slotSize + 8, slotSize, this.passiveSlots(), 101));
+    let bottom = top + (slotSize + 8) * 2;
     const arcana = this.gs.run.arcana;
     if (arcana.length > 0) {
-      const aSize = 40;
       const aGap = 8;
+      let aSize = 36;
+      const maxW = rowW + 20;
+      if (arcana.length * (aSize + aGap) - aGap > maxW) {
+        aSize = Math.max(20, (maxW + aGap) / arcana.length - aGap);
+      }
       const aW = arcana.length * (aSize + aGap) - aGap;
-      this.overlay.push(...this.drawArcanaRow(w / 2 - aW / 2, rowsBottom + 2, aSize, arcana, 101, aGap));
-      rowsBottom += aSize + 12;
+      this.overlay.push(...this.drawArcanaRow(cx - aW / 2, bottom + 6, aSize, arcana, 101, aGap));
+      bottom += aSize + 14;
     }
-    // M12 构筑总览：六项核心属性实时值 + 晨露精华计数（矮屏 <560 省略，保按钮区不溢出）
-    if (h >= 560) {
+    if (showStats) {
       const s = this.gs.run.stats;
       const ess = this.gs.run.essence;
       const essN = ess.dmg + ess.cd + ess.area;
-      const pct = (v: number) => (v >= 1 ? '+' : '−') + Math.abs(Math.round((v - 1) * 100)) + '%';
+      const pct = (v: number): string => (v >= 1 ? '+' : '−') + Math.abs(Math.round((v - 1) * 100)) + '%';
       const cdTxt = s.cd <= 1 ? '−' + Math.round((1 - s.cd) * 100) + '%' : '+' + Math.round((s.cd - 1) * 100) + '%';
       const line1 = t('st_dmg') + ' ' + pct(s.dmg) + ' · ' + t('st_cd') + ' ' + cdTxt + ' · ' + t('st_area') + ' ' + pct(s.area);
       const line2 = t('st_move') + ' ' + Math.round(s.moveSpeed) + ' · ' + t('st_magnet') + ' ' + Math.round(s.magnet)
         + ' · ' + t('st_armor') + ' ' + s.armor
         + (essN > 0 ? ' · ✦' + t('essTag') + ' ×' + essN : '');
-      const statTxt = this.add.text(w / 2, rowsBottom + 4, line1 + '\n' + line2, {
+      const statTxt = this.add.text(cx, bottom + 6, line1 + '\n' + line2, {
         fontFamily: FONT, fontSize: '13px', color: PAL.inkSoft, align: 'center', lineSpacing: 5,
         stroke: '#FFFFFF', strokeThickness: 3,
       }).setOrigin(0.5, 0).setDepth(101);
       this.overlay.push(statTxt);
-      rowsBottom += statTxt.height + 12;
+      bottom += statTxt.height + 8;
     }
-    // 四个按钮统一规格；矮屏且持卡时按钮区下移并压缩间距，避免与令牌行相叠
-    const bw = THEME.btnW;
-    const bh = THEME.btnH;
-    const by = Math.max(h * 0.42, rowsBottom + 16);
-    const gap = Math.min(68, Math.max(56, (h - by - bh / 2 - 16) / 3));
-    const resume = makeButton(this, w / 2, by, bw, bh, t('resume'), () => this.togglePause(), { fontSize: THEME.btnFs });
-    const sound = makeButton(this, w / 2, by + gap, bw, bh, SFX.muted ? t('soundOff') : t('soundOn'), () => {
+    return bottom;
+  }
+
+  /** 暂停面板四按钮（继续/声音/设置/返回主菜单），从 startY 起每隔 gap 一个 */
+  private makePauseButtons(cx: number, startY: number, gap: number, bw: number, bh: number): void {
+    const resume = makeButton(this, cx, startY, bw, bh, t('resume'), () => this.togglePause(), { fontSize: THEME.btnFs });
+    const sound = makeButton(this, cx, startY + gap, bw, bh, SFX.muted ? t('soundOff') : t('soundOn'), () => {
       SFX.setMuted(!SFX.muted);
       setButtonLabel(sound, SFX.muted ? t('soundOff') : t('soundOn'));
     }, { fontSize: THEME.btnFs });
-    const settings = makeButton(this, w / 2, by + gap * 2, bw, bh, t('menu_settings'), () => {
-      // 保持 game 场景暂停，进设置页；返回时 HUD 重启并自动重开暂停面板
-      go(this, 'settings');
+    const settings = makeButton(this, cx, startY + gap * 2, bw, bh, t('menu_settings'), () => {
+      go(this, 'settings'); // 保持 game 暂停，进设置页；返回时 HUD 重启并自动重开暂停面板
     }, { fontSize: THEME.btnFs });
-    const quit = makeButton(this, w / 2, by + gap * 3, bw, bh, t('quit'), () => {
-      // 中途退出也入账：金币/统计不丢（不计胜场）
-      const run = this.gs.run;
+    const quit = makeButton(this, cx, startY + gap * 3, bw, bh, t('quit'), () => {
+      const run = this.gs.run; // 中途退出也入账：金币/统计不丢（不计胜场）
       Meta.recordRun({ win: false, time: run.elapsed, kills: run.kills, coins: run.coins, affixKills: run.affixKills });
       this.closeOverlay();
       this.scene.stop('game');
@@ -1368,7 +1639,7 @@ export class HUDScene extends Phaser.Scene {
       this.game.scene.start('title');
     }, { fontSize: THEME.btnFs });
     [resume, sound, settings, quit].forEach((b) => b.setDepth(101));
-    this.overlay.push(veil, title, resume, sound, settings, quit);
+    this.overlay.push(resume, sound, settings, quit);
   }
 
   // ---------- 通用 ----------
@@ -1390,6 +1661,7 @@ export class HUDScene extends Phaser.Scene {
     this.banishBtn = null;
     this.banishMarks = [];
     this.pickCards = [];
+    this.arcanaPick = null;
     this.buildIconRow();
   }
 }

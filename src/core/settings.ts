@@ -6,7 +6,8 @@ export interface TempSettings {
   volBgm: number; // BGM 音量 0..1（M8 分轨）
   volSfx: number; // SFX 音量 0..1
   dmgNumbers: boolean;
-  shake: boolean;
+  shake: boolean; // 旧版主开关（保留）；UI 由 shakeLevel 三档取代
+  shakeLevel: 0 | 1 | 2; // 屏震强度档：0 关 / 1 弱 / 2 标准（FX1）
   speed: 1 | 2; // 局内倍速
   // 调试
   debugInfo: boolean; // FPS/实体数等运行信息

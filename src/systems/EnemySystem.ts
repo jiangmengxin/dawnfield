@@ -224,6 +224,7 @@ export class EnemySystem implements RunSystem {
   // ---------- 行为 ----------
   update(dt: number): void {
     const ctx = this.ctx;
+    if (ctx.enemyFrozen) return; // M19 凝时沙漏：敌人移动/攻击/词缀全冻结，玩家与武器照常
     const px = ctx.player.x;
     const py = ctx.player.y;
 

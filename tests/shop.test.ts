@@ -52,9 +52,9 @@ describe('经济总池（发行方案 3.3 验收口径）', () => {
     expect(sum).toBe(1530);
   });
 
-  it('全部 15 项买满 = 8,690（M12 阶梯溢价后口径）', () => {
+  it('全部 16 项买满 = 9,195（M19 fortune 掉率项 +505）', () => {
     const sum = POWERUPS.reduce((acc, s) => acc + totalCost(s.id, s.max), 0);
-    expect(sum).toBe(8690);
+    expect(sum).toBe(9195);
   });
 
   it('M10 新 4 条目小计 = 3,000', () => {

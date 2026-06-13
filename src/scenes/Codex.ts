@@ -1,9 +1,8 @@
 // 图鉴：五类标签页；首遇点亮（MetaState.codex），未遇见显示 ???，新点亮带 New 角标
 // 浏览某分类即清除该类 New 角标；锁定占位补齐到 1.0 目标量级
 import { t } from '../i18n';
-import { FONT } from '../i18n';
-import { PAL } from '../gfx/palette';
 import { ARCANA_META, PASSIVE_META, WEAPON_META, ENEMIES, EnemyId, CHARACTERS, MAPS } from '../content';
+import { ALL_DROPS, DROP_ITEMS } from '../content/dropItems';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { ensureMapAssets } from '../gfx/textures';
 import { CodexCat } from '../core/save';
@@ -44,10 +43,8 @@ export class CodexScene extends UIScene {
       this.fillPanel();
     }, this.tab);
 
-    const hint = this.add.text(content.x + content.w / 2, content.y + tabH + 8, t('codex_hint'), {
-      fontFamily: FONT, fontSize: this.vp.fs(13) + 'px', color: PAL.inkSoft,
-    }).setOrigin(0.5, 0);
-    const top = content.y + tabH + 8 + hint.height + THEME.gapSm;
+    // C5：去掉"游玩中遇见即点亮"提示文字
+    const top = content.y + tabH + THEME.gapSm;
 
     this.panel = new ScrollPanel(this, { x: content.x, y: top, w: content.w, h: content.y + content.h - top });
     this.fillPanel();
@@ -91,13 +88,22 @@ export class CodexScene extends UIScene {
       }
       pushLocked(TARGET.weapons - WEAPON_META.length);
     } else if (tab === 'passives') {
+      // M19「物品」页：被动护符 + 一次性掉落道具同处一页（角标区分两组）
       for (const m of PASSIVE_META) {
         items.push(this.entry(tab, m.id, {
           icon: m.icon, title: t('p_' + m.id), color: m.color, fontScale,
           desc: t('p_' + m.id + '_d'),
+          tag: t('codex_passiveGroup'), tagColor: '#A89F8E',
         }));
       }
-      pushLocked(TARGET.passives - PASSIVE_META.length);
+      for (const id of ALL_DROPS) {
+        const spec = DROP_ITEMS[id];
+        items.push(this.entry(tab, id, {
+          icon: spec.icon, title: t('drop_' + id), color: spec.color, fontScale,
+          desc: t('drop_' + id + '_d'),
+          tag: t('codex_dropGroup'), tagColor: '#C8902A',
+        }));
+      }
     } else if (tab === 'enemies') {
       // 敌人图标可能属于未生成的地图资产：先确保各图纹理就绪
       for (const m of MAPS) ensureMapAssets(this, m.id);
@@ -155,10 +161,23 @@ export class CodexScene extends UIScene {
       pushLocked(TARGET.maps - MAPS.length);
     }
 
+    // C5：分类卡片按内容差异化尺寸（同组内一致），地图走 banner 版式贴近游戏内
+    const compact = this.vp.bp === 'compact';
+    const cfg: Record<CodexCat, { minCellW: number; aspect: number; layout?: 'column' | 'banner' }> = {
+      weapons: { minCellW: compact ? 132 : 172, aspect: 1.24 },
+      passives: { minCellW: compact ? 132 : 172, aspect: 1.04 },
+      enemies: { minCellW: compact ? 126 : 158, aspect: 0.98 },
+      chars: { minCellW: compact ? 140 : 180, aspect: 1.2 },
+      maps: { minCellW: compact ? 160 : 230, aspect: compact ? 0.86 : 0.82, layout: 'banner' },
+      arcana: { minCellW: compact ? 132 : 172, aspect: 1.1 },
+    };
+    const c = cfg[tab];
     buildCardGrid(this.panel, {
       items,
-      minCellW: this.vp.bp === 'compact' ? 132 : 168,
-      aspect: 1.16,
+      minCellW: c.minCellW,
+      aspect: c.aspect,
+      layout: c.layout,
+      gap: compact ? undefined : 14,
     });
     this.panel.scrollY = this.savedScroll[tab] ?? 0;
 

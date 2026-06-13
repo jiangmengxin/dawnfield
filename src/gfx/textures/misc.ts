@@ -1,6 +1,110 @@
-// 通用纹理：阴影 / 拾取物 / 粒子 / 地面装饰 / 虚拟摇杆
+// 通用纹理：阴影 / 拾取物 / 粒子 / 地面装饰 / 掉落道具图标 / 虚拟摇杆
 import { PAL, cssOf } from '../palette';
 import { makeTex, petalShape, softGlow, star } from './core';
+import { DROP_ITEMS, DropGlyph } from '../../content/dropItems';
+
+type Ctx2D = CanvasRenderingContext2D;
+
+function rrPath(c: Ctx2D, x: number, y: number, w: number, h: number, r: number): void {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+
+// 掉落道具白色徽记（中心 cx,cy，半径 ~6.5）；玻璃令牌底由 dropToken 统一绘制
+const DROP_GLYPHS: Record<DropGlyph, (c: Ctx2D, cx: number, cy: number) => void> = {
+  magnet: (c, x, y) => {
+    c.lineWidth = 2.6; c.strokeStyle = '#FFFFFF';
+    c.beginPath(); c.arc(x, y - 1, 5, Math.PI, 0); c.stroke();
+    c.beginPath(); c.moveTo(x - 5, y - 1); c.lineTo(x - 5, y + 5); c.moveTo(x + 5, y - 1); c.lineTo(x + 5, y + 5); c.stroke();
+    c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.6)';
+    c.beginPath(); c.moveTo(x - 5, y + 5); c.lineTo(x - 5, y + 6.5); c.moveTo(x + 5, y + 5); c.lineTo(x + 5, y + 6.5); c.stroke();
+  },
+  burst: (c, x, y) => {
+    c.strokeStyle = '#FFFFFF'; c.lineWidth = 2;
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; c.beginPath(); c.moveTo(x + Math.cos(a) * 2, y + Math.sin(a) * 2); c.lineTo(x + Math.cos(a) * 6.5, y + Math.sin(a) * 6.5); c.stroke(); }
+    c.fillStyle = '#FFFFFF'; c.beginPath(); c.arc(x, y, 2, 0, Math.PI * 2); c.fill();
+  },
+  clock: (c, x, y) => {
+    c.strokeStyle = '#FFFFFF'; c.lineWidth = 2;
+    c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.stroke();
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x, y - 4); c.moveTo(x, y); c.lineTo(x + 3, y + 1); c.stroke();
+  },
+  heart: (c, x, y) => {
+    c.fillStyle = '#FFFFFF'; c.beginPath();
+    c.moveTo(x, y + 5);
+    c.bezierCurveTo(x - 7, y - 1, x - 3, y - 6, x, y - 2.5);
+    c.bezierCurveTo(x + 3, y - 6, x + 7, y - 1, x, y + 5);
+    c.closePath(); c.fill();
+  },
+  wind: (c, x, y) => {
+    c.strokeStyle = '#FFFFFF'; c.lineWidth = 2.2; c.lineCap = 'round';
+    for (const dy of [-3.5, 0.5, 4]) { c.beginPath(); c.moveTo(x - 6, y + dy); c.quadraticCurveTo(x, y + dy - 2.4, x + 5, y + dy); c.stroke(); }
+  },
+  shield: (c, x, y) => {
+    c.fillStyle = '#FFFFFF'; c.beginPath();
+    c.moveTo(x, y - 6); c.lineTo(x + 5, y - 3.5); c.lineTo(x + 5, y + 1); c.quadraticCurveTo(x + 5, y + 5, x, y + 6.5);
+    c.quadraticCurveTo(x - 5, y + 5, x - 5, y + 1); c.lineTo(x - 5, y - 3.5); c.closePath(); c.fill();
+  },
+  star: (c, x, y) => star(c, x, y, 5, 6.4, 2.7, '#FFFFFF'),
+  leaf: (c, x, y) => {
+    c.fillStyle = '#FFFFFF'; c.beginPath();
+    c.moveTo(x - 5, y + 5); c.quadraticCurveTo(x - 6, y - 5, x + 5, y - 5); c.quadraticCurveTo(x + 6, y + 4, x - 5, y + 5); c.closePath(); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.18)'; c.lineWidth = 1; c.beginPath(); c.moveTo(x - 4, y + 4); c.lineTo(x + 4, y - 4); c.stroke();
+  },
+  drop: (c, x, y) => {
+    c.fillStyle = '#FFFFFF'; c.beginPath();
+    c.moveTo(x, y - 6.5); c.bezierCurveTo(x + 6, y + 1, x + 4, y + 6, x, y + 6); c.bezierCurveTo(x - 4, y + 6, x - 6, y + 1, x, y - 6.5); c.closePath(); c.fill();
+  },
+  wave: (c, x, y) => {
+    c.strokeStyle = '#FFFFFF'; c.lineWidth = 2.2; c.lineCap = 'round';
+    for (const dy of [-3, 1.5]) { c.beginPath(); c.moveTo(x - 6, y + dy); c.quadraticCurveTo(x - 3, y + dy - 3, x, y + dy); c.quadraticCurveTo(x + 3, y + dy + 3, x + 6, y + dy); c.stroke(); }
+  },
+  swirl: (c, x, y) => {
+    c.strokeStyle = '#FFFFFF'; c.lineWidth = 2.4; c.lineCap = 'round';
+    c.beginPath(); c.arc(x, y, 5.5, -0.4, Math.PI * 1.5); c.stroke();
+    c.beginPath(); c.arc(x, y, 2.6, Math.PI * 1.1, Math.PI * 2.6); c.stroke();
+  },
+  bee: (c, x, y) => {
+    c.fillStyle = '#FFFFFF'; c.beginPath(); c.ellipse(x, y, 4, 5.5, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.3)'; c.lineWidth = 1.4;
+    for (const dy of [-1.5, 1.5]) { c.beginPath(); c.moveTo(x - 3.4, y + dy); c.lineTo(x + 3.4, y + dy); c.stroke(); }
+    c.fillStyle = 'rgba(255,255,255,0.7)'; c.beginPath(); c.ellipse(x - 4.5, y - 2, 2.4, 1.6, -0.5, 0, Math.PI * 2); c.ellipse(x + 4.5, y - 2, 2.4, 1.6, 0.5, 0, Math.PI * 2); c.fill();
+  },
+  moon: (c, x, y) => {
+    c.fillStyle = '#FFFFFF'; c.beginPath(); c.arc(x - 1, y, 6, 0, Math.PI * 2); c.fill();
+    c.globalCompositeOperation = 'destination-out'; c.beginPath(); c.arc(x + 2.5, y - 1.5, 5, 0, Math.PI * 2); c.fill();
+    c.globalCompositeOperation = 'source-over';
+  },
+  flame: (c, x, y) => {
+    c.fillStyle = '#FFFFFF'; c.beginPath();
+    c.moveTo(x, y - 7); c.quadraticCurveTo(x + 6, y - 1, x + 3.5, y + 4); c.quadraticCurveTo(x + 4, y + 6.5, x, y + 6.5); c.quadraticCurveTo(x - 4, y + 6.5, x - 3.5, y + 4); c.quadraticCurveTo(x - 2, y, x, y - 7); c.closePath(); c.fill();
+  },
+  beacon: (c, x, y) => {
+    c.fillStyle = '#FFFFFF'; c.beginPath(); c.moveTo(x - 3.5, y + 6); c.lineTo(x - 1.5, y - 4); c.lineTo(x + 1.5, y - 4); c.lineTo(x + 3.5, y + 6); c.closePath(); c.fill();
+    c.fillStyle = '#FFFFFF'; c.beginPath(); c.arc(x, y - 5, 2.4, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.7)'; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(x - 6, y - 7); c.lineTo(x - 3.5, y - 5.5); c.moveTo(x + 6, y - 7); c.lineTo(x + 3.5, y - 5.5); c.stroke();
+  },
+};
+
+function dropToken(c: Ctx2D, color: number, glyph: DropGlyph): void {
+  rrPath(c, 3, 3, 22, 22, 7);
+  c.fillStyle = cssOf(color); c.fill();
+  c.lineWidth = 2; c.strokeStyle = 'rgba(255,255,255,0.92)'; c.stroke();
+  // 顶部玻璃高光
+  c.fillStyle = 'rgba(255,255,255,0.28)';
+  c.beginPath(); c.ellipse(14, 9, 8, 3.6, 0, 0, Math.PI * 2); c.fill();
+  // 底部内阴影
+  c.fillStyle = 'rgba(0,0,0,0.12)';
+  c.beginPath(); c.ellipse(14, 23, 8, 2.4, 0, 0, Math.PI * 2); c.fill();
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  DROP_GLYPHS[glyph](c, 14, 15);
+}
 
 export function createMiscTextures(scene: Phaser.Scene): void {
   // === 阴影 ===
@@ -53,6 +157,44 @@ export function createMiscTextures(scene: Phaser.Scene): void {
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.beginPath();
     ctx.ellipse(6.4, 5.8, 1.8, 1.1, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 击杀计数图标：柔和骨白小骷髅（粉彩向，不阴森）；尺寸对齐 coin(18) 便于 HUD 等大并列
+  makeTex(scene, 'icon_kill', 18, 18, (ctx) => {
+    ctx.lineJoin = 'round';
+    // 头骨剪影：上圆下收 + 锯齿下颌（牙）
+    ctx.beginPath();
+    ctx.moveTo(3.5, 9);
+    ctx.bezierCurveTo(3.5, 3.4, 14.5, 3.4, 14.5, 9);
+    ctx.bezierCurveTo(14.5, 12, 13, 12.6, 12.6, 14);
+    ctx.lineTo(11.5, 16);
+    ctx.lineTo(10.3, 14);
+    ctx.lineTo(9, 16);
+    ctx.lineTo(7.7, 14);
+    ctx.lineTo(6.5, 16);
+    ctx.lineTo(5.4, 14);
+    ctx.bezierCurveTo(5, 12.6, 3.5, 12, 3.5, 9);
+    ctx.closePath();
+    ctx.fillStyle = '#F2ECDC';
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#9A8F78';
+    ctx.stroke();
+    // 眼窝
+    ctx.fillStyle = cssOf(PAL.ink);
+    ctx.beginPath();
+    ctx.ellipse(6.5, 8.2, 2, 2.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(11.5, 8.2, 2, 2.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // 鼻
+    ctx.beginPath();
+    ctx.moveTo(9, 9.9);
+    ctx.lineTo(8.1, 11.5);
+    ctx.lineTo(9.9, 11.5);
+    ctx.closePath();
     ctx.fill();
   });
 
@@ -309,6 +451,34 @@ export function createMiscTextures(scene: Phaser.Scene): void {
       ctx.stroke();
     });
   }
+
+  // === M19 掉落道具图标（玻璃令牌底 + 白色徽记；图鉴/拾取物/HUD 倒计时共用） ===
+  for (const id of Object.keys(DROP_ITEMS) as Array<keyof typeof DROP_ITEMS>) {
+    const spec = DROP_ITEMS[id];
+    makeTex(scene, spec.icon, 28, 28, (ctx) => dropToken(ctx, spec.color, spec.glyph));
+  }
+
+  // === M19 可破坏场景道具（小提灯：暖光灯笼，走近破碎掉道具） ===
+  makeTex(scene, 'brk_lantern', 32, 40, (ctx) => {
+    softGlow(ctx, 16, 18, 16, 'rgba(248,216,128,0.55)');
+    // 提梁
+    ctx.strokeStyle = '#9A7838'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(16, 9, 5, Math.PI, 0); ctx.stroke();
+    // 灯体（暖黄渐变）
+    const g = ctx.createLinearGradient(0, 9, 0, 32);
+    g.addColorStop(0, '#FFF0B8'); g.addColorStop(1, '#E8B860');
+    ctx.beginPath();
+    ctx.moveTo(9, 12); ctx.lineTo(23, 12); ctx.lineTo(25, 30); ctx.lineTo(7, 30); ctx.closePath();
+    ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#B88838'; ctx.stroke();
+    // 顶盖 + 底座
+    ctx.fillStyle = '#C89848';
+    ctx.fillRect(7, 9, 18, 3.5);
+    ctx.fillRect(6, 30, 20, 3.5);
+    // 烛芯高光
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath(); ctx.ellipse(16, 21, 2.2, 4, 0, 0, Math.PI * 2); ctx.fill();
+  });
 
   // === 虚拟摇杆 ===
   makeTex(scene, 'joy_base', 140, 140, (ctx) => {

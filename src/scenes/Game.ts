@@ -11,13 +11,16 @@ import { InputManager } from '../core/input/InputManager';
 import { Meta } from '../core/MetaState';
 import { RunState, Stats } from '../core/RunState';
 import { getSettings } from '../core/settings';
+import { shakeCam } from '../gfx/shake';
 import { TimeController } from '../core/TimeController';
 import { AchievementTracker } from '../systems/AchievementTracker';
 import { createArcanaModifier } from '../systems/arcana';
 import type { ArcanaId, WeaponId } from '../content/ids';
+import { DROP_RATES, rollCommonDrop, weightedDrop } from '../content/dropItems';
 import { WEAPON_META } from '../content/weapons';
-import type { CombatContext, HitOpts, RunLaunchData, RunMode, RunModifier, RunResult, RunSystem } from '../systems/context';
+import type { CombatContext, DropState, HitOpts, RunLaunchData, RunMode, RunModifier, RunResult, RunSystem } from '../systems/context';
 import { DecorSystem } from '../systems/DecorSystem';
+import { DropItemSystem } from '../systems/dropItems';
 import { DpsTracker } from '../systems/DpsTracker';
 import { Effects } from '../systems/effects';
 import { Enemy, EnemySystem } from '../systems/EnemySystem';
@@ -66,6 +69,9 @@ export class GameScene extends Phaser.Scene {
   private mechDmgMulVal = 1; // M18 lavender 花粉：机制伤害乘区（hitEnemy 读）
   private enemyHpMulVal = 1; // M18 summit 烽台：敌人生成 HP 乘区（spawn 读）
   private obstaclesArr: Array<{ x: number; y: number; r: number }> = []; // M18 bramble 荆棘墙
+  /** M19 掉落道具：HUD 倒计时读 dropSys.activeEffects；持续效果聚合态写 dropStateVal */
+  dropSys!: DropItemSystem;
+  private dropStateVal: DropState = { cdMul: 1, moveMul: 1, dmgMul: 1, areaMul: 1, invuln: false, freeze: false };
   private inputMgr!: InputManager;
   private zonesRef!: ZoneSystem;
   private pickupsRef!: PickupSystem;
@@ -139,6 +145,9 @@ export class GameScene extends Phaser.Scene {
     this.zonesRef = zones;
     this.pickupsRef = pickups;
     this.projectilesRef = projectiles;
+    // M19 掉落道具：拾取（PickupSystem）→ collect（DropItemSystem 结算/计时）
+    this.dropSys = new DropItemSystem(this.ctx);
+    pickups.onDropCollect = (id) => this.dropSys.collect(id);
 
     // 角色专属 trait（M14）：在一切规则卡之前挂入（其余 11 角色无 trait，零开销缺省路径）
     if (this.run.char.trait && !this.benchMode) {
@@ -171,6 +180,7 @@ export class GameScene extends Phaser.Scene {
           this.enemies,
           this.weapons,
           pickups,
+          this.dropSys, // M19 掉落道具：持续效果计时 + 场景物生成/破坏
           projectiles,
           zones,
           this.playerSys.contact,
@@ -255,10 +265,15 @@ export class GameScene extends Phaser.Scene {
       playerSlowAt: (x, y) => g.zonesRef.playerSlowAt(x, y),
       hasteMulAt: (x, y) => g.zonesRef.hasteMulAt(x, y),
       magnetizeGems: (x, y, r) => g.pickupsRef.magnetizeGems(x, y, r),
+      magnetizeAll: () => g.pickupsRef.magnetizeAll(),
       spawnEnemyBullet: (spec) => g.projectilesRef.spawn(spec),
       spawnGem: (x, y, v) => g.pickupsRef.spawnGem(x, y, v),
       spawnCoin: (x, y, v) => g.pickupsRef.spawnCoin(x, y, v),
       spawnPickup: (kind, x, y) => g.pickupsRef.spawnPickup(kind, x, y),
+      spawnDropItem: (id, x, y) => g.pickupsRef.spawnDropPickup(id, x, y),
+      spawnMapDrop: (x, y) => g.spawnMapDrop(x, y),
+      get enemyFrozen() { return g.dropStateVal.freeze; },
+      setDropState: (s) => g.setDropState(s),
       recomputeStats: () => g.recomputeStats(),
       bgmBoost: (sec) => { g.bgmBoostT = Math.max(g.bgmBoostT, sec); },
       // M13 契约：构筑随机统一入口（M17 注入种子流时只换此实现）
@@ -284,6 +299,27 @@ export class GameScene extends Phaser.Scene {
       .map((m) => m.statMods?.bind(m))
       .filter((f): f is (s: Stats) => void => f !== undefined);
     this.run.recomputeStats(mods);
+    // M19 掉落道具持续 buff（疾风号角/花粉狂热/顺风等）：在规则卡之后乘入，到期由 dropSys 复位
+    const d = this.dropStateVal;
+    const s = this.run.stats;
+    if (d.dmgMul !== 1) s.dmg *= d.dmgMul;
+    if (d.areaMul !== 1) s.area *= d.areaMul;
+    if (d.moveMul !== 1) s.moveSpeed *= d.moveMul;
+    if (d.cdMul !== 1) s.cd = Math.max(0.4, s.cd * d.cdMul);
+  }
+
+  /** M19 掉落道具持续效果聚合态写入（DropItemSystem 调用）：触发属性重算 */
+  private setDropState(s: DropState): void {
+    this.dropStateVal = s;
+    this.recomputeStats();
+  }
+
+  /** M19 地图专属道具：机制产物在奖励时刻调用，按掉率从本图专属池随机产出 */
+  spawnMapDrop(x: number, y: number): void {
+    const pool = this.map.drops;
+    if (!pool || pool.length === 0) return;
+    if (this.ctx.rng() >= DROP_RATES.mapDrop * this.run.dropRateMul) return;
+    this.pickupsRef.spawnDropPickup(weightedDrop(pool, this.ctx.rng), x, y);
   }
 
   /** 获得规则卡（M9）：开局三选一 / 宝箱再得 / 调试面板直给，叠加挂入 modifiers */
@@ -420,10 +456,14 @@ export class GameScene extends Phaser.Scene {
       this.fx.ring(e.x, e.y, DEATH_COLOR[e.id], 10, 0.65);
       this.fx.ring(e.x, e.y, 0xfff2c0, 7, 0.45);
       SFX.boom(true);
-      if (getSettings().shake) this.cameras.main.shake(180, 0.005);
+      shakeCam(this, 180, 0.005);
       this.pickupsRef.spawnPickup('chest', e.x, e.y);
       for (let i = 0; i < DROPS.eliteCoinN; i++) {
         this.pickupsRef.spawnCoin(e.x + (Math.random() - 0.5) * 50, e.y + (Math.random() - 0.5) * 50, DROPS.eliteCoinV);
+      }
+      // M19 精英额外掉通用道具（受商店掉率强化）
+      if (this.ctx.rng() < DROP_RATES.eliteCommon * this.run.dropRateMul) {
+        this.pickupsRef.spawnDropPickup(rollCommonDrop(this.ctx.rng), e.x, e.y - 16);
       }
     }
     if (e.isBoss) {
@@ -437,13 +477,17 @@ export class GameScene extends Phaser.Scene {
     if (Math.random() < DROPS.coinChance) {
       this.pickupsRef.spawnCoin(e.x - 10, e.y, Math.random() < DROPS.coinBigChance ? DROPS.coinBig : 1);
     }
+    // M19 普通击杀低概率掉通用道具（受商店掉率强化）
+    if (this.ctx.rng() < DROP_RATES.kill * this.run.dropRateMul) {
+      this.pickupsRef.spawnDropPickup(rollCommonDrop(this.ctx.rng), e.x, e.y - 12);
+    }
   }
 
   /** 无尽 Boss 击杀（M11）：宝箱 + 金币雨（基础 25，轮衰减在拾取时生效）+ 全场磁吸脉冲 */
   private endlessBossDown(e: Enemy): void {
     emitEvent(this.game, 'hud:boss', false);
     this.clock.hitStop(0.2);
-    if (getSettings().shake) this.cameras.main.shake(300, 0.006);
+    shakeCam(this, 300, 0.006);
     this.fx.ring(e.x, e.y, PAL.white, 12, 0.8);
     this.pickupsRef.spawnPickup('chest', e.x, e.y);
     for (let i = 0; i < ENDLESS.bossCoinN; i++) {
@@ -452,6 +496,8 @@ export class GameScene extends Phaser.Scene {
       );
     }
     this.pickupsRef.magnetizeGems(e.x, e.y, 1e5);
+    // M19 无尽 Boss 必掉一件通用道具（强力补给）
+    this.pickupsRef.spawnDropPickup(rollCommonDrop(this.ctx.rng), e.x, e.y - 20);
     SFX.victoryJingle();
     emitEvent(this.game, 'hud:warn', 'endlessBossDown');
   }
@@ -459,6 +505,7 @@ export class GameScene extends Phaser.Scene {
   damagePlayer(d: number, src?: Enemy): void {
     if (this.run.iframeT > 0 || !this.run.running) return;
     if (getSettings().invincible) return; // 调试：无敌（优先于复活，不消耗次数）
+    if (this.dropStateVal.invuln) return; // M19 晨曦护盾 / 退潮庇护：持续无敌（不消耗 iframe）
     // M13 钩子：受伤结算前改写（iframe 判定后、扣血前）；返回 ≤0 = 完全免疫，不进 iframe
     for (const m of this.modifiers) {
       if (m.modifyPlayerDamage) d = m.modifyPlayerDamage(d, this.ctx, src);
@@ -484,7 +531,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.fx.ring(this.player.x, this.player.y, 0xffffff, 2.4, 0.3);
     emitEvent(this.game, 'hud:hurt');
-    if (getSettings().shake) this.cameras.main.shake(120, 0.004);
+    shakeCam(this, 120, 0.004);
     // M13 钩子：实际扣血后、败北判定前（raw=护甲前；thorncore 蓄能用 raw，坦克体验不吃亏）
     for (const m of this.modifiers) m.onPlayerDamaged?.(d, applied, this.ctx);
     if (this.run.hp <= 0) {
@@ -545,7 +592,7 @@ export class GameScene extends Phaser.Scene {
     this.run.running = false;
     this.clock.reset();
     emitEvent(this.game, 'hud:boss', false);
-    if (getSettings().shake) this.cameras.main.shake(400, 0.008);
+    shakeCam(this, 400, 0.008);
     this.fx.burst(bx, by, { tex: 'p_confetti', color: DEATH_COLOR[this.map.bossId], count: 80, speed: 320, life: 1, scale: 1.6, spin: true, grav: 200 });
     this.fx.ring(bx, by, PAL.white, 12, 0.8);
     this.enemies.clearAllSoft();

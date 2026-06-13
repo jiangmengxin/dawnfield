@@ -31,6 +31,13 @@ export class Tabs extends Phaser.GameObjects.Container {
       const txt = scene.add.text(c.x + c.w / 2, c.y + c.h / 2, tab.label, {
         fontFamily: FONT, fontSize: Math.min(17, c.h * 0.42) + 'px', fontStyle: 'bold', color: PAL.inkCss,
       }).setOrigin(0.5);
+      // 窄屏多标签（图鉴 6 标签 / 选图难度组）时按胶囊宽度缩字号，杜绝顶边溢出（CX2）
+      let fs = Math.min(17, c.h * 0.42);
+      const avail = c.w - 12;
+      while (fs > 10 && txt.width > avail) {
+        fs -= 1;
+        txt.setFontSize(fs);
+      }
       this.labels.push(txt);
       this.add(txt);
       const zone = scene.add.zone(c.x, c.y, c.w, c.h).setOrigin(0).setInteractive({ useHandCursor: true });

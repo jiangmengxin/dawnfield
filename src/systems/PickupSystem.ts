@@ -1,6 +1,8 @@
 // 拾取系统：经验光珠（磁吸/合并）+ 金币（磁吸/合并）+ 红心 + 宝箱掉落物
 import Phaser from 'phaser';
 import { ARC_FX } from '../content/arcana';
+import { DROP_ITEMS } from '../content/dropItems';
+import type { DropItemId } from '../content/ids';
 import { DROPS } from '../content/player';
 import { PAL } from '../gfx/palette';
 import { SFX } from '../audio/sound';
@@ -8,7 +10,7 @@ import { getSettings } from '../core/settings';
 import type { CombatContext, RunSystem } from './context';
 
 interface Orb { img: Phaser.GameObjects.Image; value: number; magnet: boolean; active: boolean; born: number }
-interface Pickup { img: Phaser.GameObjects.Image; kind: 'heart' | 'chest'; active: boolean }
+interface Pickup { img: Phaser.GameObjects.Image; kind: 'heart' | 'chest' | 'drop'; dropId?: DropItemId; active: boolean }
 
 export class PickupSystem implements RunSystem {
   private gems: Orb[] = [];
@@ -18,6 +20,9 @@ export class PickupSystem implements RunSystem {
   private pickComboT = 0;
   /** 掉落总闸（复活清屏期间置 true）：统一拦截一切生成来源，含规则卡钩子（如金铃抖币） */
   suppressDrops = false;
+
+  /** M19 掉落道具拾取回调（GameScene 装配 DropItemSystem 后注入 → dropSys.collect） */
+  onDropCollect: ((id: DropItemId) => void) | null = null;
 
   /** onChest：踩到宝箱时回调（GameScene 接 LevelUpSystem.openChest） */
   constructor(private ctx: CombatContext, private onChest: () => void) {}
@@ -85,6 +90,29 @@ export class PickupSystem implements RunSystem {
       const dy = g.img.y - y;
       if (dx * dx + dy * dy < r2) g.magnet = true;
     }
+  }
+
+  /** M19 露珠磁石/萤火向导：全场光珠+金币立即磁吸 */
+  magnetizeAll(): void {
+    for (const g of this.gems) if (g.active) g.magnet = true;
+    for (const c of this.coins) if (c.active) c.magnet = true;
+  }
+
+  /** M19 掉落道具拾取物：图标为 DROP_ITEMS[id].icon；踩到即触发 onDropCollect */
+  spawnDropPickup(id: DropItemId, x: number, y: number): void {
+    if (this.suppressDrops) return;
+    const icon = DROP_ITEMS[id].icon;
+    let p = this.pickups.find((i) => !i.active);
+    if (!p) {
+      p = { img: this.ctx.scene.add.image(0, 0, icon), kind: 'drop', active: false };
+      this.pickups.push(p);
+    }
+    p.kind = 'drop';
+    p.dropId = id;
+    p.active = true;
+    p.img.setTexture(icon).setPosition(x, y).setVisible(true).setScale(0);
+    p.img.setDepth(1110 + y * 0.01);
+    this.ctx.scene.tweens.add({ targets: p.img, scale: 1, duration: 300, ease: 'Back.easeOut' });
   }
 
   spawnPickup(kind: 'heart' | 'chest', x: number, y: number): void {
@@ -162,7 +190,11 @@ export class PickupSystem implements RunSystem {
       if (dx * dx + dy * dy < 30 * 30) {
         p.active = false;
         p.img.setVisible(false);
-        if (p.kind === 'heart') {
+        if (p.kind === 'drop') {
+          // M19 掉落道具：踩到即触发（codex 点亮 + 效果结算在 DropItemSystem.collect）
+          if (p.dropId) this.onDropCollect?.(p.dropId);
+          SFX.pickup(1);
+        } else if (p.kind === 'heart') {
           if (ctx.stats.healMul <= 0) {
             // 燃晖之誓（M13 vow）：禁疗局爱心转为金币，拾取不落空
             ctx.run.addCoins(ARC_FX.vowHeartCoins);

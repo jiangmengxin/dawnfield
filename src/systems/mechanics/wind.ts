@@ -22,6 +22,7 @@ export class WindMechanic implements Mechanic {
     if (this.turnT <= 0) {
       this.turnT = spec.turnEvery;
       this.targetAngle = this.angle + (Math.random() - 0.5) * Math.PI; // 每周期转 ±90° 内
+      this.ctx.spawnMapDrop(this.ctx.player.x, this.ctx.player.y); // M19 风向转变奖励：本图专属道具（内部按掉率随机）
     }
     // 平滑转向（accel 为 lerp 速率，缓慢扫掠，玩家有时间预读风向）
     this.angle += (this.targetAngle - this.angle) * Math.min(1, dt * spec.accel);

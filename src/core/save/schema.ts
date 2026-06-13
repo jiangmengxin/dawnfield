@@ -14,7 +14,10 @@ export interface SaveSettings {
   volBgm: number;
   volSfx: number;
   dmgNumbers: boolean;
+  /** 旧版屏震开关（保留作主开关语义）；UI 已由三档 shakeLevel 取代 */
   shake: boolean;
+  /** 屏震强度档（FX1）：0 关 / 1 弱 / 2 标准。纯增量带默认值字段，sanitize 双向兼容，无需迁移 */
+  shakeLevel: 0 | 1 | 2;
   speed: 1 | 2;
   // 调试
   debugInfo: boolean;
@@ -89,7 +92,7 @@ export function defaultSave(): SaveV2 {
       affixKills: 0,
     },
     settings: {
-      lang: null, muted: false, volBgm: 1, volSfx: 1, dmgNumbers: true, shake: true, speed: 1,
+      lang: null, muted: false, volBgm: 1, volSfx: 1, dmgNumbers: true, shake: true, shakeLevel: 2, speed: 1,
       debugInfo: false, invincible: false, fullPickup: false, autoPick: false, unlockAll: false,
       arcana: true,
     },
@@ -208,6 +211,10 @@ export function sanitize(raw: unknown): SaveV2 | null {
       volSfx: num(s.volSfx, num(s.volume, 1, 0, 1), 0, 1),
       dmgNumbers: bool(s.dmgNumbers, true),
       shake: bool(s.shake, true),
+      // 旧档无 shakeLevel：由旧开关推导（开→标准 2 / 关→0），保留用户原偏好
+      shakeLevel: s.shakeLevel === 0 || s.shakeLevel === 1 || s.shakeLevel === 2
+        ? s.shakeLevel
+        : (bool(s.shake, true) ? 2 : 0),
       speed: s.speed === 2 ? 2 : 1,
       debugInfo: bool(s.debugInfo, false),
       invincible: bool(s.invincible, false),

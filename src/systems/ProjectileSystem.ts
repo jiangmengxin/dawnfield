@@ -52,6 +52,7 @@ export class ProjectileSystem implements RunSystem {
 
   update(dt: number): void {
     const ctx = this.ctx;
+    if (ctx.enemyFrozen) return; // M19 凝时沙漏：敌弹与敌人同步冻结（停在原地不推进/不判定）
     // 倍速穿隧细化：effDt 超过 1/30 时分两半步推进+判定（2x 下快弹不隔帧穿过玩家）
     const sub = dt > 1 / 30 ? 2 : 1;
     const h = dt / sub;

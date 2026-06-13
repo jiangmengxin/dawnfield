@@ -89,6 +89,11 @@ export class RunState {
   /** 商店永久强化加成（开局快照，局中不变） */
   private readonly pu: PowerUpBonus = powerUpBonus(getSave().powerUps);
 
+  /** M19 掉落道具掉率乘子（商店 fortune 永久强化；随机掉落来源乘此） */
+  get dropRateMul(): number {
+    return 1 + this.pu.dropRate;
+  }
+
   constructor(charId = 'spark', mode: RunMode = 'normal', diff: 0 | 1 | 2 = 0) {
     this.char = getCharacter(charId);
     this.mode = mode;

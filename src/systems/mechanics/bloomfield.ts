@@ -73,6 +73,7 @@ export class BloomfieldMechanic implements Mechanic {
     const ctx = this.ctx;
     ctx.spawnGem(b.x, b.y, this.spec.xp);
     ctx.run.heal(this.spec.heal);
+    ctx.spawnMapDrop(b.x, b.y); // M19 绽放奖励：本图专属道具（内部按掉率随机）
     ctx.fx.ring(b.x, b.y, MEADOW_CORE, 4, 0.6);
     ctx.fx.ring(b.x, b.y, MEADOW_BLOOM, 5.5, 0.8);
     ctx.fx.burst(b.x, b.y, { tex: 'p_petal', color: MEADOW_BLOOM, count: 18, speed: 200, life: 0.7, scale: 1, spin: true, grav: 120 });

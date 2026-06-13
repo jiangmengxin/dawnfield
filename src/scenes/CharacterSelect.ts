@@ -55,10 +55,12 @@ export class CharacterSelectScene extends UIScene {
       items.push({ title: '', desc: t('ui_lockedHint'), locked: true, fontScale });
     }
 
+    // C2：竖屏降卡高（aspect ↓）；大屏少一列+大间距放宽，缓解拥挤
     buildCardGrid(panel, {
       items,
-      minCellW: compact ? 150 : 180,
-      aspect: 1.18,
+      minCellW: compact ? 150 : 184,
+      aspect: compact ? 1.08 : 1.14,
+      gap: compact ? undefined : 16,
     });
   }
 }

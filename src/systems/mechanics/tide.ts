@@ -92,6 +92,7 @@ export class TideMechanic implements Mechanic {
     this.warned = false;
     this.t = Math.max(this.spec.warnT + 4, this.spec.period - this.spec.highT);
     ctx.setEnvSlow(1);
+    ctx.spawnMapDrop(ctx.player.x, ctx.player.y); // M19 守住高潮的奖励：本图专属道具（内部按掉率随机）
     for (const isl of this.islands) {
       const img = isl.img;
       ctx.scene.tweens.add({ targets: img, alpha: 0, duration: 400, onComplete: () => img.destroy() });

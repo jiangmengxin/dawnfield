@@ -6,3 +6,4 @@ export { Tabs, type TabSpec } from './Tabs';
 export { Toggle } from './Toggle';
 export { Slider } from './Slider';
 export { buildCardGrid, type CardGridItem } from './CardGrid';
+export { showToast, type ToastOpts } from './Toast';

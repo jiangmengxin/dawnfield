@@ -35,4 +35,11 @@ export const THEME = {
   shadowDx: 2,
   shadowDy: 4,
   shadowAlpha: 0.08,
+
+  // 动效令牌（克制统一：入场 ≤300ms，回弹幅度收小）——FX2
+  animFast: 180,
+  animIn: 280,
+  animSlow: 420,
+  easeIn: 'Back.easeOut',
+  easeOut: 'Cubic.easeOut',
 } as const;

@@ -8,7 +8,7 @@ import { DIFFICULTY } from '../content/difficulty';
 import { ENDLESS, endlessCycleAt } from '../content/endless';
 import { SFX } from '../audio/sound';
 import { emitEvent } from '../core/events';
-import { getSettings } from '../core/settings';
+import { shakeCam } from '../gfx/shake';
 import type { CombatContext, RunSystem } from './context';
 import type { EnemySystem } from './EnemySystem';
 
@@ -166,7 +166,7 @@ export class WaveDirector implements RunSystem {
       emitEvent(ctx.scene.game, 'hud:warn', 'surgeWarn');
       SFX.warning();
       ctx.scene.time.delayedCall(280, () => SFX.warning());
-      if (getSettings().shake) ctx.scene.cameras.main.shake(350, 0.004);
+      shakeCam(ctx.scene, 350, 0.004);
     } else if (ev.kind === 'boss') {
       const [x, y] = this.enemies.edgePos();
       this.enemies.spawn(map.bossId, x, y);
@@ -179,7 +179,7 @@ export class WaveDirector implements RunSystem {
       emitEvent(ctx.scene.game, 'hud:boss', true);
       emitEvent(ctx.scene.game, 'hud:warn', 'map_' + map.id + '_warn');
       SFX.bossRoar();
-      if (getSettings().shake) ctx.scene.cameras.main.shake(500, 0.004);
+      shakeCam(ctx.scene, 500, 0.004);
     }
   }
 }

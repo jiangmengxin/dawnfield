@@ -86,6 +86,7 @@ export class SporechainMechanic implements Mechanic {
       frontier = next;
     }
     SFX.boom();
+    if (hit.size >= 3) ctx.spawnMapDrop(x0, y0); // M19 连锁奖励：本图专属道具（内部按掉率随机）
   }
 
   destroy(): void {

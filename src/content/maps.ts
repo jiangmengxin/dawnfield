@@ -1,7 +1,7 @@
 // 地图表（纯数据层，禁止依赖 Phaser）：MapSpec 全链路
 // 每图差异化：时长（M12 起三档：10 / 20 / 30 分钟）/ 纸底配色 / 装饰层 / 专属敌人池与波次节奏 /
 // 轻量机制（无→减速水皮→定时大风）/ BGM 主题（调式/速度/音色/打击乐）/ Boss / 解锁链
-import type { AchievementId, EnemyId, MapId } from './ids';
+import type { AchievementId, DropItemId, EnemyId, MapId } from './ids';
 
 // ---------- 波次 ----------
 
@@ -96,6 +96,7 @@ export interface MapSpec {
   events: WaveEvent[];
   decor: DecorLayer[];
   mechanics: MechanicSpec[]; // M18：核心机制 + 次要风味并存（首项为核心，决定 BGM/文案基调）
+  drops?: DropItemId[]; // M19：本图专属掉落道具池（≥2 种，由机制产物经 ctx.spawnMapDrop 产出）
   bgm: BgmSpec;
   unlockAch: AchievementId | null; // null = 默认解锁（解锁链：通关上一图）
 }
@@ -216,6 +217,7 @@ export const MAPS: MapSpec[] = [
   // ---------- 1. 晨光草甸：基准节奏，10 分钟（M12 短档；波次自 M2 表等比压缩） ----------
   {
     id: 'meadow',
+    drops: ['bloomburst', 'verdant'],
     minutes: 10,
     timeK: 12 / 10,
     xpK: 1.2,
@@ -261,6 +263,7 @@ export const MAPS: MapSpec[] = [
   // 敌人少而硬（蜗蜗 95 血坦克、水枪鱼炮台、水母绕轨），考验集火与水皮间走位
   {
     id: 'pond',
+    drops: ['ebbaegis', 'ripple'],
     minutes: 10,
     timeK: 12 / 10,
     xpK: 1.5,
@@ -312,6 +315,7 @@ export const MAPS: MapSpec[] = [
   // 敌人多而脆（谷粒海、乌鸫俯冲、蓟球冲刺、风灵闪现），大风周期打乱站位
   {
     id: 'hills',
+    drops: ['tailwind', 'whirlwind'],
     minutes: 10,
     timeK: 12 / 10,
     xpK: 1.8,
@@ -369,6 +373,7 @@ export const MAPS: MapSpec[] = [
   // 敌人有黏性（害羞菇潜伏惊醒、孢孢菇炮台、滚滚甲冲滚），治愈泉逼迫主动走位换血
   {
     id: 'grove',
+    drops: ['sporebloom', 'fireflies'],
     minutes: 20,
     timeK: 12 / 20,
     xpK: 1.05,
@@ -428,6 +433,7 @@ export const MAPS: MapSpec[] = [
   // 敌人轻而缠人（紫蝶螺旋盘入、嗡嗡蜂俯冲、绒球弹跳），顺风带敌我同加速
   {
     id: 'lavender',
+    drops: ['pollenfrenzy', 'beeswarm'],
     minutes: 20,
     timeK: 12 / 20,
     xpK: 1.2,
@@ -492,6 +498,7 @@ export const MAPS: MapSpec[] = [
   // 敌人结实缠斗（钻钻鼠地下突进、莓爪崽扑袭、浆果炮手压制），刺丛挤压走位空间
   {
     id: 'bramble',
+    drops: ['thornnova', 'berryfeast'],
     minutes: 20,
     timeK: 12 / 20,
     xpK: 1.3,
@@ -554,6 +561,7 @@ export const MAPS: MapSpec[] = [
   // 敌人忽明忽暗（星闪闪闪现、月相灵变速、小枭枭绕飞），流星敌我同伤可借力清群
   {
     id: 'nocturne',
+    drops: ['fullmoon', 'meteor'],
     minutes: 30,
     timeK: 12 / 30,
     xpK: 0.95,
@@ -620,6 +628,7 @@ export const MAPS: MapSpec[] = [
   // 影群海量缠斗（影伏伏伏击、蚀月轮滚撞、夜昙昙压制），晨光柱是黎明前的安全岛
   {
     id: 'summit',
+    drops: ['beaconsurge', 'dawnnova'],
     minutes: 30,
     timeK: 12 / 30,
     xpK: 0.9,

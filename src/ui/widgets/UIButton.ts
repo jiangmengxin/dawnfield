@@ -23,18 +23,21 @@ export class UIButton extends Phaser.GameObjects.Container {
   private badgeDot: Phaser.GameObjects.Graphics;
   private opts: UIButtonOpts;
   private enabled = true;
+  private baseFs = 20;
 
   constructor(scene: Phaser.Scene, x: number, y: number, opts: UIButtonOpts) {
     super(scene, x, y);
     this.opts = opts;
     this.bg = scene.add.graphics();
     this.draw(false);
+    this.baseFs = opts.fontSize ?? 20;
     this.txt = scene.add.text(0, 0, opts.label ?? '', {
       fontFamily: FONT,
-      fontSize: (opts.fontSize ?? 20) + 'px',
+      fontSize: this.baseFs + 'px',
       fontStyle: 'bold',
       color: PAL.inkCss,
     }).setOrigin(0.5);
+    this.fitText();
     this.badgeDot = scene.add.graphics();
     this.badgeDot.fillStyle(0xe87878, 1);
     this.badgeDot.fillCircle(opts.w / 2 - 4, -opts.h / 2 + 4, 6);
@@ -73,8 +76,21 @@ export class UIButton extends Phaser.GameObjects.Container {
     g.strokeRoundedRect(-w / 2, -h / 2, w, h, r);
   }
 
+  /** 文案超宽时自动缩字号到下限（T3：取消放逐/i18n 长文案不顶边、不溢出） */
+  private fitText(): void {
+    const avail = this.opts.w - 16;
+    let fs = this.baseFs;
+    this.txt.setFontSize(fs);
+    const min = Math.max(11, Math.round(this.baseFs * 0.68));
+    while (fs > min && this.txt.width > avail) {
+      fs -= 1;
+      this.txt.setFontSize(fs);
+    }
+  }
+
   setLabel(s: string): this {
     this.txt.setText(s);
+    this.fitText(); // 切换模式（放逐↔取消放逐）后按新文案重判缩放
     return this;
   }
 

@@ -71,7 +71,32 @@ export type PowerUpId =
   | 'power' | 'vitality' | 'haste' | 'area' | 'speed' | 'magnet'
   | 'growth' | 'greed' | 'armor' | 'regen' | 'luck'
   // M10 构筑操控与复活（次数类：等级 → 每局次数，不走 powerUpBonus 乘区）
-  | 'revive' | 'reroll' | 'banish' | 'skip';
+  | 'revive' | 'reroll' | 'banish' | 'skip'
+  // M19 掉落道具掉率（提升随机掉落来源出现概率：击杀/场景物/地图机制）
+  | 'fortune';
+
+/** 一次性掉落道具（M19；VS 式踩到即触发）：7 通用 + 8 图×2 专属。
+ *  i18n 键公约 drop_<id>(_d)；图鉴并入「物品」页（与被动同 codex.passives）。
+ *  通用池 COMMON_DROPS 走击杀/场景物/精英；地图专属由 MapSpec.drops 经机制产物掉落 */
+export type DropItemId =
+  // 通用（全图）
+  | 'magnet' | 'nuke' | 'timestop' | 'heal' | 'frenzy' | 'aegis' | 'xpburst'
+  // meadow 晨光草甸
+  | 'bloomburst' | 'verdant'
+  // pond 露珠池塘
+  | 'ebbaegis' | 'ripple'
+  // hills 晚霞山岗
+  | 'tailwind' | 'whirlwind'
+  // grove 萤暮林地
+  | 'sporebloom' | 'fireflies'
+  // lavender 紫露花田
+  | 'pollenfrenzy' | 'beeswarm'
+  // bramble 莓果灌丛
+  | 'thornnova' | 'berryfeast'
+  // nocturne 星语夜原
+  | 'fullmoon' | 'meteor'
+  // summit 破晓之巅
+  | 'beaconsurge' | 'dawnnova';
 
 /** 成就（M7：40 个全量；M13：7 个纯计数移入 LEGACY，7 个结构性挑战顶替，总量不变）
  *  legacy id（kills5000/kills10000/coins5000/runs20/runs50/buy10/buy25）保留在联合类型：

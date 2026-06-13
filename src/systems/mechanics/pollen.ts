@@ -42,6 +42,7 @@ export class PollenMechanic implements Mechanic {
       while (this.accum >= 1 && this.stacks < spec.maxStacks) {
         this.accum -= 1;
         this.stacks++;
+        if (this.stacks === spec.maxStacks) ctx.spawnMapDrop(px, py); // M19 满层奖励：本图专属道具（内部按掉率随机）
       }
     } else {
       this.accum = 0;

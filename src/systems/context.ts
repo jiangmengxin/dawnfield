@@ -1,7 +1,7 @@
 // 局内核心接口：CombatContext（武器/敌人系统看到的世界，GameScene 实现）
 // + RunSystem（系统统一更新接口）+ RunModifier（规则卡钩子，M9 实装，M2 空挂）
 import type Phaser from 'phaser';
-import type { ArcanaId, PassiveId, WeaponId } from '../content/ids';
+import type { ArcanaId, DropItemId, PassiveId, WeaponId } from '../content/ids';
 import type { MapSpec } from '../content/maps';
 import type { RunState, Stats } from '../core/RunState';
 import type { Effects } from './effects';
@@ -63,6 +63,17 @@ export type ChestItem =
 /** 宝箱开箱结果：1 件常见，3/5 件稀有惊喜（CHEST.tripleChance/pentaChance） */
 export interface ChestReward {
   items: ChestItem[];
+}
+
+/** 掉落道具的全局生效态（M19）：DropItemSystem 聚合在场持续效果后经 ctx.setDropState 写入，
+ *  GameScene 持有，recomputeStats / damagePlayer / EnemySystem(enemyFrozen) 读取 */
+export interface DropState {
+  cdMul: number; // 攻速 buff（冷却乘子 <1）
+  moveMul: number; // 移速 buff
+  dmgMul: number; // 伤害 buff
+  areaMul: number; // 范围 buff
+  invuln: boolean; // 无敌（晨曦护盾 / 退潮庇护）
+  freeze: boolean; // 时停：敌人与敌弹冻结
 }
 
 /** 运行模式（公共契约：M11 实装无尽） */
@@ -155,10 +166,20 @@ export interface CombatContext {
   /** 该点顺风加速乘子（花浪阵风机制，敌我同加速），无则 1 */
   hasteMulAt(x: number, y: number): number;
   magnetizeGems(x: number, y: number, r: number): void;
+  /** M19 露珠磁石/萤火向导：把全场经验光珠与金币立即置为磁吸态 */
+  magnetizeAll(): void;
   spawnEnemyBullet(spec: EnemyBulletSpec): void;
   spawnGem(x: number, y: number, value: number): void;
   spawnCoin(x: number, y: number, value: number): void;
   spawnPickup(kind: 'heart' | 'chest', x: number, y: number): void;
+  /** M19 掉落道具：在 (x,y) 生成一件可拾取道具（踩到即触发） */
+  spawnDropItem(id: DropItemId, x: number, y: number): void;
+  /** M19 地图专属道具：按 DROP_RATES.mapDrop×掉率 从 ctx.map.drops 随机产出（机制产物调用） */
+  spawnMapDrop(x: number, y: number): void;
+  /** M19 时停：敌人/敌弹是否冻结（EnemySystem/ProjectileSystem 读） */
+  readonly enemyFrozen: boolean;
+  /** M19 掉落道具全局态写入（DropItemSystem 聚合后调用，触发属性重算） */
+  setDropState(s: DropState): void;
   recomputeStats(): void;
   /** BGM 强度临时抬升（M12 surge 中场事件；M18 Boss 战切换复用此通道） */
   bgmBoost(sec: number): void;
