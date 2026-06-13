@@ -80,6 +80,44 @@ describe('地图时长三档与升级节奏（M12）', () => {
   });
 });
 
+describe('地图机制参数 sanity（M18）', () => {
+  it('每图至少一条机制；首项为核心机制（meadow 起全图差异化）', () => {
+    for (const m of MAPS) {
+      expect(m.mechanics.length, m.id).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  it('机制计时/数量/半径参数均为正（防 0 间隔死循环或负半径）', () => {
+    const posKeys = ['first', 'interval', 'period', 'highT', 'warnT', 'turnEvery', 'dur',
+      'count', 'segN', 'islandN', 'maxStacks', 'maxLit', 'igniteT', 'growT', 'starEvery', 'litT',
+      'r', 'segR', 'islandR', 'dist', 'chainR', 'maxDepth'] as const;
+    for (const m of MAPS) {
+      for (const spec of m.mechanics) {
+        for (const k of posKeys) {
+          const v = (spec as Record<string, unknown>)[k];
+          if (typeof v === 'number') expect(v, `${m.id}/${spec.kind}/${k}`).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it('减速/增伤/衰减乘区在合理范围（不致负速度或失控 power creep）', () => {
+    for (const m of MAPS) {
+      for (const spec of m.mechanics) {
+        if (spec.kind === 'tide') expect(spec.slow, m.id).toBeGreaterThan(0.2);
+        if (spec.kind === 'pollen') {
+          expect(spec.maxStacks * spec.dmgPer, m.id).toBeLessThanOrEqual(0.3); // 总增伤 ≤30%
+        }
+        if (spec.kind === 'beacon') {
+          expect(spec.maxLit * spec.enemyHpPer, m.id).toBeLessThanOrEqual(0.3); // 总 HP 衰减 ≤30%
+        }
+        if (spec.kind === 'thornwall') expect(spec.gapDeg, m.id).toBeGreaterThanOrEqual(120); // 强制开口防围死
+        if (spec.kind === 'nightfall') expect(spec.darkAlpha, m.id).toBeLessThanOrEqual(0.5); // 压暗 ≤50% 保可读
+      }
+    }
+  });
+});
+
 describe('狂暴乘区表（发行方案 §4.2 对表）', () => {
   it('普通档全 1，狂暴 I/II 与方案一致', () => {
     expect(DIFFICULTY[0]).toEqual({
