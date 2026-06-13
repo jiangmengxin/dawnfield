@@ -26,6 +26,9 @@ export interface AchRunView {
   // M15 词缀埋点（graviticEscape：胜利时判定）
   gravSeen: boolean; // 本局出现过引力词缀精英
   gravHit: boolean; // 本局被引力词缀精英碰到过
+  // M16 彩蛋埋点（Tracker 逐秒评估即「仍存活」；Result 终评传缺省，局内已评估）
+  bloomed: boolean; // 本局草甸发光花圃已绽放（secretBloom）
+  meteorHits: number; // 本局被夜原流星砸中次数（stargazer：3 次仍存活）
 }
 
 export interface AchStatsView {
@@ -54,6 +57,8 @@ export interface AchievementSpec {
   unlockMap?: MapId; // 达成时解锁地图
   unlockArcana?: ArcanaId; // 达成时解锁机制规则卡（M13；查询式凭据，零存档字段）
   rewardCoins?: number; // 达成时奖励金币（不计入 coinsEarned 成就链，M11 起）
+  /** 隐藏成就（M16）：未达成时成就页显示 ？？？ 行（计入总数，不剧透条件） */
+  hidden?: boolean;
   check(v: AchView): boolean;
 }
 
@@ -148,6 +153,11 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
     check: (v) => (v.stats.affixKills ?? 0) >= 20 },
   { id: 'graviticEscape',  icon: 'e_cometlord', // 结构性挑战：引力精英在场却全程没碰到你
     check: (v) => v.run?.win === true && v.run.difficulty >= 2 && v.run.gravSeen && !v.run.gravHit },
+  // ---------- M16 隐藏成就（彩蛋链 → 隐藏角色；Tracker 逐秒评估，达成即解锁） ----------
+  { id: 'secretBloom',     icon: 'd_flower1',  unlockChar: 'blobby', hidden: true,
+    check: (v) => v.run?.bloomed === true },
+  { id: 'stargazer',       icon: 'nd_star',    unlockChar: 'nova',   hidden: true,
+    check: (v) => (v.run?.meteorHits ?? 0) >= 3 },
 ];
 
 /** 旧纯计数成就（M13 替换下场）：仅当存档已解锁才渲染（成就页 legacy 区），

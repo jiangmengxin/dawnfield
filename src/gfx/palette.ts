@@ -264,6 +264,9 @@ export const CHAR_PAL: Record<Exclude<CharacterId, 'spark'>, { body: number; edg
   berry:  { body: 0xf4a8b0, edge: 0xc86878 },
   wisp:   { body: 0xc6ecd8, edge: 0x76b896 }, // 幽光淡青：浅色身体走弱渐变
   toot:   { body: 0xa8bce8, edge: 0x7088c8 },
+  // M16 隐藏角色：小蓝团（草甸蓝团彩蛋色）+ 小流星（彗星暖金）
+  blobby: { body: 0x9cc8ec, edge: 0x6a98c8 },
+  nova:   { body: 0xffe2a0, edge: 0xe0a040 },
 };
 
 export function cssOf(c: number): string {

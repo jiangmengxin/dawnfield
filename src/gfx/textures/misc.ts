@@ -245,6 +245,17 @@ export function createMiscTextures(scene: Phaser.Scene): void {
       ctx.fill();
     });
   }
+  // M16 秘密花圃微光（草甸彩蛋）：柔和径向光晕，叠在花丛下方做「可被注意但不打扰」的提示
+  makeTex(scene, 'sb_glow', 96, 96, (ctx) => {
+    const g = ctx.createRadialGradient(48, 48, 4, 48, 48, 46);
+    g.addColorStop(0, 'rgba(255,246,200,0.85)');
+    g.addColorStop(0.55, 'rgba(255,236,170,0.35)');
+    g.addColorStop(1, 'rgba(255,236,170,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(48, 48, 46, 0, Math.PI * 2);
+    ctx.fill();
+  });
   for (let v = 0; v < 2; v++) {
     makeTex(scene, 'd_pebble' + v, 18, 14, (ctx) => {
       ctx.beginPath();

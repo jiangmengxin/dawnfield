@@ -55,6 +55,9 @@ export class AchievementTracker implements RunSystem {
         arcana: run.arcana.length,
         gravSeen: run.gravSeen,
         gravHit: run.gravHit,
+        // M16 彩蛋（逐秒评估天然满足「仍存活」语义）
+        bloomed: run.bloomed,
+        meteorHits: run.meteorHits,
       },
       // 累计类并入当前局进度，避免要再开一局才能解锁
       stats: {

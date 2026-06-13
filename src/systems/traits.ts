@@ -123,5 +123,45 @@ export function createTraitModifier(id: TraitId, ctx: CombatContext, weapons: We
           SFX.chime();
         },
       };
+
+    case 'bouncy': // 小蓝团：受击把来源敌人弹开（不减伤；modifyPlayerDamage 钩子副作用，M16）
+      return {
+        modifyPlayerDamage: (d, c, src) => {
+          if (src && src.active && !src.dying && src.knockMul > 0) {
+            const dx = src.x - c.player.x;
+            const dy = src.y - c.player.y;
+            const len = Math.hypot(dx, dy) || 1;
+            src.kvx += (dx / len) * TRAIT_FX.bouncyKb * src.knockMul;
+            src.kvy += (dy / len) * TRAIT_FX.bouncyKb * src.knockMul;
+            c.fx.ring(c.player.x, c.player.y, 0x9cc8ec, 3.5, 0.3);
+            SFX.swish();
+          }
+          return d; // 只弹不减：伤害照常进护甲结算
+        },
+      };
+
+    case 'comet': { // 小流星：持续移动 0.8s 后获得 10% 减伤（护甲前乘算，M16）
+      let moveT = 0;
+      let px = NaN;
+      let py = NaN;
+      return {
+        onTick: (dt, c) => {
+          const x = c.player.x;
+          const y = c.player.y;
+          // 以实际位移判定「在跑」（含风/击退不计的纯走位近似）；阈值取期望步长三成防抖
+          if (!Number.isNaN(px)) {
+            const moving = Math.hypot(x - px, y - py) > c.stats.moveSpeed * dt * 0.3;
+            moveT = moving ? moveT + dt : 0;
+          }
+          px = x;
+          py = y;
+        },
+        modifyPlayerDamage: (d, c) => {
+          if (moveT < TRAIT_FX.cometMoveT) return d;
+          c.fx.burst(c.player.x, c.player.y, { tex: 'p_star', color: 0xffe070, count: 4, speed: 90, life: 0.3, scale: 0.7 });
+          return d * (1 - TRAIT_FX.cometDr);
+        },
+      };
+    }
   }
 }

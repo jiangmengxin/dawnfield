@@ -864,4 +864,10 @@ export function createCharacterTextures(scene: Phaser.Scene): void {
   // 嘟嘟：头顶喇叭花 + 音符（M7）
   makeCharacter(scene, 'char_toot', { r: 16, ...C.toot, glow: 'rgba(168,188,232,0.6)',
     shape: 'egg', eye: 'surprised', mouth: 'open', faceDy: 0.05, deco: ['bugleBloom'] });
+  // 小蓝团：草甸蓝团彩蛋造型 — 圆团 + 水光（角色管线渐变+大眼，与敌人 blob 仅神似）（M16）
+  makeCharacter(scene, 'char_blobby', { r: 16, ...C.blobby, glow: 'rgba(156,200,236,0.7)',
+    shape: 'round', eye: 'happy', mouth: 'smile', faceDy: 0.04, deco: ['shine', 'droplets'] });
+  // 小流星：前倾水滴剪影（彗星形）+ 闪光 + 风速线（M16）
+  makeCharacter(scene, 'char_nova', { r: 12, ...C.nova, glow: 'rgba(255,226,160,0.85)',
+    shape: 'drop', lean: -0.14, eye: 'sparkle', mouth: 'open', faceDy: 0.06, deco: ['glints', 'windLines'] });
 }

@@ -173,8 +173,9 @@ export interface RunModifier {
   onWeaponHit?(e: Enemy, applied: number, ctx: CombatContext): void;
   /** 玩家实际扣血后、败北判定前（raw=护甲前，applied=实扣） */
   onPlayerDamaged?(raw: number, applied: number, ctx: CombatContext): void;
-  /** 玩家受伤结算前改写（返回 ≤0 = 完全免疫，不扣血不进 iframe；闪避类机制用） */
-  modifyPlayerDamage?(d: number, ctx: CombatContext): number;
+  /** 玩家受伤结算前改写（返回 ≤0 = 完全免疫，不扣血不进 iframe；闪避类机制用）。
+   *  src = 伤害来源敌人（M16 bouncy 反击退用；弹幕/区域伤害缺省） */
+  modifyPlayerDamage?(d: number, ctx: CombatContext, src?: Enemy): number;
   /** 拾取金币时 */
   onCoinPicked?(value: number, ctx: CombatContext): void;
   /** 武器进化时 */

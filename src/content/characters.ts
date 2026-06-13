@@ -37,6 +37,8 @@ export interface CharacterSpec {
   mods?: CharMods;
   /** 角色专属机制（M14）：后期角色独有，行为在 systems/traits.ts，数值在下方 TRAIT_FX */
   trait?: TraitId;
+  /** 隐藏角色（M16）：未解锁时选择页/图鉴不占位不显示（存在本身就是秘密），彩蛋链解锁 */
+  secret?: boolean;
   unlockAch: AchievementId | null; // null = 默认解锁
 }
 
@@ -59,6 +61,11 @@ export const TRAIT_FX = {
   // jingle 进化共鸣：每次进化随机未满级被动 +1 + 钟鸣新星
   resonanceDmg: 40, // × stats.dmg
   resonanceR: 220,
+  // M16 blobby 软软弹弹：受击把来源敌人弹开（不减伤）
+  bouncyKb: 240,
+  // M16 nova 流星之躯：持续移动 moveT 秒后获得 dr 减伤
+  cometMoveT: 0.8,
+  cometDr: 0.1,
 };
 
 export const CHARACTERS: CharacterSpec[] = [
@@ -143,6 +150,17 @@ export const CHARACTERS: CharacterSpec[] = [
     hp: 130, speed: 158, radius: 16,
     trail: { tex: 'p_dot', color: 0xb8c8f0, every: 0.14 },
     mods: { area: 1.18, armor: 1 }, trait: 'fanfare', unlockAch: 'kills500' },
+  // ---------- M16 隐藏角色（secret：未解锁不占位不显示；解锁走彩蛋链隐藏成就） ----------
+  // 小蓝团：草甸花圃里睡醒的蓝色小团子 — 厚实软弹，提灯暖光更大
+  { id: 'blobby', weapon: 'lantern', tex: 'char_blobby', texScale: 1.3, color: 0x6a98c8,
+    hp: 160, speed: 150, radius: 16,
+    trail: { tex: 'p_dot', color: 0x9cc8ec, every: 0.13 },
+    mods: { area: 1.1, dmg: 0.92 }, trait: 'bouncy', secret: true, unlockAch: 'secretBloom' },
+  // 小流星：被流星雨砸出来的小火花 — 跑得快弹得急，跑起来更耐砸
+  { id: 'nova', weapon: 'star', tex: 'char_nova', texScale: 1.5, color: 0xe0a040,
+    hp: 78, speed: 200, radius: 12,
+    trail: { tex: 'p_star', color: 0xffe070, every: 0.07 },
+    mods: { projSpeed: 1.2, cd: 0.9, dmg: 0.92 }, trait: 'comet', secret: true, unlockAch: 'stargazer' },
 ];
 
 /** 按 id 取角色；未知 id 兜底为小萤（防坏档/旧链接） */

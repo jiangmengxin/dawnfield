@@ -394,6 +394,11 @@ const D: Dict = {
   char_wisp_d: ['轻飘飘的小幽光，施法飞快身子轻', 'A featherlight glow: rapid casts, delicate frame'],
   char_toot: ['嘟嘟', 'Toot'],
   char_toot_d: ['吹号的小乐手，嗓门大皮也厚', 'A little hornblower: loud, proud, and sturdy'],
+  // M16 隐藏角色（未解锁时全 UI 无痕迹）
+  char_blobby: ['小蓝团', 'Blobby'],
+  char_blobby_d: ['花圃里睡醒的小蓝团，软软的没人推得动', 'A sleepy blue blob from the flowerbed, soft but unbudgeable'],
+  char_nova: ['小流星', 'Nova'],
+  char_nova_d: ['流星雨里蹦出来的小火花，跑起来闪闪发光', 'A little spark struck loose by meteors; shines brightest on the run'],
 
   // 角色专属机制 trait（M14：5 个后期角色）
   trait_flicker: ['轻盈残影', 'Flicker'],
@@ -406,6 +411,11 @@ const D: Dict = {
   trait_collector_d: ['升级三选一变为四选一', 'Level-up choices offer 4 picks instead of 3'],
   trait_resonance: ['进化共鸣', 'Resonance'],
   trait_resonance_d: ['每次武器进化：随机一个未满级被动 +1 级，并敲响钟鸣新星', 'On each evolution, a random passive gains +1 level with a chiming nova'],
+  // M16 隐藏角色 trait
+  trait_bouncy: ['软软弹弹', 'Bouncy'],
+  trait_bouncy_d: ['受击时把来源敌人软软地弹开（伤害照常）', 'When hit, softly bounces the attacker away (damage unchanged)'],
+  trait_comet: ['流星之躯', 'Comet Soul'],
+  trait_comet_d: ['持续移动 0.8 秒后，受到的伤害降低 10%', 'After moving for 0.8s, take 10% less damage'],
   traitAnnounce: ['角色机制：{n}', 'Trait: {n}'],
 
   // 进化引导（M14）：选卡角标 / 图鉴配方 / 首局 tips
@@ -625,6 +635,12 @@ const D: Dict = {
   ach_affixSlayer_d: ['累计击杀 20 只词缀精英', 'Defeat 20 affixed elites in total'],
   ach_graviticEscape: ['挣脱引力', 'Slip the Pull'],
   ach_graviticEscape_d: ['通关任意狂暴 II，且全程未被引力精英碰到', 'Clear any Hyper II run without being touched by a gravitic elite'],
+  // M16 隐藏成就（未达成时成就页显示 ach_hiddenTitle/Desc，不剧透下列文案）
+  ach_secretBloom: ['秘密花开', 'Secret Bloom'],
+  ach_secretBloom_d: ['让草甸的发光花圃绽放', 'Coax the meadow’s glowing flowerbed into bloom'],
+  ach_stargazer: ['追星人', 'Stargazer'],
+  ach_stargazer_d: ['同一局内被流星砸中 3 次仍存活', 'Survive being struck by 3 meteors in a single run'],
+  ach_hiddenDesc: ['隐藏成就——达成后揭晓', 'A hidden feat — revealed once earned'],
   ach_rewardArc: ['解锁规则卡：{a}', 'Unlocks arcana: {a}'],
   ach_legacy: ['往昔成就', 'Legacy Feats'],
 

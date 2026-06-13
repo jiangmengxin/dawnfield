@@ -138,6 +138,10 @@ export class GameScene extends Phaser.Scene {
       this.modifiers.push(createTraitModifier(this.run.char.trait, this.ctx, this.weapons));
     }
 
+    // M16 草甸秘密花圃彩蛋：每局 35% 概率刷出（站立 5s 绽放 → 隐藏成就 secretBloom）
+    this.secretSpot = null;
+    if (!this.benchMode && this.mapId === 'meadow' && Math.random() < 0.35) this.spawnSecretBloom();
+
     this.waveDir = new WaveDirector(this.ctx, this.enemies);
 
     // 按帧序注册（与拆分前 update 顺序一致；地图机制紧随波次导演）
@@ -168,6 +172,7 @@ export class GameScene extends Phaser.Scene {
           this.levelUp,
           new AchievementTracker(this.ctx, this.weapons),
           new TipSystem(this.ctx, this.weapons), // M14 首局进化引导（tipsSeen 节流）
+          ...(this.secretSpot ? [{ update: (dt: number) => this.updateSecretBloom(dt) }] : []),
         ];
 
     // 图鉴首遇点亮：本局角色与地图（bench 不计）
@@ -424,7 +429,7 @@ export class GameScene extends Phaser.Scene {
     if (getSettings().invincible) return; // 调试：无敌（优先于复活，不消耗次数）
     // M13 钩子：受伤结算前改写（iframe 判定后、扣血前）；返回 ≤0 = 完全免疫，不进 iframe
     for (const m of this.modifiers) {
-      if (m.modifyPlayerDamage) d = m.modifyPlayerDamage(d, this.ctx);
+      if (m.modifyPlayerDamage) d = m.modifyPlayerDamage(d, this.ctx, src);
     }
     if (d <= 0) return;
     this.run.iframeT = PLAYER.iframe;
@@ -539,6 +544,68 @@ export class GameScene extends Phaser.Scene {
     };
     this.scene.stop('hud');
     this.scene.start('result', result);
+  }
+
+  // ---------- M16 草甸秘密花圃（彩蛋：发现引导克制——微光 + 靠近轻响，游戏内不提示玩法） ----------
+
+  /** 彩蛋状态：站立 5s 绽放 → run.bloomed → AchievementTracker 解锁 secretBloom（隐藏角色 blobby） */
+  private secretSpot: {
+    x: number; y: number; stand: number; noticed: boolean; done: boolean;
+    glow: Phaser.GameObjects.Image; flowers: Phaser.GameObjects.Image[];
+  } | null = null;
+
+  private spawnSecretBloom(): void {
+    // 离出生点 ≥600px：开局不会一眼撞见，要靠游荡途中注意微光
+    const a = Math.random() * Math.PI * 2;
+    const d = 600 + Math.random() * 300;
+    const x = Math.cos(a) * d;
+    const y = Math.sin(a) * d;
+    const glow = this.add.image(x, y, 'sb_glow').setDepth(7).setAlpha(0.45);
+    this.tweens.add({ targets: glow, alpha: 0.8, scale: 1.25, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+    const flowers: Phaser.GameObjects.Image[] = [];
+    for (let i = 0; i < 5; i++) {
+      const fa = (i / 5) * Math.PI * 2 + 0.5;
+      flowers.push(this.add.image(x + Math.cos(fa) * 16, y + Math.sin(fa) * 11, 'd_flower' + (i % 3)).setDepth(8).setScale(0.9));
+    }
+    this.secretSpot = { x, y, stand: 0, noticed: false, done: false, glow, flowers };
+  }
+
+  private updateSecretBloom(dt: number): void {
+    const s = this.secretSpot;
+    if (!s || s.done) return;
+    const dx = this.player.x - s.x;
+    const dy = this.player.y - s.y;
+    const d2 = dx * dx + dy * dy;
+    if (!s.noticed && d2 < 320 * 320) {
+      // 首次靠近：轻微音效 + 微光涟漪（可被注意但不打扰）
+      s.noticed = true;
+      SFX.chime();
+      this.fx.ring(s.x, s.y, 0xfff2c0, 4, 0.6);
+    }
+    if (d2 < 70 * 70) {
+      s.stand += dt;
+      if (Math.random() < dt * 5) {
+        this.fx.burst(s.x + (Math.random() - 0.5) * 40, s.y + (Math.random() - 0.5) * 28,
+          { tex: 'p_star', color: 0xfff2c0, count: 1, speed: 30, life: 0.5, scale: 0.7, alpha: 0.85 });
+      }
+      if (s.stand >= 5) this.bloomSecret(s);
+    } else {
+      s.stand = 0;
+    }
+  }
+
+  /** 绽放演出：花圃放大 + 花瓣纸屑；run.bloomed 由 Tracker 每秒评估接走（toast 即成就横幅） */
+  private bloomSecret(s: NonNullable<GameScene['secretSpot']>): void {
+    s.done = true;
+    this.run.bloomed = true;
+    for (const f of s.flowers) {
+      this.tweens.add({ targets: f, scale: 1.6, angle: (Math.random() - 0.5) * 30, duration: 600, ease: 'Back.easeOut' });
+    }
+    this.tweens.add({ targets: s.glow, alpha: 1, scale: 2, duration: 800, ease: 'Sine.easeOut' });
+    this.fx.ring(s.x, s.y, 0xf6b8c8, 9, 0.7);
+    this.fx.ring(s.x, s.y, 0xfff2c0, 6, 0.5);
+    this.fx.burst(s.x, s.y, { tex: 'p_petal', color: 0xf8b0c4, count: 26, speed: 220, life: 0.8, scale: 1.1, spin: true, grav: 60 });
+    SFX.chime();
   }
 
   // ---------- 调试 ----------

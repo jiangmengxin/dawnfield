@@ -21,7 +21,10 @@ export class CharacterSelectScene extends UIScene {
     const compact = this.vp.bp === 'compact';
     const fontScale = compact ? 0.9 : 1;
 
-    const items: CardGridItem[] = CHARACTERS.map((c) => {
+    // M16 隐藏角色：未解锁不占位不显示（与普通 ??? 占位区分——存在本身就是秘密）
+    const visible = CHARACTERS.filter((c) =>
+      !c.secret || c.unlockAch === null || Meta.isUnlocked('chars', c.id));
+    const items: CardGridItem[] = visible.map((c) => {
       const unlocked = c.unlockAch === null || Meta.isUnlocked('chars', c.id);
       if (!unlocked) {
         // ??? + 解锁条件（成就名；成就表后续调整时此处自动跟随）
@@ -43,10 +46,12 @@ export class CharacterSelectScene extends UIScene {
         subDesc: c.trait ? '✦ ' + t('trait_' + c.trait) : undefined,
         color: c.color,
         fontScale,
+        // M16 揭示动效：隐藏角色解锁后首次亮相（markTip 全存档一次，resize 重建不复播）
+        reveal: c.secret === true && Meta.markTip('reveal_' + c.id),
         onTap: () => this.goto('mapselect', { charId: c.id }),
       };
     });
-    for (let i = CHARACTERS.length; i < TARGET_CHARS; i++) {
+    for (let i = visible.length; i < TARGET_CHARS; i++) {
       items.push({ title: '', desc: t('ui_lockedHint'), locked: true, fontScale });
     }
 

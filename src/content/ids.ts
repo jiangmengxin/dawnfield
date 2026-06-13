@@ -33,11 +33,13 @@ export type EnemyId =
   // M15 新行为敌人（图 4–8 后段波次插入：自爆 / 护盾光环 / 召唤）
   | 'bombcap' | 'hivebud' | 'husker' | 'novamote' | 'duskward' | 'shadowmaw';
 
-/** 角色（M4 批次 A：8 个；M6：12 个；M7：16 个全量） */
+/** 角色（M4 批次 A：8 个；M6：12 个；M7：16 个全量；M16：+2 隐藏角色） */
 export type CharacterId =
   | 'spark' | 'rosa' | 'dew' | 'gale' | 'lumen' | 'volt' | 'pebble' | 'fluff'
   | 'ember' | 'luna' | 'conker' | 'jingle'
-  | 'ivy' | 'berry' | 'wisp' | 'toot';
+  | 'ivy' | 'berry' | 'wisp' | 'toot'
+  // M16 隐藏角色（secret：未解锁不占位不显示，彩蛋链解锁）
+  | 'blobby' | 'nova';
 
 /** 地图（M7：8 张全量） */
 export type MapId = 'meadow' | 'pond' | 'hills' | 'grove' | 'lavender' | 'bramble' | 'nocturne' | 'summit';
@@ -53,8 +55,9 @@ export type BehaviorId =
 /** 精英词缀（M15）：狂暴 II 全部精英 / 无尽第 2 轮起精英随机携带 1 个（调参在 content/affixes.ts） */
 export type AffixId = 'swift' | 'bulwark' | 'splitting' | 'gravitic' | 'volley';
 
-/** 角色专属机制 trait（M14：5 个后期角色，复用 M13 RunModifier 钩子体系） */
-export type TraitId = 'flicker' | 'sweettooth' | 'fanfare' | 'collector' | 'resonance';
+/** 角色专属机制 trait（M14：5 个后期角色；M16：+2 隐藏角色，复用 M13 RunModifier 钩子体系） */
+export type TraitId = 'flicker' | 'sweettooth' | 'fanfare' | 'collector' | 'resonance'
+  | 'bouncy' | 'comet';
 
 /** 规则卡 Arcana（M9：10 张基础卡；M13：6 张机制卡，成就解锁后入池） */
 export type ArcanaId =
@@ -90,4 +93,6 @@ export type AchievementId =
   | 'flawlessBoss' | 'fiveCharWins' | 'noPassiveClear' | 'untouchable10'
   | 'evolveRush' | 'soloWeaponClear' | 'arcanaTrio'
   // M15（精英词缀）
-  | 'affixSlayer' | 'graviticEscape';
+  | 'affixSlayer' | 'graviticEscape'
+  // M16（隐藏成就：未达成时成就页显示 ？？？，达成解锁隐藏角色）
+  | 'secretBloom' | 'stargazer';

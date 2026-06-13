@@ -148,7 +148,10 @@ export class MapMechanicSystem implements RunSystem {
     }
     const dx = ctx.player.x - x;
     const dy = ctx.player.y - y;
-    if (dx * dx + dy * dy < r * r) ctx.damagePlayer(spec.dmg * dmgScale(min));
+    if (dx * dx + dy * dy < r * r) {
+      ctx.run.meteorHits++; // M16 stargazer 埋点：被砸中即计数（活到 Tracker 下秒评估 = 仍存活）
+      ctx.damagePlayer(spec.dmg * dmgScale(min));
+    }
   }
 
   // ---------- 晨光柱 ----------

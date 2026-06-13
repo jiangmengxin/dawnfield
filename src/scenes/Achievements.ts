@@ -42,6 +42,8 @@ export class AchievementsScene extends UIScene {
       let y = 0;
       const addRow = (spec: AchievementSpec): void => {
         const unlocked = Meta.hasAch(spec.id);
+        // M16 隐藏成就：未达成时连条件/奖励都不剧透（标题 ？？？ 由 Card locked 态统一渲染）
+        const hiddenLocked = spec.hidden === true && !unlocked;
         // 附带解锁奖励的成就：描述里点明（角色名达成前不剧透显示 ???；地图/规则卡名直接显示当目标）
         let reward = '';
         if (spec.unlockChar) {
@@ -61,7 +63,7 @@ export class AchievementsScene extends UIScene {
           layout: 'row',
           icon: spec.icon,
           title: t('ach_' + spec.id),
-          desc: t('ach_' + spec.id + '_d') + reward,
+          desc: hiddenLocked ? t('ach_hiddenDesc') : t('ach_' + spec.id + '_d') + reward,
           tag: unlocked ? '★' : undefined,
           tagColor: '#C8902A',
           color: unlocked ? 0xe2b452 : undefined,

@@ -50,6 +50,9 @@ export class ResultScene extends Phaser.Scene {
         // M15 graviticEscape（win 类，终评）
         gravSeen: data.gravSeen,
         gravHit: data.gravHit,
+        // M16 彩蛋成就：局内 Tracker 已逐秒评估（终评不补——「仍存活」语义只在局内成立）
+        bloomed: false,
+        meteorHits: 0,
       },
       // recordRun 已先入账：winsByChar 含本局胜利，fiveCharWins 当场可判
       stats: { ...Meta.save.stats, charWins: Object.keys(Meta.save.stats.winsByChar).length },

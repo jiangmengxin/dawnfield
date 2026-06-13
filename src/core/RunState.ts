@@ -67,6 +67,9 @@ export class RunState {
   affixKills = 0;
   gravSeen = false;
   gravHit = false;
+  // M16 彩蛋埋点：草甸花圃已绽放（secretBloom）+ 夜原流星被砸次数（stargazer）
+  bloomed = false;
+  meteorHits = 0;
   /** 地图升级节奏乘子（M12，= MapSpec.xpK；GameScene.create 写入） */
   mapXpK = 1;
   difficultyHp = 1;

@@ -112,7 +112,9 @@ export class CodexScene extends UIScene {
         }));
       }
     } else if (tab === 'chars') {
-      for (const c of CHARACTERS) {
+      // M16 隐藏角色：未解锁不占位不显示（与 CharacterSelect 同口径）；解锁后 16→18
+      const chars = CHARACTERS.filter((c) => !c.secret || Meta.isUnlocked('chars', c.id));
+      for (const c of chars) {
         // M14 角色专属机制：图鉴展示机制全文（选人页只露机制名，详情在此）
         items.push(this.entry(tab, c.id, {
           icon: c.tex, iconScale: c.texScale * 0.85, title: t('char_' + c.id), color: c.color, fontScale,
@@ -121,7 +123,7 @@ export class CodexScene extends UIScene {
           subDesc: c.trait ? '✦ ' + t('trait_' + c.trait) : undefined,
         }));
       }
-      pushLocked(TARGET.chars - CHARACTERS.length);
+      pushLocked(Math.max(0, TARGET.chars - chars.length));
     } else if (tab === 'arcana') {
       for (const m of ARCANA_META) {
         // M13 机制卡未解锁：不走首遇点亮，直接显示解锁条件（成就名）当攻略目标
