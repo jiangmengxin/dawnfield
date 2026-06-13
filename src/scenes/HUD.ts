@@ -66,8 +66,13 @@ export class HUDScene extends Phaser.Scene {
   /** 暂停/倍速固定触控尺寸（HUD 通用规范：触控目标 ≥44） */
   private static readonly HUD_BTN = 44;
 
-  /** 状态行顶边相对安全区顶的偏移：XP 通栏下方统一净空线，HP/计时/按钮 顶对齐 */
-  private static readonly HUD_ROW_TOP = 14;
+  /** 状态行顶边相对安全区顶的偏移：与屏边 gut(16) 一致的净空，HP/计时/按钮 顶对齐 */
+  private static readonly HUD_ROW_TOP = 16;
+
+  /** LV/HP 胶囊高度（计时数字高度与之一致）：竖屏 24 / 横屏 28 */
+  private pillHeight(): number {
+    return this.compactHud ? 24 : 28;
+  }
 
   /** 屏边安全留白：所有边缘元素的统一内缩，≥16px（gapMd），大屏随 vp.s() 略增。
    *  注意是"下限"而非"缩放内缩"——绝不因小屏缩放把元素推到更贴边。 */
@@ -207,28 +212,33 @@ export class HUDScene extends Phaser.Scene {
     const rightEdge = safe.x + safe.w - gut;
     const BTN = HUDScene.HUD_BTN; // 暂停/倍速固定 44 触控尺寸
 
-    // 顶栏统一（移动端/横屏一致）：HP | 计时 | 倍速+暂停 顶边对齐同一净空线；
-    // 等级/击杀/金币 在按钮下方右侧竖排，统一步距。HP 条顶边在 update() 里同样贴 rowTop。
+    // 顶栏（按 mockup）：左上 LV/HP 胶囊 | 居中计时 | 右上 横排 倍速+暂停（顶边对齐 rowTop）；
+    // 其下左列：武器令牌行 + 被动令牌行 + 击杀(骷髅) + 金币(币)。胶囊与文字位置随血条在 update() 内更新。
     const rowTop = safe.y + HUDScene.HUD_ROW_TOP;
-    // 暂停/倍速：横排右上（横屏也横排），顶边贴 rowTop
     this.pauseBtn.setPosition(rightEdge - BTN / 2, rowTop + BTN / 2);
     this.speedBtn.setPosition(rightEdge - BTN / 2 - BTN - THEME.gapSm, rowTop + BTN / 2);
-    // 计时：中上，顶边与按钮顶对齐
-    this.timerText.setOrigin(0.5, 0).setFontSize(compact ? 26 : 30).setPosition(cx, rowTop);
+    // 计时：居中，与 LV/HP 胶囊**等高且同一中线**（数字高度 ≈ 胶囊高度）
+    const pillH = this.pillHeight();
+    this.timerText.setOrigin(0.5, 0.5).setFontSize(compact ? 26 : 30).setPosition(cx, rowTop + pillH / 2);
+    // LV/HP 胶囊文字样式（LV 左 origin 0,0.5 / HP 右 origin 1,0.5；坐标在 update() 内随胶囊设）
+    this.levelText.setOrigin(0, 0.5).setFontSize(compact ? 12 : 14).setColor(PAL.inkCss).setVisible(true);
+    this.hpText.setOrigin(1, 0.5).setFontSize(compact ? 12 : 14).setColor(PAL.inkCss);
 
-    // 右侧统计栈：等级 / 击杀 / 金币（按钮下方、统一步距；图标 X 在 update() 随数字宽度跟随，
-    // 保证后期击杀/金币位数增长时数字右缘对齐、图标不重叠）
-    const statTop = rowTop + BTN + 12;
-    const step = compact ? 24 : 26;
-    const sfs = compact ? 14 : 15;
-    const iconScale = (compact ? 14 : 15) / 18; // 骷髅与金币同源 18px → 等比同显示尺寸
-    this.levelText.setOrigin(1, 0.5).setFontSize(sfs).setPosition(rightEdge, statTop).setVisible(true);
-    this.killText.setOrigin(1, 0.5).setFontSize(sfs).setPosition(rightEdge, statTop + step).setVisible(true);
-    this.coinText.setOrigin(1, 0.5).setFontSize(sfs).setPosition(rightEdge, statTop + step * 2).setVisible(true);
-    this.killIcon.setScale(iconScale).setY(statTop + step).setVisible(true);
-    this.coinIcon.setScale(iconScale).setY(statTop + step * 2).setVisible(true);
+    // 左下：击杀(骷髅，灰) + 金币(币，金) —— 图标在左、数字紧随，左缘对齐
+    const statX = safe.x + gut;
+    const iconScale = (compact ? 15 : 17) / 18;
+    const iconW = 18 * iconScale;
+    const tokenY = rowTop + (compact ? 32 : 38);
+    const tokenSize = compact ? 26 : 32;
+    const tokenGap = compact ? 4 : 7;
+    const killY = tokenY + 2 * (tokenSize + tokenGap) + (compact ? 6 : 8) + iconW / 2;
+    const coinY = killY + (compact ? 23 : 27);
+    this.killIcon.setScale(iconScale).setPosition(statX + iconW / 2, killY).setVisible(true);
+    this.killText.setOrigin(0, 0.5).setFontSize(compact ? 14 : 15).setPosition(statX + iconW + 5, killY).setVisible(true);
+    this.coinIcon.setScale(iconScale).setPosition(statX + iconW / 2, coinY).setVisible(true);
+    this.coinText.setOrigin(0, 0.5).setFontSize(compact ? 14 : 15).setPosition(statX + iconW + 5, coinY).setVisible(true);
 
-    this.bossName.setPosition(cx, rowTop + 128);
+    this.bossName.setPosition(cx, coinY + (compact ? 22 : 26));
     this.warnText.setPosition(cx, safe.y + safe.h * 0.3);
     this.debugText.setPosition(safe.x + gut, safe.y + safe.h - 4);
     this.buildIconRow();
@@ -267,34 +277,37 @@ export class HUDScene extends Phaser.Scene {
     }
     const compact = this.compactHud;
     const gut = this.edgeGutter(); // 左缘统一安全留白（与 layout 同）
-    const hpH = 16;
-    const hpR = 8;
-    const hpX = safe.x + gut + shX;
-    const hpY = safe.y + HUDScene.HUD_ROW_TOP + shY; // 顶边与计时/按钮同净空线（顶对齐）
-    // 桌面 HP 条与下方 6 格技能区等宽（与 buildIconRow 固定尺寸一致）
-    const slotRowW = MAX_WEAPONS * (32 + 7) - 7;
-    const hpW = compact ? Math.min(132, safe.w * 0.32) : Math.min(slotRowW, safe.w * 0.35);
+    // LV/HP 胶囊（等级集成进血条）：填充随 HP 减少；移动端压缩宽度，避让居中计时（留 ≥10 间隙）
+    const pillH = this.pillHeight();
+    const pillR = pillH / 2;
+    const timerHalf = (compact ? 26 : 30) * 1.65; // 估算"00:00"半宽
+    const maxPillW = safe.x + safe.w / 2 - timerHalf - 10 - (safe.x + gut);
+    const pillW = compact ? Math.min(132, maxPillW) : Math.min(228, safe.w * 0.26, maxPillW);
+    const pillX = safe.x + gut + shX;
+    const pillY = safe.y + HUDScene.HUD_ROW_TOP + shY;
     const hpK = Phaser.Math.Clamp(run.hp / run.stats.maxHp, 0, 1);
-    g.fillStyle(0x5a5248, 0.08);
-    g.fillRoundedRect(hpX, hpY, hpW, hpH, hpR);
-    g.fillStyle(PAL.hp, 1);
-    if (hpK > 0.03) g.fillRoundedRect(hpX, hpY, Math.max(12, hpW * hpK), hpH, hpR);
+    g.fillStyle(PAL.hpBack, 1); // 未填充底
+    g.fillRoundedRect(pillX, pillY, pillW, pillH, pillR);
+    g.fillStyle(PAL.hp, 1); // HP 填充（左起）
+    if (hpK > 0.02) g.fillRoundedRect(pillX, pillY, Math.max(pillH, pillW * hpK), pillH, pillR);
     g.lineStyle(2, 0xe0d4bc, 1);
-    g.strokeRoundedRect(hpX, hpY, hpW, hpH, hpR);
-    // M12 HUD 打磨：低血（<30%）红描边呼吸脉冲提示
+    g.strokeRoundedRect(pillX, pillY, pillW, pillH, pillR);
+    // M12 低血（<30%）红描边呼吸脉冲
     if (hpK < 0.3) {
       g.lineStyle(2.5, 0xe05060, 0.4 + 0.4 * Math.abs(Math.sin(run.elapsed * 5)));
-      g.strokeRoundedRect(hpX - 2.5, hpY - 2.5, hpW + 5, hpH + 5, hpR + 2);
+      g.strokeRoundedRect(pillX - 2.5, pillY - 2.5, pillW + 5, pillH + 5, pillR + 2);
     }
-    this.hpText.setPosition(hpX + 6, hpY + hpH / 2).setText(Math.ceil(run.hp) + ' / ' + run.stats.maxHp);
-    // M14 wisp 闪避就绪点：HP 条右侧小圆点（就绪 = 角色主题色实心；冷却 = 灰点变淡）
+    // LV 左 / HP 右（均在胶囊内）
+    this.levelText.setPosition(pillX + 10, pillY + pillH / 2).setText('LV ' + run.level);
+    this.hpText.setPosition(pillX + pillW - 10, pillY + pillH / 2).setText(Math.ceil(run.hp) + '/' + run.stats.maxHp);
+    // M14 wisp 闪避就绪点：胶囊右侧小圆点（就绪 = 角色主题色实心；冷却 = 灰点变淡）
     if (run.char.trait === 'flicker') {
       const ready = run.flickerCdLeft <= 0;
       g.fillStyle(ready ? 0x76b896 : 0xc8bca4, ready ? 1 : 0.45);
-      g.fillCircle(hpX + hpW + 12, hpY + hpH / 2, 5);
+      g.fillCircle(pillX + pillW + 12, pillY + pillH / 2, 5);
       if (ready) {
         g.lineStyle(1.5, 0xffffff, 0.9);
-        g.strokeCircle(hpX + hpW + 12, hpY + hpH / 2, 5);
+        g.strokeCircle(pillX + pillW + 12, pillY + pillH / 2, 5);
       }
     }
 
@@ -331,23 +344,18 @@ export class HUDScene extends Phaser.Scene {
     } else if (this.debugText.visible) {
       this.debugText.setVisible(false);
     }
+    // 击杀/金币数字（图标在左、左缘对齐，数字随位数向右增长——左侧有空间）；等级已并入 LV/HP 胶囊
     this.killText.setText(String(run.kills));
     this.coinText.setText(String(Math.floor(run.coins)));
-    this.levelText.setText(t('level') + ' ' + run.level);
-    // 图标紧贴数字左缘（数字右缘对齐 rightEdge，后期位数增长时图标随之左移、不重叠）
-    const statRight = safe.x + safe.w - this.edgeGutter();
-    const ig = 7;
-    this.killIcon.setX(statRight - this.killText.width - ig - this.killIcon.displayWidth / 2);
-    this.coinIcon.setX(statRight - this.coinText.width - ig - this.coinIcon.displayWidth / 2);
 
     // Boss 条（名称/配色随本图 Boss）
     if (this.bossVisible) {
       const boss = this.gs.enemies.boss;
       if (boss && boss.active) {
-        // Boss 条居中（两侧 ≥40 留白），位置在 bossName（rowTop+128）之下
+        // Boss 条居中（两侧 ≥40 留白），位置在左列统计（击杀/金币）与 bossName 之下
         const bw = Math.min(420, safe.w - 80);
         const bx = safe.x + safe.w / 2 - bw / 2;
-        const by = safe.y + HUDScene.HUD_ROW_TOP + 144;
+        const by = safe.y + (compact ? 182 : 218);
         const bh = 12;
         const br = 6;
         const bk = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
@@ -468,11 +476,11 @@ export class HUDScene extends Phaser.Scene {
     this.iconRow = [];
     const safe = this.vp.safe;
     const compact = this.compactHud;
-    // 6+6 槽位常显：左缘对齐 HP 条同一 gut 安全留白；HP 条（顶 14、高 16）下方一档
+    // 6+6 槽位常显：左缘对齐 LV/HP 胶囊同一 gut 安全留白；胶囊下方一档（与 layout tokenY 一致）
     const size = compact ? 26 : 32;
     const gap = compact ? 4 : 7;
     const x0 = safe.x + this.edgeGutter();
-    const y = safe.y + HUDScene.HUD_ROW_TOP + 16 + 8;
+    const y = safe.y + HUDScene.HUD_ROW_TOP + (compact ? 32 : 38);
     this.iconRow.push(...this.drawSlotRow(x0, y, size, this.weaponSlots(), 11, gap));
     this.iconRow.push(...this.drawSlotRow(x0, y + size + gap, size, this.passiveSlots(), 11, gap));
     // 规则卡不在 HUD 常显，构筑详情见暂停面板（drawArcanaRow）
