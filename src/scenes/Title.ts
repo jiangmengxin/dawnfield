@@ -34,7 +34,7 @@ export class TitleScene extends UIScene {
     }
 
     // 标题
-    const titleZh = this.add.text(cx, safe.y + safe.h * 0.17, getLang() === 'zh' ? '晨 野' : 'DAWNFIELD', {
+    const titleZh = this.add.text(cx, safe.y + safe.h * 0.17, getLang() === 'zh' ? '晨 露 之 野' : 'DAWNFIELD', {
       fontFamily: FONT, fontSize: vp.fs(compact ? 54 : 72) + 'px', fontStyle: 'bold', color: PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 8,
     }).setOrigin(0.5).setShadow(0, 4, 'rgba(90,82,72,0.18)', 8).setDepth(2);

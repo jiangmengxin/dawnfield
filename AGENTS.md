@@ -1,10 +1,10 @@
-# AGENTS.md — 晨野 Dawnfield Agent 开发指南
+# AGENTS.md — 晨露之野 Dawnfield Agent 开发指南
 
 面向 AI Agent（Claude Code 等）的开发手册。完整产品蓝图见 [docs/blueprint-1.0.md](docs/blueprint-1.0.md)。
 
 ## 项目概述
 
-晨野 Dawnfield：Phaser 4.1 + Vite 7 + TypeScript 5.8 的吸血鬼幸存者类网页游戏。
+晨露之野 Dawnfield：Phaser 4.1 + Vite 7 + TypeScript 5.8 的吸血鬼幸存者类网页游戏。
 1.0 目标：16 角色 / 8 地图 / 16 武器+16 超武 / 16 被动，分 9 个里程碑（M1-M9）实施。
 
 **当前进度：M16 已完成（秘密内容：2 隐藏角色 blobby/nova + 草甸花圃/夜原流星两条彩蛋链 + 隐藏成就，详见文末 M16 要点）。M1-M9 全里程碑完成，1.0 内容齐整；发行补强 M10（重抽/放逐/跳过 + 复活 + 商店 15 项）、M11（无尽模式 + 狂暴两档 + 存档 v2）、M12（手感与数值打磨：时长三档 10/20/30 + 晨露精华 + surge + 打击感分级 + 可读性规范 + UI 打磨 + DPS bench）、M13（构筑深度 I：RunModifier 5 新钩子 + Stats 3 字段 + 6 张机制 Arcana + 成就重构 7 项替换/奖励挂钩）、M14（5 角色 trait + 进化引导三件套）、M15（威胁多样性）与 M16（秘密内容）已完成，见下表与文末要点。**
