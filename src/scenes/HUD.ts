@@ -883,7 +883,7 @@ export class HUDScene extends Phaser.Scene {
     }
     this.overlayMode = 'arcana';
     this.overlay.push(this.addVeil());
-    this.addPickTitle(t('arcanaTitle'), this.vp.safe.y + this.vp.safe.h * 0.06);
+    this.addPickTitle(t('arcanaTitle'), this.arcanaLayout().titleY);
     this.openArcanaPicker(choices, (id) => this.chooseArcana(id));
   }
 
@@ -891,6 +891,57 @@ export class HUDScene extends Phaser.Scene {
   private arcanaPageSpec(): { cols: number; rows: number; perPage: number } {
     const portrait = this.vp.h > this.vp.w;
     return portrait ? { cols: 2, rows: 3, perPage: 6 } : { cols: 4, rows: 2, perPage: 8 };
+  }
+
+  /** 选择器整组几何：标题 + 网格 + 规则描述 + 翻页指示 + 控制行作为一个整体在安全区内**垂直居中**，
+   *  上下留白均衡；描述框与网格等宽对齐；控制行（‹ 选择 ›）聚成居中一簇——不再把标题贴顶、
+   *  把翻页箭头甩到屏幕左右角落、把按钮压到底边（见反馈截图）。竖屏/横屏同一套居中口径。 */
+  private arcanaLayout(): {
+    cols: number; rows: number; titleY: number;
+    gx0: number; gy0: number; cw: number; ch: number; gapX: number; gapY: number; gridW: number;
+    descTop: number; descH: number; descW: number;
+    pageY: number; ctrlCy: number; ctrlH: number;
+  } {
+    const safe = this.vp.safe;
+    const cx = safe.x + safe.w / 2;
+    const portrait = this.vp.h > this.vp.w;
+    const { cols, rows } = this.arcanaPageSpec();
+
+    const titleH = 40;
+    const gapTitleGrid = 16;
+    const gapGridDesc = 14;
+    const gapDescCtrl = 12; // 规则描述 → 控制行
+    const gapCtrlPage = 6;  // 控制行 → 页数
+    const pageH = 16;
+    const ctrlH = Math.max(THEME.hitMin, 50);
+    const topPad = 14;
+    const gapX = 12;
+    const gapY = 12;
+
+    const sidePad = portrait ? 18 : 56;
+    const cw = Math.min(portrait ? 210 : 220, (safe.w - 2 * sidePad - (cols - 1) * gapX) / cols);
+    // 规则描述区压缩到刚好容纳标题 + 至多 2 行规则文字（竖屏最长 2 行、横屏单行）
+    const descH = portrait ? 74 : 58;
+
+    // 卡高：取上限；整组高度超出安全区时再压缩卡高（保留 topPad 下限），保证整组始终能容纳
+    const fixed = titleH + gapTitleGrid + gapGridDesc + descH + gapDescCtrl + ctrlH + gapCtrlPage + pageH
+      + (rows - 1) * gapY;
+    const ch = Math.max(portrait ? 92 : 116, Math.min(portrait ? 158 : 188, (safe.h - 2 * topPad - fixed) / rows));
+
+    const gridW = cols * cw + (cols - 1) * gapX;
+    const gridH = rows * ch + (rows - 1) * gapY;
+    const total = titleH + gapTitleGrid + gridH + gapGridDesc + descH + gapDescCtrl + ctrlH + gapCtrlPage + pageH;
+    const top = safe.y + Math.max(topPad, (safe.h - total) / 2);
+
+    const titleY = top + titleH / 2;
+    const gy0 = top + titleH + gapTitleGrid;
+    const gx0 = cx - gridW / 2;
+    const descTop = gy0 + gridH + gapGridDesc;
+    // 页数挪到控制行下方：描述 → 控制行 → 页数，整体更紧凑
+    const ctrlCy = descTop + descH + gapDescCtrl + ctrlH / 2;
+    const pageY = ctrlCy + ctrlH / 2 + gapCtrlPage + pageH / 2;
+
+    return { cols, rows, titleY, gx0, gy0, cw, ch, gapX, gapY, gridW, descTop, descH, descW: gridW, pageY, ctrlCy, ctrlH };
   }
 
   /** 规则卡分页选择器（B3，开局选卡与宝箱规则卡件共用）：点选预览高亮 + 下方规则描述 +
@@ -930,65 +981,52 @@ export class HUDScene extends Phaser.Scene {
     const safe = this.vp.safe;
     const cx = safe.x + safe.w / 2;
     const all = ARCANA_META.map((m) => m.id);
-    const { cols, rows, perPage } = this.arcanaPageSpec();
+    const { perPage } = this.arcanaPageSpec();
+    const L = this.arcanaLayout();
+    const { cols } = L;
     const pageCount = Math.ceil(all.length / perPage);
     st.page = Phaser.Math.Clamp(st.page, 0, pageCount - 1);
 
-    // 纵向分区：标题（已在 show 中加）→ 网格 → 规则描述区 → 翻页指示 → 控制行
-    const ctrlCy = safe.y + safe.h - 40;
-    const pageY = ctrlCy - 25 - 20;
-    const descBottom = pageY - 14;
-    const descH = this.vp.h > this.vp.w ? 92 : 78;
-    const descTop = descBottom - descH;
-    const gridTop = safe.y + safe.h * 0.13;
-    const gridBottom = descTop - 12;
-
-    const gapX = 12;
-    const gapY = 12;
-    const sidePad = this.vp.h > this.vp.w ? 18 : 56;
-    const cw = Math.min(this.vp.h > this.vp.w ? 210 : 200, (safe.w - 2 * sidePad - (cols - 1) * gapX) / cols);
-    const ch = Math.min(this.vp.h > this.vp.w ? 158 : 188, (gridBottom - gridTop - (rows - 1) * gapY) / rows);
-    const gridW = cols * cw + (cols - 1) * gapX;
-    const gridH = rows * ch + (rows - 1) * gapY;
-    const gx0 = cx - gridW / 2;
-    const gy0 = gridTop + Math.max(0, (gridBottom - gridTop - gridH) / 2);
-
+    // 网格瓦片（整组居中布局，几何由 arcanaLayout 给定）
     const pageItems = all.slice(st.page * perPage, st.page * perPage + perPage);
     pageItems.forEach((id, i) => {
       const col = i % cols;
       const row = Math.floor(i / cols);
-      const tcx = gx0 + col * (cw + gapX) + cw / 2;
-      const tcy = gy0 + row * (ch + gapY) + ch / 2;
-      this.makeArcanaTile(id, tcx, tcy, cw, ch, st.selected === id).forEach(push);
+      const tcx = L.gx0 + col * (L.cw + L.gapX) + L.cw / 2;
+      const tcy = L.gy0 + row * (L.ch + L.gapY) + L.ch / 2;
+      this.makeArcanaTile(id, tcx, tcy, L.cw, L.ch, st.selected === id).forEach(push);
     });
 
-    // 规则描述区
-    this.drawArcanaDesc(cx, descTop, safe.w - 2 * (this.vp.h > this.vp.w ? 16 : 44), descH, st.selected).forEach(push);
+    // 规则描述区（与网格等宽、左右边缘对齐）
+    this.drawArcanaDesc(cx, L.descTop, L.descW, L.descH, st.selected).forEach(push);
 
     // 翻页指示
-    push(this.add.text(cx, pageY, (st.page + 1) + ' / ' + pageCount, {
+    push(this.add.text(cx, L.pageY, (st.page + 1) + ' / ' + pageCount, {
       fontFamily: FONT, fontSize: '13px', color: PAL.inkSoft, stroke: '#FFFFFF', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(102));
 
-    // 控制行：‹ 上一页 | 选择 | 下一页 ›
-    const gut = this.edgeGutter();
+    // 控制行：‹ 选择 › 聚成居中一簇（翻页箭头紧贴选择按钮两侧，不再甩到屏幕左右角落）
+    const ctrlCy = L.ctrlCy;
     const selectable = st.selected !== null && st.pickable.includes(st.selected);
+    const selectW = Math.min(200, safe.w * 0.46);
+    const arrowW = 44;
+    const clusterGap = 12;
     const selectBtn = new UIButton(this, cx, ctrlCy, {
-      w: Math.min(200, safe.w * 0.46), h: 50, label: t('arcSelect'), fontSize: 18,
+      w: selectW, h: L.ctrlH, label: t('arcSelect'), fontSize: 18,
       fill: 0xffeec0, edge: 0xe2b452,
       onTap: () => { if (st.selected && st.pickable.includes(st.selected)) st.onPick(st.selected); },
     });
     selectBtn.setDepth(102);
     if (!selectable) selectBtn.setEnabled(false);
     push(selectBtn);
-    const prev = new UIButton(this, safe.x + gut + 22, ctrlCy, {
-      w: 44, h: 44, label: '‹', fontSize: 24, onTap: () => { st.page--; this.renderArcanaPage(); },
+    const prev = new UIButton(this, cx - selectW / 2 - clusterGap - arrowW / 2, ctrlCy, {
+      w: arrowW, h: arrowW, label: '‹', fontSize: 24, onTap: () => { st.page--; this.renderArcanaPage(); },
     });
     prev.setDepth(102);
     if (st.page <= 0) prev.setEnabled(false);
     push(prev);
-    const next = new UIButton(this, safe.x + safe.w - gut - 22, ctrlCy, {
-      w: 44, h: 44, label: '›', fontSize: 24, onTap: () => { st.page++; this.renderArcanaPage(); },
+    const next = new UIButton(this, cx + selectW / 2 + clusterGap + arrowW / 2, ctrlCy, {
+      w: arrowW, h: arrowW, label: '›', fontSize: 24, onTap: () => { st.page++; this.renderArcanaPage(); },
     });
     next.setDepth(102);
     if (st.page >= pageCount - 1) next.setEnabled(false);
@@ -1393,10 +1431,10 @@ export class HUDScene extends Phaser.Scene {
       this.gs.levelUp.applyChest(reward, pick);
       this.scene.resume('game');
     };
-    // 单件规则卡：直接进分页选卡器（与开局选卡同一版式）；标题上移到顶部腾出网格区
+    // 单件规则卡：直接进分页选卡器（与开局选卡同一版式）；标题与整组居中布局对齐（arcanaLayout）
     if (items.length === 1 && arc && !auto) {
       this.chestTitle?.setText(t('chestArcanaPick'))
-        .setPosition(this.vp.safe.x + this.vp.safe.w / 2, this.vp.safe.y + this.vp.safe.h * 0.06);
+        .setPosition(this.vp.safe.x + this.vp.safe.w / 2, this.arcanaLayout().titleY);
       this.openArcanaPicker(arc.cards, (id) => {
         if (this.overlayMode !== 'chest') return;
         SFX.uiClick();
@@ -1520,7 +1558,7 @@ export class HUDScene extends Phaser.Scene {
         SFX.uiClick();
         revealObjs.forEach((o) => o.destroy());
         this.chestTitle?.setText(t('chestArcanaPick'))
-          .setPosition(this.vp.safe.x + this.vp.safe.w / 2, this.vp.safe.y + this.vp.safe.h * 0.06);
+          .setPosition(this.vp.safe.x + this.vp.safe.w / 2, this.arcanaLayout().titleY);
         this.openArcanaPicker(arc.cards, (id) => {
           if (this.overlayMode !== 'chest') return;
           SFX.uiClick();
