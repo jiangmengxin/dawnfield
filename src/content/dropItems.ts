@@ -33,21 +33,10 @@ export interface DropItemSpec {
 
 /** 各掉落来源的基础概率（× run.dropRateMul 由商店 fortune 提升） */
 export const DROP_RATES = {
-  kill: 0.0045, // 普通敌人击杀掉通用道具
+  kill: 0.006, // 普通敌人击杀掉通用道具（移除可破坏容器后小幅上调补偿）
   eliteCommon: 0.55, // 精英额外掉通用道具
   bossCommon: 1, // Boss（无尽）必掉通用道具
   mapDrop: 0.3, // 地图机制产物掉专属道具
-  breakBonus: 0.12, // 场景物破坏时改掉地图专属（而非通用）的概率
-} as const;
-
-/** 可破坏场景道具（VS 火盆式）生成节奏 */
-export const BREAKABLE = {
-  interval: 9, // 每隔多少秒尝试生成一个
-  maxAlive: 4, // 同时存在上限
-  spawnMin: 220, // 在玩家周围环形带内生成
-  spawnMax: 460,
-  breakR: 30, // 玩家走近此半径即破碎
-  cullR: 1500, // 超出此距离回收（玩家走远）
 } as const;
 
 export const DROP_ITEMS: Record<DropItemId, DropItemSpec> = {

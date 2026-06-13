@@ -1,7 +1,8 @@
-// 一次性掉落道具系统（M19）：效果注册表 + 在场持续效果计时 + 可破坏场景道具
+// 一次性掉落道具系统（M19）：效果注册表 + 在场持续效果计时
 // 拾取（PickupSystem）命中玩家 → collect(id)：瞬发立即结算，持续型入 active 列计时。
 // 持续型的 buff/无敌/时停经 recomputeState 聚合后一次性写入 ctx.setDropState。
-import { BREAKABLE, DROP_ITEMS, DROP_RATES, DropItemSpec, rollCommonDrop, weightedDrop } from '../content/dropItems';
+// 掉落来源：击杀 / 精英·Boss / 地图机制产物（直接以各自专属图标落地，无中间容器）。
+import { DROP_ITEMS, DropItemSpec } from '../content/dropItems';
 import type { DropItemId } from '../content/ids';
 import { shakeCam } from '../gfx/shake';
 import { SFX } from '../audio/sound';
@@ -27,14 +28,6 @@ interface ActiveEffect {
   eff: DropEffect;
   remain: number;
   dur: number;
-}
-
-interface Breakable {
-  img: Phaser.GameObjects.Image;
-  x: number;
-  y: number;
-  born: number;
-  active: boolean;
 }
 
 // ---------- 效果原语 ----------
@@ -282,8 +275,6 @@ export const DROP_EFFECTS: Record<DropItemId, DropEffect> = {
 
 export class DropItemSystem implements RunSystem {
   private active: ActiveEffect[] = [];
-  private breakables: Breakable[] = [];
-  private breakT = BREAKABLE.interval;
 
   constructor(private ctx: CombatContext) {}
 
@@ -322,7 +313,6 @@ export class DropItemSystem implements RunSystem {
       }
     }
     if (changed) this.recomputeState();
-    this.updateBreakables(dt);
   }
 
   /** 聚合在场持续效果 → 一次性写入 ctx（属性重算 + 无敌/时停态） */
@@ -339,71 +329,8 @@ export class DropItemSystem implements RunSystem {
     this.ctx.setDropState(s);
   }
 
-  // ---------- 可破坏场景道具（VS 火盆式：走近自动破碎掉道具） ----------
-
-  private updateBreakables(dt: number): void {
-    const ctx = this.ctx;
-    const px = ctx.player.x;
-    const py = ctx.player.y;
-    this.breakT -= dt;
-    const aliveN = this.breakables.reduce((n, b) => n + (b.active ? 1 : 0), 0);
-    if (this.breakT <= 0) {
-      this.breakT = BREAKABLE.interval;
-      if (aliveN < BREAKABLE.maxAlive) this.spawnBreakable(px, py);
-    }
-    for (const b of this.breakables) {
-      if (!b.active) continue;
-      b.img.y = b.y + Math.sin(ctx.run.elapsed * 3 + b.born * 7) * 1.6;
-      const dx = b.x - px;
-      const dy = b.y - py;
-      const d2 = dx * dx + dy * dy;
-      if (d2 > BREAKABLE.cullR * BREAKABLE.cullR) { this.deactivateBreakable(b); continue; }
-      if (d2 < BREAKABLE.breakR * BREAKABLE.breakR) this.breakOpen(b);
-    }
-  }
-
-  private spawnBreakable(px: number, py: number): void {
-    const ctx = this.ctx;
-    const a = ctx.rng() * Math.PI * 2;
-    const r = BREAKABLE.spawnMin + ctx.rng() * (BREAKABLE.spawnMax - BREAKABLE.spawnMin);
-    const x = px + Math.cos(a) * r;
-    const y = py + Math.sin(a) * r;
-    let b = this.breakables.find((i) => !i.active);
-    if (!b) {
-      b = { img: ctx.scene.add.image(0, 0, 'brk_lantern'), x, y, born: 0, active: false };
-      this.breakables.push(b);
-    }
-    b.x = x;
-    b.y = y;
-    b.born = ctx.run.elapsed;
-    b.active = true;
-    b.img.setTexture('brk_lantern').setPosition(x, y).setVisible(true).setDepth(950 + y * 0.01).setScale(0);
-    ctx.scene.tweens.add({ targets: b.img, scale: 1, duration: 280, ease: 'Back.easeOut' });
-  }
-
-  private breakOpen(b: Breakable): void {
-    const ctx = this.ctx;
-    this.deactivateBreakable(b);
-    // 破坏掉落：通常通用道具，小概率改掉本图专属
-    const mapDrops = ctx.map.drops;
-    const id = (mapDrops && mapDrops.length && ctx.rng() < DROP_RATES.breakBonus)
-      ? weightedDrop(mapDrops, ctx.rng)
-      : rollCommonDrop(ctx.rng);
-    ctx.spawnDropItem(id, b.x, b.y);
-    ctx.fx.burst(b.x, b.y, { tex: 'p_dot', color: 0xf0c860, count: 8, speed: 130, life: 0.4, scale: 0.7, grav: 160 });
-    ringFx(ctx, b.x, b.y, 0xf0c860, 60, 0.4);
-    SFX.swish();
-  }
-
-  private deactivateBreakable(b: Breakable): void {
-    b.active = false;
-    b.img.setVisible(false);
-  }
-
   destroy(): void {
     this.ctx.setDropState({ ...DEFAULT_STATE });
     this.active.length = 0;
-    for (const b of this.breakables) b.img.destroy();
-    this.breakables.length = 0;
   }
 }

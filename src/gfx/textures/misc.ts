@@ -587,28 +587,6 @@ export function createMiscTextures(scene: Phaser.Scene): void {
     makeTex(scene, DROP_ITEMS[id].icon, 28, 28, (ctx) => DROP_ICONS[id](ctx));
   }
 
-  // === M19 可破坏场景道具（小提灯：暖光灯笼，走近破碎掉道具） ===
-  makeTex(scene, 'brk_lantern', 32, 40, (ctx) => {
-    softGlow(ctx, 16, 18, 16, 'rgba(248,216,128,0.55)');
-    // 提梁
-    ctx.strokeStyle = '#9A7838'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(16, 9, 5, Math.PI, 0); ctx.stroke();
-    // 灯体（暖黄渐变）
-    const g = ctx.createLinearGradient(0, 9, 0, 32);
-    g.addColorStop(0, '#FFF0B8'); g.addColorStop(1, '#E8B860');
-    ctx.beginPath();
-    ctx.moveTo(9, 12); ctx.lineTo(23, 12); ctx.lineTo(25, 30); ctx.lineTo(7, 30); ctx.closePath();
-    ctx.fillStyle = g; ctx.fill();
-    ctx.lineWidth = 2; ctx.strokeStyle = '#B88838'; ctx.stroke();
-    // 顶盖 + 底座
-    ctx.fillStyle = '#C89848';
-    ctx.fillRect(7, 9, 18, 3.5);
-    ctx.fillRect(6, 30, 20, 3.5);
-    // 烛芯高光
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.beginPath(); ctx.ellipse(16, 21, 2.2, 4, 0, 0, Math.PI * 2); ctx.fill();
-  });
-
   // === 虚拟摇杆 ===
   makeTex(scene, 'joy_base', 140, 140, (ctx) => {
     ctx.beginPath();
