@@ -125,6 +125,8 @@ export interface CombatContext {
   readonly enemyCapMul: number;
   /** 返回实际结算伤害（含浮动/暴击；目标已死/无效返回 0）——DPS 统计据此归账 */
   hitEnemy(e: Enemy, dmg: number, opts?: HitOpts): number;
+  /** M17 施放反馈：玩家小幅 pop + 武器主题色环（GameScene 内 0.15s 节流，6 武器齐射不闪疯） */
+  castFx(id: WeaponId): void;
   /** 伤害归账（M8 武器 DPS 统计；调试面板显示） */
   dmgLog(src: string, dmg: number): void;
   onEnemyKilled(e: Enemy): void;

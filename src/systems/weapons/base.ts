@@ -38,6 +38,7 @@ export abstract class Weapon {
     this.cdT -= dt;
     if (this.cdT <= 0) {
       this.fire();
+      this.ctx.castFx(this.id); // M17 施放反馈（节流在 GameScene）
       this.cdT = Math.max(0.15, this.cooldown() * this.ctx.stats.cd);
     }
     this.tick(dt);

@@ -76,6 +76,27 @@ export class Effects {
     }
   }
 
+  /** M17 方向性命中喷溅：沿击退法向小粒子飞出（无方向时全向）；数量走画质系数自动降档 */
+  spray(x: number, y: number, nx: number, ny: number, color: number): void {
+    const n = Math.max(1, Math.round(2 * this.q));
+    const dir = nx !== 0 || ny !== 0 ? Math.atan2(ny, nx) : null;
+    for (let i = 0; i < n; i++) {
+      const p = this.getParticle('p_dot');
+      const a = dir === null ? Math.random() * Math.PI * 2 : dir + (Math.random() - 0.5) * 0.9;
+      const sp = 140 + Math.random() * 120;
+      p.vx = Math.cos(a) * sp;
+      p.vy = Math.sin(a) * sp - 40;
+      p.drag = 0.82;
+      p.grav = 260;
+      p.maxLife = p.life = 0.28 + Math.random() * 0.14;
+      p.scale0 = 0.5 + Math.random() * 0.3;
+      p.spin = 0;
+      p.active = true;
+      p.img.setPosition(x, y).setVisible(true).setRotation(0).setScale(p.scale0).setAlpha(0.9);
+      p.img.setTint(color);
+    }
+  }
+
   /** 预警线（M12 telegraph 规范）：冲刺/俯冲路径预示——统一警示色、双层粗细、淡入淡出 */
   teleLine(x: number, y: number, nx: number, ny: number, len: number, dur: number): void {
     const g = this.scene.add.graphics().setDepth(DEPTH_FX - 1).setAlpha(0);

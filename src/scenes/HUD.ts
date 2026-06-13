@@ -51,6 +51,7 @@ export class HUDScene extends Phaser.Scene {
   private overlay: Phaser.GameObjects.GameObject[] = [];
   private overlayMode: 'none' | 'levelup' | 'chest' | 'arcana' | 'pause' = 'none';
   private bossVisible = false;
+  private hurtShakeT = 0; // M17 受击血条抖动剩余秒数
 
   constructor() {
     super('hud');
@@ -147,6 +148,7 @@ export class HUDScene extends Phaser.Scene {
       onEvent(this.game, 'hud:revive', (n) => this.queueToast(t('reviveBanner').replace('{n}', String(n)))),
       onEvent(this.game, 'hud:achievement', (id) => this.queueAchToast(id)),
       onEvent(this.game, 'hud:tip', (text) => this.queueToast(text, 3500)), // M14 引导停留更久
+      onEvent(this.game, 'hud:hurt', () => { this.hurtShakeT = 0.25; }),
       onEvent(this.game, 'hud:refresh', () => this.buildIconRow()),
       onEvent(this.game, 'hud:togglepause', () => this.togglePause()),
       onEvent(this.game, 'hud:autopause', () => {
@@ -229,10 +231,18 @@ export class HUDScene extends Phaser.Scene {
     g.fillRect(0, safe.y, w, 9);
     g.fillStyle(PAL.xp, 1);
     g.fillRect(0, safe.y, w * xpK, 9);
-    // HP 条（左上；竖屏与计时/按钮同一中线）
+    // HP 条（左上；竖屏与计时/按钮同一中线）；受击时随 hurtShakeT 衰减抖动（M17）
+    let shX = 0;
+    let shY = 0;
+    if (this.hurtShakeT > 0) {
+      this.hurtShakeT -= this.game.loop.delta / 1000;
+      const k = Math.max(0, this.hurtShakeT / 0.25);
+      shX = (Math.random() - 0.5) * 7 * k;
+      shY = (Math.random() - 0.5) * 5 * k;
+    }
     const compact = this.compactHud;
-    const hpX = safe.x + (compact ? 12 : 14);
-    const hpY = safe.y + (compact ? 30 : 16);
+    const hpX = safe.x + (compact ? 12 : 14) + shX;
+    const hpY = safe.y + (compact ? 30 : 16) + shY;
     // 桌面 HP 条与下方 6 格技能区等宽
     const slotRowW = MAX_WEAPONS * (32 + 7) - 7;
     const hpW = compact ? Math.min(130, safe.w * 0.32) : Math.min(slotRowW, safe.w * 0.35);

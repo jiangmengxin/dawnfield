@@ -47,4 +47,8 @@ export const HITFEEL = {
   microStop: 0.03,   // 大伤害/暴击微顿帧（秒）
   eliteStop: 0.08,   // 精英死亡顿帧（秒）
   budgetPerSec: 0.12, // 每秒 hitstop 预算（超出静默丢弃）
+  // M17 受击反馈
+  punchDur: 0.09,    // 敌人受击 scale 脉冲回落时长（秒）
+  punchK: 0.18,      // 脉冲峰值放大比例
+  hurtKnock: 12,     // 玩家受击位移（px，背离伤害来源）
 };

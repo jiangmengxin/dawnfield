@@ -9,6 +9,7 @@ import { DIFFICULTY } from '../content/difficulty';
 import { ENDLESS } from '../content/endless';
 import type { AffixId, BehaviorId, EnemyId } from '../content/ids';
 import { DEATH_COLOR, cssOf } from '../gfx/palette';
+import { HITFEEL } from '../content/player';
 import { FONT, t } from '../i18n';
 import { Meta } from '../core/MetaState';
 import { BEHAVIORS, BehaviorMove, exploderBoom } from './behaviors';
@@ -46,6 +47,7 @@ export class Enemy extends Phaser.GameObjects.Image {
   exploded = false; // exploder 已主动引爆（kill() 不再触发死亡半爆）
   summonerRef: Enemy | null = null; // 召唤物归属（单召唤者存活上限用）
   recoverMul = 1; // dash 硬直乘子（swift 词缀 ×0.6）
+  punchT = 0; // M17 受击 punch 脉冲剩余秒数（并入每帧呼吸缩放）
   affixLabel?: Phaser.GameObjects.Text; // 词缀头顶浮签（随敌人池复用）
   auraImg?: Phaser.GameObjects.Image; // shielder 光环常显圈
 }
@@ -124,6 +126,7 @@ export class EnemySystem implements RunSystem {
     e.exploded = false;
     e.summonerRef = null;
     e.recoverMul = 1;
+    e.punchT = 0;
     if (spec.behavior === 'summoner') e.fireT = 2 + Math.random() * 3; // 首召错峰
     if (e.isBoss) {
       this.boss = e;
@@ -281,7 +284,10 @@ export class EnemySystem implements RunSystem {
       if (Math.abs(mvx) > 1) e.setFlipX((mvx < 0) !== (ENEMIES[e.id].flipInvert === true));
       e.wobble += dt * 4;
       const br = 1 + Math.sin(e.wobble * 2) * 0.04;
-      if (e.dashState !== 'tele') e.setScale(e.baseScale * br, e.baseScale * (2 - br));
+      // M17 受击 punch：命中瞬间放大脉冲线性回落（并入每帧缩放，tween 会被这里覆写所以不用 tween）
+      if (e.punchT > 0) e.punchT -= dt;
+      const pk = e.punchT > 0 ? 1 + HITFEEL.punchK * (e.punchT / HITFEEL.punchDur) : 1;
+      if (e.dashState !== 'tele') e.setScale(e.baseScale * br * pk, e.baseScale * (2 - br) * pk);
 
       e.setDepth(1000 + e.y * 0.01);
       e.shadowImg.setPosition(e.x, e.y + e.radius * 0.9);

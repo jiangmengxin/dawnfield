@@ -135,7 +135,7 @@ export class ResultScene extends Phaser.Scene {
 
     // 主角谢幕（本局角色）
     const heroTex = getCharacter(r.charId).tex;
-    const hero = this.add.image(cx, h * 0.33, heroTex).setScale(1.8).setDepth(2);
+    const hero = this.add.image(cx, h * 0.33, heroTex).setScale(1.25).setDepth(2); // M17 纹理 ×1.45 后补偿
     if (!r.win) hero.setAlpha(0.55).setAngle(14);
     else this.tweens.add({ targets: hero, y: '-=10', duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 

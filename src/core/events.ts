@@ -13,6 +13,7 @@ export interface GameEventMap {
   'hud:revive': [revivesLeft: number];
   'hud:achievement': [achId: string];
   'hud:tip': [text: string]; // M14 引导 tips（已 t() 完成的成文，金色 toast 停留 3.5s）
+  'hud:hurt': []; // M17 受击反馈：HUD 血条抖动
   'hud:refresh': [];
   'hud:togglepause': [];
   'hud:autopause': [];

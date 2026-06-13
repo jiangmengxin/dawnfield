@@ -17,17 +17,23 @@ export class PlayerSystem implements RunSystem {
   private touchT = 0;
   private trailT = 0;
   private rippleT = 0; // 水皮减速时的涟漪反馈节流
-  // 角色动效帧：姿态 A/B 交替（饰件摆动）+ 随机眨眼（_p1/_k 后缀纹理）
-  private pose: 0 | 1 = 0;
+  // M17 运动形变层：起步/急停 squash-stretch 脉冲 + 影子呼吸 + 施放 pop
+  private shadowK = 1;
+  private wasMoving = false;
+  private pulseT = 0;
+  private pulseK = 0;
+  private popT = 0;
+  // 角色动效帧（M17）：4 姿态钟摆步行循环（饰件连续摆动）+ 随机眨眼（_p1.._p3/_k 后缀纹理）
+  private pose = 0; // 0..3
   private poseT = 0;
   private blinkIn = 1.2 + Math.random() * 2.5; // 距下次眨眼
   private blinkLeft = 0; // 眨眼剩余时长
   private curFrame = '';
 
   constructor(private ctx: CombatContext, private input: InputManager) {
-    // 影子随角色体积缩放（基准：小萤 r=14 → 0.85）
-    const k = ctx.run.char.radius / 14;
-    this.shadow = ctx.scene.add.image(0, 0, 'shadow').setDepth(8).setScale(0.85 * k, 0.8 * k);
+    // 影子随角色视觉体积缩放（基准：小萤 artR=20 → 0.85）
+    this.shadowK = ctx.run.char.artR / 20;
+    this.shadow = ctx.scene.add.image(0, 0, 'shadow').setDepth(8).setScale(0.85 * this.shadowK, 0.8 * this.shadowK);
     this.hpBar = ctx.scene.add.graphics().setDepth(1e6 + 10);
   }
 
@@ -51,7 +57,7 @@ export class PlayerSystem implements RunSystem {
         this.rippleT -= dt;
         if (this.rippleT <= 0) {
           this.rippleT = 0.3;
-          ctx.fx.ring(player.x, player.y + ctx.run.char.radius * 0.7, POND.pool, 1.4, 0.45);
+          ctx.fx.ring(player.x, player.y + ctx.run.char.artR * 0.7, POND.pool, 1.4, 0.45);
         }
       }
       ctx.facing.x = vx;
@@ -63,18 +69,44 @@ export class PlayerSystem implements RunSystem {
       if (this.trailT <= 0) {
         const tr = ctx.run.char.trail;
         this.trailT = tr.every;
-        ctx.fx.burst(player.x - vx * 9, player.y + ctx.run.char.radius * 0.5 - vy * 6, {
+        ctx.fx.burst(player.x - vx * 9, player.y + ctx.run.char.artR * 0.5 - vy * 6, {
           tex: tr.tex, color: tr.color, count: 1, speed: 16, life: 0.45, scale: 0.55, alpha: 0.55,
         });
       }
     } else {
       this.bounce += dt * 3;
     }
-    const b = Math.sin(this.bounce) * (len > 0.01 ? 0.07 : 0.025);
-    player.setScale(1 + b, 1 - b);
+    const moving = len > 0.01;
+    // 起步/急停 squash-stretch 脉冲（起步纵向拉伸，急停压扁）
+    if (moving !== this.wasMoving) {
+      this.wasMoving = moving;
+      this.pulseT = 0.12;
+      this.pulseK = moving ? 0.12 : -0.1;
+    }
+    let pulse = 0;
+    if (this.pulseT > 0) {
+      this.pulseT -= dt;
+      pulse = this.pulseK * Math.max(0, this.pulseT / 0.12);
+    }
+    // 弹跳幅度随实际移速调制（顺风/水皮/加点都会反映在步态上）
+    const spdK = moving ? Math.min(1.5, (ctx.stats.moveSpeed * slowK * hasteK) / 175) : 1;
+    const b = Math.sin(this.bounce) * (moving ? 0.07 * spdK : 0.025);
+    // 施放 pop（C7）：武器 fire 瞬间整体小幅放大后回落
+    let pop = 1;
+    if (this.popT > 0) {
+      this.popT -= dt;
+      pop = 1 + 0.06 * Math.max(0, this.popT / 0.12);
+    }
+    player.setScale((1 + b - pulse) * pop, (1 - b + pulse) * pop);
+    // 朝向倾斜：向移动方向轻微前倾（lerp 过渡，停下回正）
+    const targetRot = moving ? ctx.facing.x * 0.07 : 0;
+    player.rotation += (targetRot - player.rotation) * Math.min(1, dt * 10);
     player.setDepth(1000 + player.y * 0.01);
-    this.shadow.setPosition(player.x, player.y + ctx.run.char.radius + 1);
-    this.updateFrame(dt, len > 0.01);
+    // 影子呼吸：身体弹起相位影子略收，近似离地感
+    const shK = 1 - Math.max(0, b) * 0.8;
+    this.shadow.setScale(0.85 * this.shadowK * shK, 0.8 * this.shadowK * shK);
+    this.shadow.setPosition(player.x, player.y + ctx.run.char.artR + 1);
+    this.updateFrame(dt, moving);
 
     // 永久强化：持续回复
     if (ctx.stats.regen > 0 && ctx.run.hp < ctx.stats.maxHp) ctx.run.heal(ctx.stats.regen * dt);
@@ -91,7 +123,7 @@ export class PlayerSystem implements RunSystem {
     if (ctx.run.hp < ctx.stats.maxHp) {
       const w = 30;
       const k = Math.max(0, ctx.run.hp / ctx.stats.maxHp);
-      const barY = player.y - ctx.run.char.radius - 16;
+      const barY = player.y - ctx.run.char.artR - 16;
       this.hpBar.fillStyle(PAL.hpBack, 0.9);
       this.hpBar.fillRoundedRect(player.x - w / 2, barY, w, 5, 2.5);
       this.hpBar.fillStyle(PAL.hp, 1);
@@ -103,8 +135,8 @@ export class PlayerSystem implements RunSystem {
   private updateFrame(dt: number, moving: boolean): void {
     this.poseT -= dt;
     if (this.poseT <= 0) {
-      this.poseT = moving ? 0.22 : 0.5;
-      this.pose = this.pose === 0 ? 1 : 0;
+      this.poseT = moving ? 0.11 : 0.32; // 4 帧循环：移动 0.44s/圈，待机慢摆
+      this.pose = (this.pose + 1) % 4;
     }
     if (this.blinkLeft > 0) {
       this.blinkLeft -= dt;
@@ -115,7 +147,7 @@ export class PlayerSystem implements RunSystem {
         this.blinkIn = 1.6 + Math.random() * 2.8;
       }
     }
-    const key = this.ctx.run.char.tex + (this.pose === 1 ? '_p1' : '') + (this.blinkLeft > 0 ? '_k' : '');
+    const key = this.ctx.run.char.tex + (this.pose > 0 ? '_p' + this.pose : '') + (this.blinkLeft > 0 ? '_k' : '');
     if (key !== this.curFrame) {
       this.curFrame = key;
       this.ctx.player.setTexture(key);
@@ -140,9 +172,22 @@ export class PlayerSystem implements RunSystem {
     if (worst > 0) ctx.damagePlayer(worst, src);
   }
 
-  /** 倒下：隐藏玩家与血条 */
+  /** 武器施放 pop（M17 C7）：GameScene.castFx 节流后调用 */
+  castPop(): void {
+    this.popT = 0.12;
+  }
+
+  /** 倒下演出（M17 C8）：灰阶 squash 塌落后隐藏（run.running=false 后本系统停更，tween 不被覆写） */
   onDefeat(): void {
-    this.ctx.player.setVisible(false);
+    const p = this.ctx.player;
+    // 受击白闪 70ms 后会 clearTint，灰阶延后上色防被擦掉
+    this.ctx.scene.time.delayedCall(80, () => {
+      if (p.visible) p.setTint(0x9a9489);
+    });
+    this.ctx.scene.tweens.add({
+      targets: p, scaleX: 1.35, scaleY: 0.12, alpha: 0, duration: 700, ease: 'Cubic.easeIn',
+      onComplete: () => p.setVisible(false),
+    });
     this.hpBar.clear();
   }
 

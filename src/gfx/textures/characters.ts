@@ -3,9 +3,9 @@
 //   体色径向渐变 + 异形剪影（水滴/宝石/岩石/蛋形…）+ 大高光眼 + 专属饰件
 // 每角色生成 4 帧动效纹理：姿态 A/B（饰件摆动）× 睁眼/眨眼，由 PlayerSystem 驱动切换
 //   key（姿态A） / key_p1（姿态B） / key_k（眨眼A） / key_p1_k（眨眼B）
-// 体积差异直接画进纹理（半径 r 即 content/characters 的 radius）
+// 体积差异直接画进纹理（半径 r 即 content/characters 的 artR；接触判定走更小的 radius，M17 解耦）
 import { CHAR_PAL, PAL, cssOf } from '../palette';
-import { Ctx, makeTex, petalShape, softGlow } from './core';
+import { Ctx, makeTex, petalShape, silhouettePass, softGlow } from './core';
 
 type Shape = 'round' | 'drop' | 'gem' | 'stone' | 'egg';
 type Eye = 'sparkle' | 'happy' | 'sleepy' | 'surprised';
@@ -29,7 +29,7 @@ type Deco =
   | 'bugleBloom';                  // 嘟嘟：头顶喇叭花 + 音符（M7）
 
 export interface CharRecipe {
-  r: number;            // 身体半径（= 接触判定半径，体积观感同源）
+  r: number;            // 身体半径（= content/characters 的 artR，纯视觉口径）
   body: number;
   edge: number;
   glow: string;         // 周身柔光（rgba）
@@ -219,11 +219,14 @@ function buildShape(ctx: Ctx, shape: Shape, cx: number, cy: number, r: number): 
 
 const BEHIND: ReadonlySet<Deco> = new Set<Deco>(['wings', 'petalSkirt', 'leafWings']);
 
-function drawDeco(ctx: Ctx, deco: Deco, rec: CharRecipe, cx: number, cy: number, ph: number): void {
+function drawDeco(ctx: Ctx, deco: Deco, rec: CharRecipe, cx: number, cy: number, phase: number): void {
   const r = rec.r;
   const edge = cssOf(rec.edge);
   const topY = cy - r; // 头顶基准
-  const sway = ph === 0 ? -1 : 1; // 摆动方向
+  // M17 四姿态步行循环：sway 为连续摆动相位（pose0=-1 → pose1=0 → pose2=+1 → pose3=0 的钟摆），
+  // 旧两帧 ±1 是其特例；ph 为二值特例（闪烁/换位/变色类饰件仍两态交替，摆到正半程 = "亮"帧）
+  const sway = -Math.cos(phase * Math.PI * 2);
+  const ph: 0 | 1 = sway > 0 ? 1 : 0;
   switch (deco) {
     case 'wings': { // 精灵翼（肩后，半透明渐变 + 细翼脉；两帧扇动）
       // 翼形：根部圆润、尖端收细的上挑曲线，避免读成"耳朵"
@@ -780,12 +783,17 @@ function drawDeco(ctx: Ctx, deco: Deco, rec: CharRecipe, cx: number, cy: number,
 
 // ---------- 主入口 ----------
 
-/** 角色动效帧后缀（PlayerSystem 按 姿态/眨眼 状态拼 key） */
-export const CHAR_FRAMES: ReadonlyArray<{ suffix: string; ph: 0 | 1; blink: boolean }> = [
+/** 角色动效帧后缀（PlayerSystem 按 姿态/眨眼 状态拼 key）
+ *  M17：2 姿态 → 4 姿态钟摆循环（A→中→B→中），ph 为连续相位（0..1） */
+export const CHAR_FRAMES: ReadonlyArray<{ suffix: string; ph: number; blink: boolean }> = [
   { suffix: '', ph: 0, blink: false },
-  { suffix: '_p1', ph: 1, blink: false },
+  { suffix: '_p1', ph: 0.25, blink: false },
+  { suffix: '_p2', ph: 0.5, blink: false },
+  { suffix: '_p3', ph: 0.75, blink: false },
   { suffix: '_k', ph: 0, blink: true },
-  { suffix: '_p1_k', ph: 1, blink: true },
+  { suffix: '_p1_k', ph: 0.25, blink: true },
+  { suffix: '_p2_k', ph: 0.5, blink: true },
+  { suffix: '_p3_k', ph: 0.75, blink: true },
 ];
 
 /** 参数化角色生成：画布按半径与饰件外延自适应；一次生成 4 帧动效纹理 */
@@ -798,18 +806,21 @@ export function makeCharacter(scene: Phaser.Scene, key: string, rec: CharRecipe)
   const cy = h - r - 9;
   for (const f of CHAR_FRAMES) {
     makeTex(scene, key + f.suffix, w, h, (ctx) => {
+      // 周身柔光画在剪影 pass 之外：描边只贴角色形体，不贴光晕
       softGlow(ctx, cx, cy, Math.min(r + 9, cy), rec.glow);
-      ctx.save();
-      if (rec.lean) {
-        ctx.translate(cx, cy);
-        ctx.rotate(rec.lean);
-        ctx.translate(-cx, -cy);
-      }
-      for (const d of rec.deco) if (BEHIND.has(d)) drawDeco(ctx, d, rec, cx, cy, f.ph);
-      fillShape(ctx, buildShape(ctx, rec.shape, cx, cy, r), bodyGrad(ctx, cx, cy, r, rec.body, rec.softGrad), cssOf(rec.edge));
-      for (const d of rec.deco) if (!BEHIND.has(d)) drawDeco(ctx, d, rec, cx, cy, f.ph);
-      face(ctx, cx, cy + (rec.faceDy ?? 0) * r, r, rec.eye, rec.mouth, f.blink);
-      ctx.restore();
+      silhouettePass(ctx, w, h, cssOf(rec.edge), (sctx) => {
+        sctx.save();
+        if (rec.lean) {
+          sctx.translate(cx, cy);
+          sctx.rotate(rec.lean);
+          sctx.translate(-cx, -cy);
+        }
+        for (const d of rec.deco) if (BEHIND.has(d)) drawDeco(sctx, d, rec, cx, cy, f.ph);
+        fillShape(sctx, buildShape(sctx, rec.shape, cx, cy, r), bodyGrad(sctx, cx, cy, r, rec.body, rec.softGrad), cssOf(rec.edge));
+        for (const d of rec.deco) if (!BEHIND.has(d)) drawDeco(sctx, d, rec, cx, cy, f.ph);
+        face(sctx, cx, cy + (rec.faceDy ?? 0) * r, r, rec.eye, rec.mouth, f.blink);
+        sctx.restore();
+      });
     });
   }
 }
@@ -817,57 +828,57 @@ export function makeCharacter(scene: Phaser.Scene, key: string, rec: CharRecipe)
 export function createCharacterTextures(scene: Phaser.Scene): void {
   const C = CHAR_PAL;
   // 小萤：萤翅 + 发光天线（沿用 'player' 键，全 UI 自动升级）
-  makeCharacter(scene, 'player', { r: 14, body: 0xffe9a8, edge: 0xe2b452, glow: 'rgba(255,246,216,0.85)',
+  makeCharacter(scene, 'player', { r: 20, body: 0xffe9a8, edge: 0xe2b452, glow: 'rgba(255,246,216,0.85)',
     shape: 'round', eye: 'sparkle', mouth: 'smile', deco: ['wings', 'antenna'] });
   // 蔷蔷：花苞裙摆 + 花冠
-  makeCharacter(scene, 'char_rosa', { r: 12, ...C.rosa, glow: 'rgba(248,176,196,0.6)',
+  makeCharacter(scene, 'char_rosa', { r: 17, ...C.rosa, glow: 'rgba(248,176,196,0.6)',
     shape: 'round', eye: 'happy', mouth: 'cat', deco: ['petalSkirt', 'petalCrown'] });
   // 露露：水滴剪影 + 水光 + 伴生水珠
-  makeCharacter(scene, 'char_dew', { r: 17, ...C.dew, glow: 'rgba(170,212,240,0.6)',
+  makeCharacter(scene, 'char_dew', { r: 25, ...C.dew, glow: 'rgba(170,212,240,0.6)',
     shape: 'drop', eye: 'sleepy', mouth: 'smile', faceDy: 0.06, deco: ['shine', 'droplets'] });
   // 风风：前倾蛋形 + 叶翼 + 风速线
-  makeCharacter(scene, 'char_gale', { r: 12, ...C.gale, glow: 'rgba(168,224,192,0.6)',
+  makeCharacter(scene, 'char_gale', { r: 17, ...C.gale, glow: 'rgba(168,224,192,0.6)',
     shape: 'egg', lean: -0.12, eye: 'sparkle', mouth: 'open', deco: ['leafWings', 'windLines'] });
   // 琉璃：多面宝石剪影 + 晶面 + 闪光
-  makeCharacter(scene, 'char_lumen', { r: 13, ...C.lumen, glow: 'rgba(216,208,240,0.7)',
+  makeCharacter(scene, 'char_lumen', { r: 19, ...C.lumen, glow: 'rgba(216,208,240,0.7)',
     shape: 'gem', eye: 'sparkle', mouth: 'smile', faceDy: -0.02, deco: ['facets', 'glints'] });
   // 闪闪：环身静电 + 闪电呆毛
-  makeCharacter(scene, 'char_volt', { r: 12, ...C.volt, glow: 'rgba(255,224,112,0.65)',
+  makeCharacter(scene, 'char_volt', { r: 17, ...C.volt, glow: 'rgba(255,224,112,0.65)',
     shape: 'round', eye: 'surprised', mouth: 'open', deco: ['staticSparks', 'bolt'] });
   // 墩墩：岩石剪影 + 橡果帽 + 苔藓
-  makeCharacter(scene, 'char_pebble', { r: 18, ...C.pebble, glow: 'rgba(216,192,160,0.55)',
+  makeCharacter(scene, 'char_pebble', { r: 26, ...C.pebble, glow: 'rgba(216,192,160,0.55)',
     shape: 'stone', eye: 'sleepy', mouth: 'pout', faceDy: 0.05, deco: ['acornCap', 'moss'] });
   // 蒲蒲：绒毛圈 + 绒球呆毛 + 飘絮（浅色身体走弱渐变防泛白）
-  makeCharacter(scene, 'char_fluff', { r: 13, ...C.fluff, glow: 'rgba(245,238,220,0.9)',
+  makeCharacter(scene, 'char_fluff', { r: 19, ...C.fluff, glow: 'rgba(245,238,220,0.9)',
     shape: 'round', eye: 'sparkle', mouth: 'smile', softGrad: true, deco: ['fluffRim', 'fluffBall', 'seeds'] });
   // 暖暖：提灯果呆毛 + 暖闪光（M6）
-  makeCharacter(scene, 'char_ember', { r: 15, ...C.ember, glow: 'rgba(255,216,160,0.8)',
+  makeCharacter(scene, 'char_ember', { r: 22, ...C.ember, glow: 'rgba(255,216,160,0.8)',
     shape: 'egg', eye: 'happy', mouth: 'smile', deco: ['lanternFruit', 'glints'] });
   // 月月：绕头星月（M6，浅紫蓝身体走弱渐变）
-  makeCharacter(scene, 'char_luna', { r: 13, ...C.luna, glow: 'rgba(200,204,240,0.7)',
+  makeCharacter(scene, 'char_luna', { r: 19, ...C.luna, glow: 'rgba(200,204,240,0.7)',
     shape: 'round', eye: 'sleepy', mouth: 'pout', softGrad: true, deco: ['starHalo'] });
   // 栗栗：松果鳞帽（M6）
-  makeCharacter(scene, 'char_conker', { r: 16, ...C.conker, glow: 'rgba(216,168,120,0.55)',
+  makeCharacter(scene, 'char_conker', { r: 23, ...C.conker, glow: 'rgba(216,168,120,0.55)',
     shape: 'egg', eye: 'sparkle', mouth: 'pout', faceDy: 0.08, deco: ['pineHat'] });
   // 铃铃：铃铛领结 + 音波（M6）
-  makeCharacter(scene, 'char_jingle', { r: 12, ...C.jingle, glow: 'rgba(200,232,224,0.75)',
+  makeCharacter(scene, 'char_jingle', { r: 17, ...C.jingle, glow: 'rgba(200,232,224,0.75)',
     shape: 'round', eye: 'happy', mouth: 'open', deco: ['bellBow'] });
   // 藤藤：卷须呆毛 + 肩头小叶（M7）
-  makeCharacter(scene, 'char_ivy', { r: 14, ...C.ivy, glow: 'rgba(176,216,144,0.6)',
+  makeCharacter(scene, 'char_ivy', { r: 20, ...C.ivy, glow: 'rgba(176,216,144,0.6)',
     shape: 'egg', eye: 'happy', mouth: 'smile', deco: ['vineCurl'] });
   // 莓莓：草莓小帽（M7）
-  makeCharacter(scene, 'char_berry', { r: 13, ...C.berry, glow: 'rgba(244,168,176,0.65)',
+  makeCharacter(scene, 'char_berry', { r: 19, ...C.berry, glow: 'rgba(244,168,176,0.65)',
     shape: 'round', eye: 'sparkle', mouth: 'cat', faceDy: 0.06, deco: ['berryCap'] });
   // 悠悠：幽光苗 + 飘浮光点（M7，浅色身体走弱渐变）
-  makeCharacter(scene, 'char_wisp', { r: 11, ...C.wisp, glow: 'rgba(198,236,216,0.9)',
+  makeCharacter(scene, 'char_wisp', { r: 16, ...C.wisp, glow: 'rgba(198,236,216,0.9)',
     shape: 'round', eye: 'sleepy', mouth: 'smile', softGrad: true, deco: ['wispFlame'] });
   // 嘟嘟：头顶喇叭花 + 音符（M7）
-  makeCharacter(scene, 'char_toot', { r: 16, ...C.toot, glow: 'rgba(168,188,232,0.6)',
+  makeCharacter(scene, 'char_toot', { r: 23, ...C.toot, glow: 'rgba(168,188,232,0.6)',
     shape: 'egg', eye: 'surprised', mouth: 'open', faceDy: 0.05, deco: ['bugleBloom'] });
   // 小蓝团：草甸蓝团彩蛋造型 — 圆团 + 水光（角色管线渐变+大眼，与敌人 blob 仅神似）（M16）
-  makeCharacter(scene, 'char_blobby', { r: 16, ...C.blobby, glow: 'rgba(156,200,236,0.7)',
+  makeCharacter(scene, 'char_blobby', { r: 23, ...C.blobby, glow: 'rgba(156,200,236,0.7)',
     shape: 'round', eye: 'happy', mouth: 'smile', faceDy: 0.04, deco: ['shine', 'droplets'] });
   // 小流星：前倾水滴剪影（彗星形）+ 闪光 + 风速线（M16）
-  makeCharacter(scene, 'char_nova', { r: 12, ...C.nova, glow: 'rgba(255,226,160,0.85)',
+  makeCharacter(scene, 'char_nova', { r: 17, ...C.nova, glow: 'rgba(255,226,160,0.85)',
     shape: 'drop', lean: -0.14, eye: 'sparkle', mouth: 'open', faceDy: 0.06, deco: ['glints', 'windLines'] });
 }

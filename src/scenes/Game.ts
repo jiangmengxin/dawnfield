@@ -14,7 +14,8 @@ import { getSettings } from '../core/settings';
 import { TimeController } from '../core/TimeController';
 import { AchievementTracker } from '../systems/AchievementTracker';
 import { createArcanaModifier } from '../systems/arcana';
-import type { ArcanaId } from '../content/ids';
+import type { ArcanaId, WeaponId } from '../content/ids';
+import { WEAPON_META } from '../content/weapons';
 import type { CombatContext, HitOpts, RunLaunchData, RunMode, RunModifier, RunResult, RunSystem } from '../systems/context';
 import { DecorSystem } from '../systems/DecorSystem';
 import { DpsTracker } from '../systems/DpsTracker';
@@ -229,6 +230,7 @@ export class GameScene extends Phaser.Scene {
       get isMobile() { return g.isMobile; },
       get enemyCapMul() { return g.enemyCapMul * g.dynCapMul; },
       hitEnemy: (e, dmg, opts) => g.hitEnemy(e, dmg, opts),
+      castFx: (id) => g.castFx(id),
       dmgLog: (src, dmg) => g.dps.add(src, dmg),
       onEnemyKilled: (e) => g.onEnemyKilled(e),
       damagePlayer: (d, src) => g.damagePlayer(d, src),
@@ -323,6 +325,16 @@ export class GameScene extends Phaser.Scene {
 
   // ---------- 战斗结算 ----------
 
+  /** M17 施放反馈：玩家小幅 pop + 武器主题色环；0.15s 节流（6 武器齐射不闪疯） */
+  private lastCastFx = -1;
+  castFx(id: WeaponId): void {
+    if (this.run.elapsed - this.lastCastFx < 0.15) return;
+    this.lastCastFx = this.run.elapsed;
+    this.playerSys.castPop();
+    const color = WEAPON_META.find((m) => m.id === id)?.color ?? 0xfff2c0;
+    this.fx.ring(this.player.x, this.player.y, color, 1.15, 0.22);
+  }
+
   /** 预算化微顿帧（M12 打击感分级）：超预算静默丢弃，防 spark 链电/petal 多段叠成幻灯片 */
   requestHitStop(sec: number): void {
     if (this.hitStopBudget < sec) return;
@@ -346,6 +358,9 @@ export class GameScene extends Phaser.Scene {
       const big = final >= HITFEEL.bigHitMul * this.run.stats.dmg;
       this.fx.flash(e);
       this.fx.number(e.x, e.y - e.radius, final, crit, big, e);
+      // M17 受击 punch：放大脉冲（EnemySystem 每帧缩放里回落）+ 沿击退法向粒子喷溅
+      e.punchT = HITFEEL.punchDur;
+      this.fx.spray(e.x, e.y, opts.kx ?? 0, opts.ky ?? 0, DEATH_COLOR[e.id]);
       SFX.hit((opts.pitch ?? 1) * (crit || big ? 1.3 : 1));
       if (crit || big) this.requestHitStop(HITFEEL.microStop);
     }
@@ -442,6 +457,16 @@ export class GameScene extends Phaser.Scene {
     if (boss && boss.active) this.run.bossHit = true;
     SFX.hurt();
     this.fx.flash(this.player, 0xf08080);
+    // M17 受击强化：背离伤害来源位移 + 白圈冲击 + HUD 血条抖动
+    if (src) {
+      const dx = this.player.x - src.x;
+      const dy = this.player.y - src.y;
+      const d = Math.hypot(dx, dy) || 1;
+      this.player.x += (dx / d) * HITFEEL.hurtKnock;
+      this.player.y += (dy / d) * HITFEEL.hurtKnock;
+    }
+    this.fx.ring(this.player.x, this.player.y, 0xffffff, 2.4, 0.3);
+    emitEvent(this.game, 'hud:hurt');
     if (getSettings().shake) this.cameras.main.shake(120, 0.004);
     // M13 钩子：实际扣血后、败北判定前（raw=护甲前；thorncore 蓄能用 raw，坦克体验不吃亏）
     for (const m of this.modifiers) m.onPlayerDamaged?.(d, applied, this.ctx);
@@ -492,6 +517,7 @@ export class GameScene extends Phaser.Scene {
     this.clock.hitStop(0.25);
     this.fx.ring(px, py, 0xe2b452, 12, 0.8);
     this.fx.ring(px, py, 0xfff2c0, 9, 0.55);
+    this.cameras.main.flash(350, 255, 252, 240); // M17 C8：复活白屏 flash（纸白）
     SFX.revive();
     emitEvent(this.game, 'hud:revive', run.revivesLeft);
   }
@@ -514,6 +540,7 @@ export class GameScene extends Phaser.Scene {
     this.run.running = false;
     SFX.defeatJingle();
     this.fx.burst(this.player.x, this.player.y, { tex: 'p_dot', color: PAL.playerBody, count: 24, speed: 160, life: 0.8 });
+    this.fx.ring(this.player.x, this.player.y, 0x9a9489, 4.5, 1.0); // M17 C8：灰阶慢环送别
     this.playerSys.onDefeat();
     this.time.delayedCall(1300, () => this.finish(false));
   }
