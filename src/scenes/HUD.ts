@@ -134,6 +134,7 @@ export class HUDScene extends Phaser.Scene {
     this.input.keyboard!.on('keydown-FOUR', () => this.pickByIndex(3)); // M14 ivy 四选一 / 精华四卡
     this.input.keyboard!.on('keydown-R', (ev: KeyboardEvent) => { if (!ev.repeat) this.doReroll(); });
     this.input.keyboard!.on('keydown-S', (ev: KeyboardEvent) => { if (!ev.repeat) this.doSkip(); });
+    this.input.keyboard!.on('keydown-B', (ev: KeyboardEvent) => { if (!ev.repeat) this.toggleBanish(); }); // M16.5 放逐模式
 
     const subs = [
       onEvent(this.game, 'hud:levelup', (offers) => this.showLevelUp(offers)),
@@ -485,6 +486,12 @@ export class HUDScene extends Phaser.Scene {
 
   private pendingOffers: Offer[] = [];
   private pendingArcana: ArcanaId[] = [];
+  // 放逐改版（M16.5）：与重抽/跳过同排的按钮，点击进入「选卡放逐」模式
+  private pickCards: Array<{ offer: Offer; card: Phaser.GameObjects.Container; banishable: boolean }> = [];
+  private banishMode = false;
+  private banishAnim = false; // 放逐演出进行中：屏蔽一切选卡/按钮输入
+  private banishBtn: UIButton | null = null;
+  private banishMarks: Phaser.GameObjects.GameObject[] = [];
 
   /** 选卡卡片几何（升级与规则卡共用）：竖屏纵排 / 横屏横排 */
   private pickCardGeom(i: number, n: number): { cx: number; cy: number; cw: number; ch: number; portrait: boolean } {
@@ -545,66 +552,167 @@ export class HUDScene extends Phaser.Scene {
     }
     this.overlayMode = 'levelup';
     this.pendingOffers = offers;
+    this.pickCards = [];
+    this.banishMode = false;
+    this.banishAnim = false;
+    this.banishMarks = [];
     this.overlay.push(this.addVeil());
     this.addPickTitle(t('levelUpTitle'));
     this.addBuildBar(); // M12 选卡构筑栏：当前持有一览，放逐/重抽决策有依据
-    const banishLeft = this.gs.run.banishes > 0;
     offers.forEach((offer, i) => {
-      // M10 放逐角标：仅 weapon/passive 卡；次数耗尽显示置灰角标
       const banishable = offer.kind === 'weapon' || offer.kind === 'passive';
-      const onBanish = banishable ? (banishLeft ? () => this.doBanish(offer) : null) : undefined;
-      this.makePickCard(this.offerInfo(offer), i, this.pickCardGeom(i, offers.length), () => this.chooseOffer(offer), onBanish);
+      const card = this.makePickCard(this.offerInfo(offer), i, this.pickCardGeom(i, offers.length), () => this.onCardTap(offer));
+      this.pickCards.push({ offer, card, banishable });
     });
     this.addLevelUpActions(offers.length);
   }
 
-  /** 重抽/跳过胶囊按钮行（M10）：横屏卡下居中一行 / 竖屏条卡下两按钮各占 45% 宽 */
+  /** 选卡点击统一入口：放逐模式下点卡 = 放逐该卡，否则正常拾取 */
+  private onCardTap(offer: Offer): void {
+    if (this.banishAnim) return;
+    if (this.banishMode) this.banishCard(offer);
+    else this.chooseOffer(offer);
+  }
+
+  /** 重抽/放逐/跳过胶囊按钮行（M10；M16.5 放逐从卡面角标改为同排按钮）：
+   *  横屏卡下居中一行 / 竖屏条卡下三按钮均分条卡宽 */
   private addLevelUpActions(n: number): void {
     const run = this.gs.run;
     const last = this.pickCardGeom(n - 1, n);
     const y = last.cy + last.ch / 2 + 36;
-    const bw = last.portrait ? last.cw * 0.45 : 156;
-    const gap = last.portrait ? last.cw * 0.06 : 18;
+    const bw = last.portrait ? Math.min(118, last.cw * 0.32) : 140;
+    const gap = last.portrait ? Math.max(6, (last.cw - bw * 3) / 2) : 14;
+    const fs = last.portrait ? 14 : 15;
     const cx = this.vp.w / 2;
-    const reroll = new UIButton(this, cx - bw / 2 - gap / 2, y, {
+    const step = bw + gap;
+    const reroll = new UIButton(this, cx - step, y, {
       w: bw, h: 40, label: t('lvl_reroll').replace('{n}', String(run.rerolls)),
-      fontSize: 16, onTap: () => this.doReroll(),
+      fontSize: fs, onTap: () => this.doReroll(),
     });
-    const skip = new UIButton(this, cx + bw / 2 + gap / 2, y, {
+    const banish = new UIButton(this, cx, y, {
+      w: bw, h: 40, label: t('lvl_banish').replace('{n}', String(run.banishes)),
+      fontSize: fs, onTap: () => this.toggleBanish(),
+    });
+    const skip = new UIButton(this, cx + step, y, {
       w: bw, h: 40, label: t('lvl_skip').replace('{n}', String(run.skips)),
-      fontSize: 16, onTap: () => this.doSkip(),
+      fontSize: fs, onTap: () => this.doSkip(),
     });
     // 精华三选一（M12）不可重抽（重抽对永续成长卡无意义）；skip 照常可用
     const hasEssence = this.pendingOffers.some((o) => o.kind === 'essence');
     if (run.rerolls <= 0 || hasEssence) reroll.setEnabled(false);
+    // 放逐：次数耗尽或面板上没有可放逐卡（精华/回血/金币层）时置灰
+    if (run.banishes <= 0 || !this.pickCards.some((p) => p.banishable)) banish.setEnabled(false);
     if (run.skips <= 0) skip.setEnabled(false);
     reroll.setDepth(101);
+    banish.setDepth(101);
     skip.setDepth(101);
-    this.overlay.push(reroll, skip);
+    this.banishBtn = banish;
+    this.overlay.push(reroll, banish, skip);
   }
 
   private doReroll(): void {
-    if (this.overlayMode !== 'levelup' || this.gs.run.rerolls <= 0) return;
+    if (this.overlayMode !== 'levelup' || this.gs.run.rerolls <= 0 || this.banishAnim || this.banishMode) return;
     SFX.uiClick();
     this.closeOverlay();
     this.gs.levelUp.reroll(); // 重发 hud:levelup → showLevelUp 重绘
   }
 
   private doSkip(): void {
-    if (this.overlayMode !== 'levelup' || this.gs.run.skips <= 0) return;
+    if (this.overlayMode !== 'levelup' || this.gs.run.skips <= 0 || this.banishAnim || this.banishMode) return;
     SFX.uiClick();
     this.closeOverlay();
     this.gs.levelUp.skip();
     this.scene.resume('game');
   }
 
-  private doBanish(offer: Offer): void {
+  // ---------- 放逐模式（M16.5）：按钮进入选卡放逐，点卡盖章演出后原位补抽 ----------
+
+  private toggleBanish(): void {
+    if (this.overlayMode !== 'levelup' || this.banishAnim) return;
+    if (!this.banishMode && this.gs.run.banishes <= 0) return;
+    this.banishMode = !this.banishMode;
+    this.applyBanishVisuals();
+  }
+
+  /** 模式视觉：可放逐卡盖红 ✕ 角章脉动 + 不可放逐卡减淡；按钮变「取消」；标题行换提示 */
+  private applyBanishVisuals(): void {
+    this.banishMarks.forEach((o) => o.destroy());
+    this.banishMarks = [];
+    const run = this.gs.run;
+    if (this.banishMode) {
+      this.banishBtn?.setLabel(t('lvl_banishCancel'));
+      // 提示行放在卡组上缘（按钮行与卡底间隙不足 16px，会压住卡片描边）
+      const firstGeom = this.pickCardGeom(0, this.pickCards.length);
+      const hint = this.add.text(this.vp.w / 2, firstGeom.cy - firstGeom.ch / 2 - 20, t('banishPick'), {
+        fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: '#C06870',
+        stroke: '#FFFFFF', strokeThickness: 5,
+      }).setOrigin(0.5).setDepth(102).setAlpha(0);
+      this.tweens.add({ targets: hint, alpha: 1, duration: 180 });
+      this.overlay.push(hint);
+      this.banishMarks.push(hint);
+      for (const p of this.pickCards) {
+        if (!p.banishable) {
+          p.card.setAlpha(0.4);
+          continue;
+        }
+        const mark = this.add.text(p.card.x + p.card.width / 2 - 16, p.card.y - p.card.height / 2 + 2, '✕', {
+          fontFamily: FONT, fontSize: '26px', fontStyle: 'bold', color: '#C06870',
+          stroke: '#FFFFFF', strokeThickness: 6,
+        }).setOrigin(0.5).setDepth(103).setScale(0);
+        this.tweens.add({ targets: mark, scale: 1, duration: 200, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: mark, scale: 1.18, delay: 220, duration: 460, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.overlay.push(mark);
+        this.banishMarks.push(mark);
+      }
+    } else {
+      this.banishBtn?.setLabel(t('lvl_banish').replace('{n}', String(run.banishes)));
+      for (const p of this.pickCards) p.card.setAlpha(1);
+    }
+  }
+
+  /** 放逐选中卡：红章盖卡 + 碎屑飞散演出，结束后原位补抽并重发面板 */
+  private banishCard(offer: Offer): void {
     if (this.overlayMode !== 'levelup' || this.gs.run.banishes <= 0) return;
-    SFX.uiClick();
+    const entry = this.pickCards.find((p) => p.offer === offer);
+    if (!entry) return;
+    if (!entry.banishable) {
+      // 摇头：精华/回血/金币卡不可放逐
+      this.tweens.add({ targets: entry.card, x: entry.card.x + 7, duration: 48, yoyo: true, repeat: 3 });
+      return;
+    }
+    this.banishAnim = true;
+    SFX.swish();
+    const card = entry.card;
+    const stamp = this.add.text(card.x, card.y, '✕', {
+      fontFamily: FONT, fontSize: '64px', fontStyle: 'bold', color: '#C06870',
+      stroke: '#FFFFFF', strokeThickness: 8,
+    }).setOrigin(0.5).setDepth(103).setScale(0);
+    this.overlay.push(stamp);
+    this.tweens.add({ targets: stamp, scale: 1, duration: 150, ease: 'Back.easeOut' });
+    this.tweens.add({ targets: stamp, alpha: 0, delay: 260, duration: 180 });
+    // 卡片旋坠淡出 + 碎屑
+    this.tweens.add({
+      targets: card, alpha: 0, angle: (card.x < this.vp.w / 2 ? -1 : 1) * 14, y: card.y + 46, scale: 0.82,
+      delay: 110, duration: 300, ease: 'Cubic.easeIn',
+    });
+    for (let i = 0; i < 10; i++) {
+      const sx = card.x + (Math.random() - 0.5) * card.width * 0.7;
+      const sy = card.y + (Math.random() - 0.5) * card.height * 0.7;
+      const p = this.add.image(sx, sy, 'p_confetti').setTint(0xc06870).setDepth(103).setScale(1.1);
+      this.overlay.push(p);
+      this.tweens.add({
+        targets: p, x: sx + (Math.random() - 0.5) * 90, y: sy + 60 + Math.random() * 60,
+        alpha: 0, rotation: Math.random() * 6, delay: 110, duration: 420, ease: 'Cubic.easeOut',
+      });
+    }
     const first = this.gs.run.banished.size === 0;
-    this.closeOverlay();
-    this.gs.levelUp.banish(offer); // 原位重抽一张并重发事件
-    if (first) this.queueToast(t('banishToast'));
+    this.time.delayedCall(450, () => {
+      if (this.overlayMode !== 'levelup') return;
+      this.banishAnim = false;
+      this.closeOverlay();
+      this.gs.levelUp.banish(offer); // 原位补抽一张并重发 hud:levelup
+      if (first) this.queueToast(t('banishToast'));
+    });
   }
 
   /** 规则卡选卡（M9）：全部未持有卡一次铺开任选其一（与升级三选一的横排大卡明显区分——
@@ -815,14 +923,13 @@ export class HUDScene extends Phaser.Scene {
       : { text: t('evoHintNeed').replace('{p}', t('p_' + meta.evolvesWith)), ready: false };
   }
 
-  /** onBanish（M10）：undefined = 无放逐角标；null = 置灰角标（次数耗尽）；函数 = 可点 */
+  /** 选卡卡片；返回容器供放逐模式做标记/演出（M16.5 起卡面不再带放逐角标） */
   private makePickCard(
     info: PickCardInfo,
     idx: number,
     geom: { cx: number; cy: number; cw: number; ch: number; portrait: boolean },
     onPick: () => void,
-    onBanish?: (() => void) | null,
-  ): void {
+  ): Phaser.GameObjects.Container {
     const { cx, cy, cw, ch, portrait } = geom;
     const g = this.add.graphics();
     const draw = (over: boolean) => {
@@ -885,26 +992,6 @@ export class HUDScene extends Phaser.Scene {
         }).setOrigin(0.5, 1));
       }
     }
-    // M10 放逐 ✕ 角标（28px 圆）：横屏卡右上角 / 竖屏条卡右缘垂直居中（避开 tag 文字区）
-    if (onBanish !== undefined) {
-      const bx = portrait ? cw / 2 - 18 : cw / 2 - 16;
-      const by = portrait ? 0 : -ch / 2 + 16;
-      const bg = this.add.graphics();
-      bg.fillStyle(0xfffdf6, 1);
-      bg.fillCircle(bx, by, 14);
-      bg.lineStyle(2, 0xc06870, onBanish ? 0.9 : 0.3);
-      bg.strokeCircle(bx, by, 14);
-      const xTxt = this.add.text(bx, by, '✕', {
-        fontFamily: FONT, fontSize: '15px', fontStyle: 'bold',
-        color: onBanish ? '#C06870' : '#C8BCA4',
-      }).setOrigin(0.5);
-      parts.push(bg, xTxt);
-      if (onBanish) {
-        const zone = this.add.zone(bx, by, 34, 34).setInteractive({ useHandCursor: true });
-        zone.on('pointerup', onBanish);
-        parts.push(zone);
-      }
-    }
     const c = this.add.container(cx, cy + 24, parts).setDepth(101).setAlpha(0);
     c.setSize(cw, ch);
     c.setInteractive({ useHandCursor: true });
@@ -913,12 +1000,13 @@ export class HUDScene extends Phaser.Scene {
     c.on('pointerup', onPick);
     this.tweens.add({ targets: c, alpha: 1, y: cy, duration: 260, delay: 90 * idx, ease: 'Cubic.easeOut' });
     this.overlay.push(c);
+    return c;
   }
 
   private pickByIndex(i: number): void {
     if (this.overlayMode === 'levelup') {
       const offer = this.pendingOffers[i];
-      if (offer) this.chooseOffer(offer);
+      if (offer) this.onCardTap(offer); // 放逐模式下数字键同样指放逐目标
     } else if (this.overlayMode === 'arcana') {
       const id = this.pendingArcana[i];
       if (id) this.chooseArcana(id);
@@ -926,7 +1014,7 @@ export class HUDScene extends Phaser.Scene {
   }
 
   private chooseOffer(offer: Offer): void {
-    if (this.overlayMode !== 'levelup') return;
+    if (this.overlayMode !== 'levelup' || this.banishAnim) return;
     SFX.uiClick();
     this.closeOverlay();
     this.gs.levelUp.applyOffer(offer);
@@ -1119,23 +1207,53 @@ export class HUDScene extends Phaser.Scene {
         stroke: '#FFFFFF', strokeThickness: 5, wordWrap: { width: w - 60 },
       }).setOrigin(0.5).setDepth(104));
     } else {
-      // 多件（3/5）：标题切换 + 逐行清单（图标 + 名称，依次滑入）
+      // 多件（3/5，M16.5 改版）：金光令牌阵列——大图标 + 光晕 + 星屑逐个迸出，
+      // 与单件同一档演出规格（此前的清单小图标反而比单件寒酸）
       this.chestTitle?.setText(t('chestRich').replace('{n}', String(items.length)));
-      const rowH = items.length >= 5 ? 46 : 54;
-      const rowW = Math.min(380, w - 70);
-      const y0 = h * 0.43 - ((items.length - 1) * rowH) / 2;
+      const n = items.length;
+      const perRow = n === 5 && w < 620 ? 3 : n; // 窄屏 5 件拆两行（3+2）
+      const stepX = Math.min(150, (w - 50) / perRow);
+      const rowN = Math.ceil(n / perRow);
+      const stepY = Math.min(176, (h * 0.38) / rowN);
+      const y0 = h * 0.42 - ((rowN - 1) * stepY) / 2;
       items.forEach((it, i) => {
+        const row = Math.floor(i / perRow);
+        const inRow = Math.min(perRow, n - row * perRow);
+        const x = w / 2 + (i - row * perRow - (inRow - 1) / 2) * stepX;
+        const y = y0 + row * stepY;
         const info = itemInfo(it);
-        const y = y0 + i * rowH;
-        const icon = track(this.add.image(w / 2 - rowW / 2 + 20, y, info.icon).setDepth(104).setAlpha(0));
-        icon.setDisplaySize(34, 34);
+        const delay = 150 * i;
+        const glow = track(this.add.image(x, y, 'p_dot').setTint(0xf2cf6e).setAlpha(0)
+          .setDisplaySize(84, 84).setDepth(103));
+        const icon = track(this.add.image(x, y, info.icon).setScale(0).setDepth(104));
         if (info.tint !== undefined) icon.setTint(info.tint);
-        const txt = track(this.add.text(w / 2 - rowW / 2 + 46, y, info.label, {
-          fontFamily: FONT, fontSize: '17px', fontStyle: 'bold', color: PAL.inkCss,
-          stroke: '#FFFFFF', strokeThickness: 4,
-        }).setOrigin(0, 0.5).setDepth(104).setAlpha(0));
+        // 令牌等大：图标源尺寸不一（coin 18px / 武器符 44px），按目标尺寸归一
+        const iconScale = 56 / Math.max(icon.width, icon.height);
+        const label = track(this.add.text(x, y + 44, info.label, {
+          fontFamily: FONT, fontSize: '13px', fontStyle: 'bold', color: PAL.inkCss, align: 'center',
+          stroke: '#FFFFFF', strokeThickness: 4, wordWrap: { width: stepX - 6, useAdvancedWrap: true },
+        }).setOrigin(0.5, 0).setDepth(104).setAlpha(0));
+        this.tweens.add({ targets: icon, scale: iconScale, delay, duration: 320, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: glow, alpha: 0.55, delay, duration: 260 });
         this.tweens.add({
-          targets: [icon, txt], alpha: 1, x: '+=10', delay: 110 * i, duration: 280, ease: 'Cubic.easeOut',
+          targets: glow, displayWidth: 102, displayHeight: 102, alpha: 0.3,
+          delay: delay + 300, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
+        });
+        this.tweens.add({ targets: label, alpha: 1, delay: delay + 120, duration: 240 });
+        // 入场时点：星屑迸出 + 音阶上行的拾取音（开箱节奏感）
+        this.time.delayedCall(delay, () => {
+          if (this.overlayMode !== 'chest') return;
+          SFX.pickup(i);
+          for (let k = 0; k < 6; k++) {
+            const a = (k / 6) * Math.PI * 2 + Math.random() * 0.8;
+            const s = this.add.image(x, y, 'p_star').setTint(0xf2cf6e).setScale(0.9).setDepth(105);
+            this.overlay.push(s);
+            this.tweens.add({
+              targets: s, x: x + Math.cos(a) * 52, y: y + Math.sin(a) * 46,
+              alpha: 0, scale: 0.3, duration: 480, ease: 'Cubic.easeOut',
+              onComplete: () => s.destroy(),
+            });
+          }
         });
       });
     }
@@ -1256,6 +1374,12 @@ export class HUDScene extends Phaser.Scene {
     this.overlay.forEach((o) => o.destroy());
     this.overlay = [];
     this.overlayMode = 'none';
+    // 放逐模式状态随面板一并复位（对象已随 overlay 销毁，这里只清引用）
+    this.banishMode = false;
+    this.banishAnim = false;
+    this.banishBtn = null;
+    this.banishMarks = [];
+    this.pickCards = [];
     this.buildIconRow();
   }
 }

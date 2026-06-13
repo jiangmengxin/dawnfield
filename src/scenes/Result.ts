@@ -107,8 +107,12 @@ export class ResultScene extends Phaser.Scene {
     const titleText = endless
       ? t('endlessTitle').replace('{n}', String(r.cycle))
       : r.win ? t('victory') : t('defeat');
-    const title = this.add.text(cx, h * 0.16, titleText, {
-      fontFamily: FONT, fontSize: endless ? '40px' : '46px', fontStyle: 'bold',
+    const titleFs = endless ? 40 : 46;
+    // 居中校正：尾随全角标点（「胜 利 ！」的 ！/「倒下了…」的 …）字面右侧大半是空白，
+    // 文本框居中时墨迹视觉中心偏左——按字号右移补偿
+    const tailPad = /！$/.test(titleText) ? 0.27 : /…$/.test(titleText) ? 0.16 : 0;
+    const title = this.add.text(cx + titleFs * tailPad, h * 0.16, titleText, {
+      fontFamily: FONT, fontSize: titleFs + 'px', fontStyle: 'bold',
       color: r.win || endless ? '#C8902A' : PAL.inkCss,
       stroke: '#FFFFFF', strokeThickness: 8,
     }).setOrigin(0.5).setDepth(2).setScale(0.4);
@@ -151,17 +155,29 @@ export class ResultScene extends Phaser.Scene {
       [t('statCoins'), '+' + r.coins],
     ];
     const rowGap = 30;
+    const rowObjs: Array<{ label: Phaser.GameObjects.Text; value: Phaser.GameObjects.Text; icon?: Phaser.GameObjects.Image }> = [];
     rows.forEach(([k, v], i) => {
       const y = h * 0.44 + i * rowGap;
       const gold = i === rows.length - 1;
-      this.add.text(cx - 16, y, k, {
+      const label = this.add.text(cx - 16, y, k, {
         fontFamily: FONT, fontSize: '17px', color: PAL.inkSoft,
       }).setOrigin(1, 0.5).setDepth(2);
-      this.add.text(cx + 16, y, v, {
+      const value = this.add.text(cx + 16, y, v, {
         fontFamily: FONT, fontSize: '19px', fontStyle: 'bold', color: gold ? '#C8902A' : PAL.inkCss,
       }).setOrigin(0, 0.5).setDepth(2);
-      if (gold) this.add.image(cx + 16 + 56, y, 'coin').setDepth(2);
+      const icon = gold ? this.add.image(value.x + value.width + 20, y, 'coin').setDepth(2) : undefined;
+      rowObjs.push({ label, value, icon });
     });
+    // 居中校正：标签列（CJK 四字宽）与数值列（短数字）不等宽，对齐轴放在屏幕中线时
+    // 整块包围盒会向左偏——按两侧实测宽度把对齐轴右移，块整体回正
+    const maxL = Math.max(...rowObjs.map((o) => o.label.width));
+    const maxR = Math.max(...rowObjs.map((o) => o.value.width + (o.icon ? 32 : 0)));
+    const axisShift = (maxL - maxR) / 2;
+    for (const o of rowObjs) {
+      o.label.x += axisShift;
+      o.value.x += axisShift;
+      if (o.icon) o.icon.x += axisShift;
+    }
 
     // 武器构成
     const buildLabelY = h * 0.44 + rows.length * rowGap + 6;

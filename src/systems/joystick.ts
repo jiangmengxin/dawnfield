@@ -11,6 +11,7 @@ export class Joystick {
   private base: Phaser.GameObjects.Image;
   private thumb: Phaser.GameObjects.Image;
   private pointerId = -1;
+  private pointer: Phaser.Input.Pointer | null = null;
   private originX = 0;
   private originY = 0;
   private readonly radius = 52;
@@ -34,6 +35,7 @@ export class Joystick {
       // 顶部 88px(CSS) 留给 HUD 按钮
       if (p.y / Viewport.get().dpr < 88) return;
       this.pointerId = p.id;
+      this.pointer = p;
       const f = this.toFixed(p);
       this.originX = f.x;
       this.originY = f.y;
@@ -69,14 +71,30 @@ export class Joystick {
     };
     scene.input.on('pointerup', release);
     scene.input.on('pointerupoutside', release);
+
+    // 场景暂停期间（升级选卡/宝箱/暂停面板）收不到 pointerup——恢复后摇杆黏在旧方向，
+    // 人物会朝旧摇杆方向自走；暂停即重置
+    scene.events.on(Phaser.Scenes.Events.PAUSE, this.reset, this);
+  }
+
+  /** 每帧轮询兜底：追踪的指针已物理抬起但 pointerup 事件丢失（暂停窗口/页面失焦）时复位 */
+  poll(): void {
+    if (this.pointerId !== -1 && this.pointer !== null && !this.pointer.isDown) this.reset();
   }
 
   reset(): void {
     this.pointerId = -1;
+    this.pointer = null;
     this.active = false;
     this.vx = 0;
     this.vy = 0;
     this.base.setVisible(false);
     this.thumb.setVisible(false);
+  }
+
+  destroy(): void {
+    this.scene.events.off(Phaser.Scenes.Events.PAUSE, this.reset, this);
+    this.base.destroy();
+    this.thumb.destroy();
   }
 }

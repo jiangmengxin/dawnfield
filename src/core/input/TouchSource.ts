@@ -11,6 +11,7 @@ export class TouchSource implements MoveSource {
   }
 
   get active(): boolean {
+    this.joy.poll(); // 指针已抬起但 pointerup 丢失（暂停窗口）时复位，防选卡后自走
     return this.joy.active;
   }
 
@@ -20,5 +21,9 @@ export class TouchSource implements MoveSource {
 
   get y(): number {
     return this.joy.vy;
+  }
+
+  destroy(): void {
+    this.joy.destroy();
   }
 }

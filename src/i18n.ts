@@ -54,6 +54,10 @@ const D: Dict = {
   // 构筑操控（M10）：重抽 / 放逐 / 跳过
   lvl_reroll: ['↻ 重抽 ×{n}', '↻ Reroll ×{n}'],
   lvl_skip: ['▸ 跳过 ×{n}', '▸ Skip ×{n}'],
+  // M16.5 放逐改版：从卡面 ✕ 角标改为与重抽/跳过同排的按钮（点击进入选卡放逐模式）
+  lvl_banish: ['✕ 放逐 ×{n}', '✕ Banish ×{n}'],
+  lvl_banishCancel: ['↩ 取消放逐', '↩ Cancel'],
+  banishPick: ['点选要放逐的卡牌', 'Tap a card to banish it'],
   banishToast: ['已放逐：本局不再出现', 'Banished: gone for the rest of this run'],
 
   // 复活（M10）
