@@ -46,7 +46,7 @@
 
 ## 地图
 
-源文件：`src/content/maps.ts`、`src/content/bosses.ts`、`src/systems/mechanics/*`、`src/gfx/textures/mapassets.ts`。
+源文件：`src/content/maps.ts`、`src/content/bosses.ts`、`src/systems/mechanics/*`、`src/gfx/textures/mapassets.ts`、`src/gfx/textures/bosses.ts`。
 
 | id | 名称 | 时长 | 核心机制 | Boss | 专属掉落 |
 |---|---|---:|---|---|---|
@@ -133,7 +133,7 @@
 
 ## Boss
 
-源文件：`src/content/bosses.ts`。Boss 以地图为 key 配装，敌人体格仍来自 `EnemyId`；每个 Boss 有独占主招 + 轻辅招，旧四模块只作低频辅压。
+源文件：`src/content/bosses.ts`、`src/gfx/textures/bosses.ts`、`src/systems/BossVisual.ts`。Boss 以地图为 key 配装，敌人体格仍来自 `EnemyId`；每个 Boss 有独占主招 + 轻辅招，旧四模块只作低频辅压；实战视觉使用多帧/P2/施法/受击/死亡状态。
 
 `boss`, `bubbleking`, `galecrow`, `sporeking`, `flutterqueen`, `bramblebear`, `starelk`, `nightowl`, `ciderwyrm`, `frosthare`, `miragewhale`, `clockrooster`。
 

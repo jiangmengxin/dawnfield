@@ -55,7 +55,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   splitter: { hp: 34,   speed: 64,  dmg: 9,  xp: 2,  radius: 15, tex: 'e_splitter', knockMul: 0.9,  behavior: 'chase', split: { id: 'mini', n: 2 } },
   mini:     { hp: 8,    speed: 88,  dmg: 5,  xp: 1,  radius: 9,  tex: 'e_mini',     knockMul: 1.2,  behavior: 'wobble' },
   elite:    { hp: 900,  speed: 42,  dmg: 18, xp: 30, radius: 40, tex: 'e_elite',    knockMul: 0.05, behavior: 'chase', elite: true },
-  boss:     { hp: 3600, speed: 64,  dmg: 24, xp: 0,  radius: 62, tex: 'e_boss',     knockMul: 0,    behavior: 'chase', boss: true },
+  boss:     { hp: 3600, speed: 64,  dmg: 24, xp: 0,  radius: 64, tex: 'e_boss',     knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 露珠池塘（厚重慢节奏：坦克/炮台/跳袭） ----------
   tad:       { hp: 10,   speed: 104, dmg: 6,  xp: 1,  radius: 9,  tex: 'e_tad',       knockMul: 1.3,  behavior: 'zigzag' },
@@ -66,7 +66,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
                shoot: { range: 250, cd: 2.6, speed: 170, dmg: 9, tex: 'pz_bub' } },
   jelly:     { hp: 40,   speed: 58,  dmg: 12, xp: 2,  radius: 14, tex: 'e_jelly',     knockMul: 0.6,  behavior: 'orbit' },
   bigbubble: { hp: 1000, speed: 38,  dmg: 18, xp: 30, radius: 42, tex: 'e_bigbubble', knockMul: 0.05, behavior: 'chase', elite: true },
-  bubbleking:{ hp: 4200, speed: 56,  dmg: 24, xp: 0,  radius: 64, tex: 'e_bubbleking',knockMul: 0,    behavior: 'chase', boss: true },
+  bubbleking:{ hp: 4200, speed: 56,  dmg: 24, xp: 0,  radius: 66, tex: 'e_bubbleking',knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 晚霞山岗（轻血海量快节奏：冲刺/俯冲/闪现） ----------
   leafy:     { hp: 12,   speed: 70,  dmg: 7,  xp: 1,  radius: 12, tex: 'e_leafy',     knockMul: 1.1,  behavior: 'chase' },
@@ -79,7 +79,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   gust:      { hp: 24,   speed: 58,  dmg: 10, xp: 2,  radius: 12, tex: 'e_gust',      knockMul: 1,    behavior: 'blink' },
   bigthistle:{ hp: 850,  speed: 44,  dmg: 18, xp: 30, radius: 40, tex: 'e_bigthistle',knockMul: 0.05, behavior: 'dash', elite: true,
                dash: { triggerDist: 340, telegraph: 0.9, dashSpeed: 300, dashTime: 0.7, recover: 1.6 } },
-  galecrow:  { hp: 3800, speed: 70,  dmg: 24, xp: 0,  radius: 60, tex: 'e_galecrow',  knockMul: 0,    behavior: 'chase', boss: true },
+  galecrow:  { hp: 3800, speed: 70,  dmg: 24, xp: 0,  radius: 64, tex: 'e_galecrow',  knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 萤暮林地（中速韧性节奏：潜伏菇/孢子炮台/滚壳虫） ----------
   shroom:    { hp: 18,   speed: 58,  dmg: 9,  xp: 1,  radius: 13, tex: 'e_shroom',    knockMul: 1,    behavior: 'chase' },
@@ -91,7 +91,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   roller:    { hp: 55,   speed: 50,  dmg: 14, xp: 2,  radius: 14, tex: 'e_roller',    knockMul: 0.5,  behavior: 'pulse' },
   bombcap:   { hp: 30,   speed: 66,  dmg: 18, xp: 2,  radius: 13, tex: 'e_bombcap',   knockMul: 0.8,  behavior: 'exploder' }, // M15：dmg = 自爆对玩家伤害
   eldercap:  { hp: 1100, speed: 40,  dmg: 19, xp: 30, radius: 42, tex: 'e_eldercap',  knockMul: 0.05, behavior: 'chase', elite: true },
-  sporeking: { hp: 4600, speed: 52,  dmg: 25, xp: 0,  radius: 64, tex: 'e_sporeking', knockMul: 0,    behavior: 'chase', boss: true },
+  sporeking: { hp: 4600, speed: 52,  dmg: 25, xp: 0,  radius: 66, tex: 'e_sporeking', knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 紫露花田（轻快缠绕节奏：螺旋蝶/俯冲蜂/弹跳绒球） ----------
   budling:   { hp: 13,   speed: 74,  dmg: 7,  xp: 1,  radius: 11, tex: 'e_budling',   knockMul: 1.1,  behavior: 'chase' },
@@ -104,7 +104,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
                shoot: { range: 270, cd: 3.2, speed: 170, dmg: 10, tex: 'lz_thorn' } },
   hivebud:   { hp: 55,   speed: 40,  dmg: 10, xp: 3,  radius: 15, tex: 'e_hivebud',   knockMul: 0.6,  behavior: 'summoner', summon: 'budling' }, // M15
   queenbee:  { hp: 950,  speed: 46,  dmg: 18, xp: 30, radius: 40, tex: 'e_queenbee',  knockMul: 0.05, behavior: 'chase', elite: true },
-  flutterqueen: { hp: 5000, speed: 66, dmg: 25, xp: 0, radius: 62, tex: 'e_flutterqueen', knockMul: 0, behavior: 'chase', boss: true },
+  flutterqueen: { hp: 5000, speed: 66, dmg: 25, xp: 0, radius: 64, tex: 'e_flutterqueen', knockMul: 0, behavior: 'chase', boss: true },
 
   // ---------- 莓果灌丛（中坚黏人节奏：钻地鼠/扑袭熊崽/浆果炮手） ----------
   berryling: { hp: 16,   speed: 72,  dmg: 8,  xp: 1,  radius: 12, tex: 'e_berryling', knockMul: 1.1,  behavior: 'chase' },
@@ -116,7 +116,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
                shoot: { range: 260, cd: 2.9, speed: 165, dmg: 10, tex: 'bz_berry' } },
   husker:    { hp: 80,   speed: 44,  dmg: 12, xp: 3,  radius: 16, tex: 'e_husker',    knockMul: 0.3,  behavior: 'shielder' }, // M15
   bigberry:  { hp: 1150, speed: 42,  dmg: 19, xp: 30, radius: 42, tex: 'e_bigberry',  knockMul: 0.05, behavior: 'chase', elite: true },
-  bramblebear: { hp: 5300, speed: 58, dmg: 26, xp: 0, radius: 64, tex: 'e_bramblebear', knockMul: 0,  behavior: 'chase', boss: true },
+  bramblebear: { hp: 5300, speed: 58, dmg: 26, xp: 0, radius: 67, tex: 'e_bramblebear', knockMul: 0,  behavior: 'chase', boss: true },
 
   // ---------- 星语夜原（夜行游击节奏：闪现星精/月相变速/绕飞小枭） ----------
   moonmote:  { hp: 9,    speed: 100, dmg: 6,  xp: 1,  radius: 9,  tex: 'e_moonmote',  knockMul: 1.3,  behavior: 'wobble' },
@@ -129,7 +129,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   novamote:  { hp: 26,   speed: 78,  dmg: 18, xp: 2,  radius: 11, tex: 'e_novamote',  knockMul: 1,    behavior: 'exploder' }, // M15：dmg = 自爆对玩家伤害
   cometlord: { hp: 1050, speed: 46,  dmg: 19, xp: 30, radius: 40, tex: 'e_cometlord', knockMul: 0.05, behavior: 'dash', elite: true,
                dash: { triggerDist: 340, telegraph: 0.85, dashSpeed: 320, dashTime: 0.65, recover: 1.5 } },
-  starelk:   { hp: 5600, speed: 64,  dmg: 26, xp: 0,  radius: 62, tex: 'e_starelk',   knockMul: 0,    behavior: 'chase', boss: true },
+  starelk:   { hp: 5600, speed: 64,  dmg: 26, xp: 0,  radius: 65, tex: 'e_starelk',   knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 破晓之巅（终局长夜节奏：影群海量/伏击影守/滚动蚀轮） ----------
   shade:     { hp: 18,   speed: 76,  dmg: 9,  xp: 1,  radius: 12, tex: 'e_shade',     knockMul: 1.1,  behavior: 'chase' },
@@ -143,7 +143,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   duskward:  { hp: 90,   speed: 42,  dmg: 12, xp: 3,  radius: 16, tex: 'e_duskward',  knockMul: 0.3,  behavior: 'shielder' }, // M15
   shadowmaw: { hp: 70,   speed: 38,  dmg: 11, xp: 3,  radius: 15, tex: 'e_shadowmaw', knockMul: 0.6,  behavior: 'summoner', summon: 'shade' }, // M15
   shadelord: { hp: 1250, speed: 42,  dmg: 20, xp: 30, radius: 42, tex: 'e_shadelord', knockMul: 0.05, behavior: 'chase', elite: true },
-  nightowl:  { hp: 6200, speed: 60,  dmg: 27, xp: 0,  radius: 64, tex: 'e_nightowl',  knockMul: 0,    behavior: 'chase', boss: true },
+  nightowl:  { hp: 6200, speed: 60,  dmg: 27, xp: 0,  radius: 66, tex: 'e_nightowl',  knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 琥珀果园（丰收落果：诱导敌群进落点，混合飞行/炮台/护盾） ----------
   pip:        { hp: 18,   speed: 86,  dmg: 8,  xp: 1,  radius: 10, tex: 'e_pip',        knockMul: 1.15, behavior: 'chase' },
@@ -154,7 +154,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   scareseed:  { hp: 38,   speed: 48,  dmg: 9,  xp: 2,  radius: 13, tex: 'e_scareseed',  knockMul: 0.8,  behavior: 'turret',
                 shoot: { range: 270, cd: 2.9, speed: 180, dmg: 11, tex: 'oz_seed' } },
   harvestorb: { hp: 1350, speed: 44,  dmg: 20, xp: 30, radius: 42, tex: 'e_harvestorb', knockMul: 0.05, behavior: 'chase', elite: true },
-  ciderwyrm:  { hp: 6600, speed: 58,  dmg: 28, xp: 0,  radius: 66, tex: 'e_ciderwyrm',  knockMul: 0,    behavior: 'chase', boss: true },
+  ciderwyrm:  { hp: 6600, speed: 58,  dmg: 28, xp: 0,  radius: 68, tex: 'e_ciderwyrm',  knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 雪铃庭院（寒印碎裂：触发控场，跳扑/相位/冲刺并存） ----------
   snowdrop:   { hp: 14,   speed: 78,  dmg: 8,  xp: 1,  radius: 10, tex: 'e_snowdrop',   knockMul: 1.2,  behavior: 'chase' },
@@ -166,7 +166,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   bellfox:    { hp: 46,   speed: 66,  dmg: 14, xp: 2,  radius: 14, tex: 'e_bellfox',    knockMul: 0.7,  behavior: 'dash',
                 dash: { triggerDist: 285, telegraph: 0.55, dashSpeed: 390, dashTime: 0.5, recover: 1.0 } },
   snowwarden: { hp: 1400, speed: 42,  dmg: 20, xp: 30, radius: 42, tex: 'e_snowwarden', knockMul: 0.05, behavior: 'shielder', elite: true },
-  frosthare:  { hp: 7000, speed: 62,  dmg: 28, xp: 0,  radius: 64, tex: 'e_frosthare',  knockMul: 0,    behavior: 'chase', boss: true },
+  frosthare:  { hp: 7000, speed: 62,  dmg: 28, xp: 0,  radius: 65, tex: 'e_frosthare',  knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 彩镜沙洲（折光充能：玻璃系游击、闪现和远程压制） ----------
   prismite:   { hp: 10,   speed: 104, dmg: 6,  xp: 1,  radius: 9,  tex: 'e_prismite',   knockMul: 1.3,  behavior: 'wobble' },
@@ -177,7 +177,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   lensbeetle: { hp: 42,   speed: 56,  dmg: 13, xp: 2,  radius: 13, tex: 'e_lensbeetle', knockMul: 0.55, behavior: 'orbit' },
   sandsprite: { hp: 28,   speed: 92,  dmg: 12, xp: 2,  radius: 12, tex: 'e_sandsprite', knockMul: 1,    behavior: 'blink' },
   prismguard: { hp: 1480, speed: 42,  dmg: 21, xp: 30, radius: 42, tex: 'e_prismguard', knockMul: 0.05, behavior: 'phase', elite: true },
-  miragewhale:{ hp: 7500, speed: 54,  dmg: 29, xp: 0,  radius: 68, tex: 'e_miragewhale',knockMul: 0,    behavior: 'chase', boss: true },
+  miragewhale:{ hp: 7500, speed: 54,  dmg: 29, xp: 0,  radius: 70, tex: 'e_miragewhale',knockMul: 0,    behavior: 'chase', boss: true },
 
   // ---------- 晨钟庭（节拍钟阵：召唤/护盾/冲刺逼迫踩拍） ----------
   gearling:   { hp: 20,   speed: 74,  dmg: 9,  xp: 1,  radius: 11, tex: 'e_gearling',   knockMul: 1.1,  behavior: 'chase' },
@@ -189,7 +189,7 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   chimewisp:  { hp: 30,   speed: 78,  dmg: 10, xp: 2,  radius: 12, tex: 'e_chimewisp',  knockMul: 1.05, behavior: 'strafeShoot',
                 shoot: { range: 280, cd: 2.8, speed: 190, dmg: 11, tex: 'ck_note' } },
   gearwarden: { hp: 1550, speed: 42,  dmg: 22, xp: 30, radius: 44, tex: 'e_gearwarden', knockMul: 0.05, behavior: 'chase', elite: true },
-  clockrooster:{ hp: 8200, speed: 60, dmg: 30, xp: 0,  radius: 68, tex: 'e_clockrooster', knockMul: 0,   behavior: 'chase', boss: true },
+  clockrooster:{ hp: 8200, speed: 60, dmg: 30, xp: 0,  radius: 69, tex: 'e_clockrooster', knockMul: 0,   behavior: 'chase', boss: true },
 });
 
 // 随时间成长（min 为「有效分钟」：elapsed/60 × MapSpec.timeK，长图成长更慢）

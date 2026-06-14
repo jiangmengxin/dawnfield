@@ -5,6 +5,7 @@ import Phaser from 'phaser';
 import { ENEMIES, EXPLODER, SHIELDER, dmgScale, hpScale } from '../content/enemies';
 import { AFFIX, AFFIX_COLOR, AFFIX_IDS } from '../content/affixes';
 import { BOSSES } from '../content/bosses';
+import type { BossMoveId } from '../content/bosses';
 import { DIFFICULTY } from '../content/difficulty';
 import { ENDLESS } from '../content/endless';
 import type { AffixId, BehaviorId, EnemyId } from '../content/ids';
@@ -14,6 +15,7 @@ import { FONT, t } from '../i18n';
 import { Meta } from '../core/MetaState';
 import { BEHAVIORS, BehaviorMove, exploderBoom } from './behaviors';
 import { BossController } from './BossController';
+import { BossVisualController } from './BossVisual';
 import type { CombatContext, RunSystem } from './context';
 
 export class Enemy extends Phaser.GameObjects.Image {
@@ -65,6 +67,7 @@ export class EnemySystem implements RunSystem {
   boss: Enemy | null = null;
   private pool: Enemy[] = [];
   private bossCtl: BossController | null = null;
+  private bossVisual: BossVisualController | null = null;
   /** 在场护盾怪（每 0.3s 重建；hitEnemy 减伤查询 O(护盾怪数)） */
   private shielders: Enemy[] = [];
   private shieldRebuildT = 0;
@@ -131,6 +134,7 @@ export class EnemySystem implements RunSystem {
     if (e.isBoss) {
       this.boss = e;
       this.bossCtl = new BossController(this.ctx, this, BOSSES[this.ctx.map.id]);
+      this.bossVisual = new BossVisualController(this.ctx.scene, spec.tex);
     }
     this.actives.push(e);
     this.onEnemySpawned(e); // M15：spawn 后置钩子（3.2 契约 #3——词缀挂载点）
@@ -197,10 +201,16 @@ export class EnemySystem implements RunSystem {
     }
     if (e === this.boss) {
       this.bossCtl?.destroy();
+      this.bossVisual?.destroy();
       this.boss = null;
       this.bossCtl = null;
+      this.bossVisual = null;
     }
     this.pool.push(e);
+  }
+
+  notifyBossCast(role: 'main' | 'support', moveId: BossMoveId): void {
+    this.bossVisual?.notifyCast(role, moveId);
   }
 
   /** 护盾光环减伤（M15）：目标在任一存活护盾怪光环内 → 伤害 ×(1−reduce)；护盾怪自身不受庇护 */
@@ -296,7 +306,11 @@ export class EnemySystem implements RunSystem {
       // M17 受击 punch：命中瞬间放大脉冲线性回落（并入每帧缩放，tween 会被这里覆写所以不用 tween）
       if (e.punchT > 0) e.punchT -= dt;
       const pk = e.punchT > 0 ? 1 + HITFEEL.punchK * (e.punchT / HITFEEL.punchDur) : 1;
-      if (e.dashState !== 'tele') e.setScale(e.baseScale * br * pk, e.baseScale * (2 - br) * pk);
+      if (e.isBoss && this.bossVisual) {
+        const phase2 = e.hp < e.maxHp * BOSSES[ctx.map.id].phase2HpK;
+        const moving = Math.hypot(mvx, mvy) > 8 || Math.hypot(e.kvx, e.kvy) > 8;
+        this.bossVisual.update(e, dt, phase2, moving);
+      } else if (e.dashState !== 'tele') e.setScale(e.baseScale * br * pk, e.baseScale * (2 - br) * pk);
 
       e.setDepth(1000 + e.y * 0.01);
       e.shadowImg.setPosition(e.x, e.y + e.radius * 0.9);
@@ -407,6 +421,7 @@ export class EnemySystem implements RunSystem {
       this.ctx.fx.ring(e.x, e.y, AFFIX_COLOR.splitting, 4, 0.4);
     }
 
+    if (e.isBoss) this.bossVisual?.playDeath(e);
     this.ctx.onEnemyKilled(e);
     this.release(e);
   }

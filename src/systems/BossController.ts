@@ -2,6 +2,8 @@
 // 新 Boss 主体 = 独占主招 + 轻辅招；旧 ring/spread/summon/dash 仅保留低频背景压力。
 import type Phaser from 'phaser';
 import type { BossMoveSpec, BossRing, BossSpec, BossSpread } from '../content/bosses';
+import type { BossMoveId } from '../content/bosses';
+import type { BossTelegraphStyle } from '../gfx/textures/bosses';
 import { SFX } from '../audio/sound';
 import type { CombatContext } from './context';
 import type { Enemy, EnemySystem } from './EnemySystem';
@@ -26,6 +28,7 @@ interface BaseHazard {
   color: number;
   dmg: number;
   source: Enemy;
+  style: BossTelegraphStyle;
 }
 
 interface CircleHazard extends BaseHazard {
@@ -84,6 +87,7 @@ export class BossController {
   private hazards: Hazard[] = [];
   private trail: Pt[] = [];
   private trailT = 0;
+  private activeStyle: BossTelegraphStyle | null = null;
 
   constructor(private ctx: CombatContext, private enemies: EnemySystem, private spec: BossSpec) {
     this.moveT = spec.moves.map((m) => m.firstCd);
@@ -163,6 +167,9 @@ export class BossController {
     const warn = phase2 ? move.warnP2 ?? move.warn : move.warn;
     const p = this.playerPt();
     const aim = Math.atan2(ny, nx);
+    this.enemies.notifyBossCast?.(move.role, move.id);
+    const prevStyle = this.activeStyle;
+    this.activeStyle = styleForMove(move.id);
     switch (move.id) {
       case 'ink_recall':
         this.castInkRecall(e, move, warn, phase2);
@@ -241,6 +248,7 @@ export class BossController {
         if (phase2) this.addLineThrough(e, p.x, p.y, aim + Math.PI / 2 + (move.p2?.rotate ?? 0.28), move.length ?? 650, move.width ?? 44, warn, move.dmg, move.color, 0.32);
         break;
     }
+    this.activeStyle = prevStyle;
     this.pump(e);
     SFX.warning();
   }
@@ -464,6 +472,7 @@ export class BossController {
     if (h.kind === 'circle') {
       g.fillStyle(h.color, alpha).fillCircle(h.x, h.y, h.r);
       g.lineStyle(3, h.color, 0.7 + k * 0.25).strokeCircle(h.x, h.y, h.r);
+      this.drawCircleMotifs(g, h.x, h.y, h.r, h.style, h.color, 0.32 + k * 0.36);
     } else if (h.kind === 'line') {
       g.lineStyle(h.width, h.color, alpha + 0.08);
       g.beginPath();
@@ -475,6 +484,7 @@ export class BossController {
       g.moveTo(h.x1, h.y1);
       g.lineTo(h.x2, h.y2);
       g.strokePath();
+      this.drawLineMotifs(g, h.x1, h.y1, h.x2, h.y2, h.width, h.style, h.color, 0.3 + k * 0.38);
     } else if (h.kind === 'ring') {
       g.lineStyle(h.width, h.color, alpha + 0.05);
       if (h.gapA === undefined || h.gapArc === undefined) {
@@ -486,17 +496,20 @@ export class BossController {
       }
       g.lineStyle(2, h.color, 0.75 + k * 0.2);
       this.drawArc(g, h.x, h.y, h.r, 0, TAU);
+      this.drawRingMotifs(g, h.x, h.y, h.r, h.gapA, h.gapArc, h.style, h.color, 0.34 + k * 0.34);
     } else if (h.kind === 'sector') {
       this.drawSector(g, h.x, h.y, h.angle, h.arc, h.range, h.color, alpha);
+      this.drawSectorMotifs(g, h.x, h.y, h.angle, h.arc, h.range, h.style, h.color, 0.3 + k * 0.34);
     } else {
       g.fillStyle(0xfff2c0, 0.12 + k * 0.14).fillCircle(h.x, h.y, h.r);
       g.lineStyle(4, h.color, 0.75 + k * 0.2).strokeCircle(h.x, h.y, h.r);
       g.lineStyle(1, 0xfff2c0, 0.75).strokeCircle(h.x, h.y, h.r * 0.72);
+      this.drawCircleMotifs(g, h.x, h.y, h.r * 0.86, h.style, h.color, 0.35 + k * 0.3);
     }
   }
 
   private addCircle(source: Enemy, x: number, y: number, r: number, warn: number, dmg: number, color: number, delay = 0): void {
-    this.pushHazard({ kind: 'circle', gfx: this.graphics(delay), x, y, r, warn, t: warn, dmg, color, delay, source });
+    this.pushHazard({ kind: 'circle', gfx: this.graphics(delay), x, y, r, warn, t: warn, dmg, color, delay, source, style: this.hazardStyle(source) });
   }
 
   private addLineThrough(source: Enemy, x: number, y: number, angle: number, len: number, width: number, warn: number, dmg: number, color: number, delay = 0): void {
@@ -506,19 +519,19 @@ export class BossController {
   }
 
   private addLine(source: Enemy, x1: number, y1: number, x2: number, y2: number, width: number, warn: number, dmg: number, color: number, delay = 0): void {
-    this.pushHazard({ kind: 'line', gfx: this.graphics(delay), x1, y1, x2, y2, width, warn, t: warn, dmg, color, delay, source });
+    this.pushHazard({ kind: 'line', gfx: this.graphics(delay), x1, y1, x2, y2, width, warn, t: warn, dmg, color, delay, source, style: this.hazardStyle(source) });
   }
 
   private addRing(source: Enemy, x: number, y: number, r: number, width: number, warn: number, dmg: number, color: number, gapA?: number, gapArc?: number, delay = 0): void {
-    this.pushHazard({ kind: 'ring', gfx: this.graphics(delay), x, y, r, width, gapA, gapArc, warn, t: warn, dmg, color, delay, source });
+    this.pushHazard({ kind: 'ring', gfx: this.graphics(delay), x, y, r, width, gapA, gapArc, warn, t: warn, dmg, color, delay, source, style: this.hazardStyle(source) });
   }
 
   private addSector(source: Enemy, x: number, y: number, angle: number, arc: number, range: number, warn: number, dmg: number, color: number, delay = 0): void {
-    this.pushHazard({ kind: 'sector', gfx: this.graphics(delay), x, y, angle, arc, range, warn, t: warn, dmg, color, delay, source });
+    this.pushHazard({ kind: 'sector', gfx: this.graphics(delay), x, y, angle, arc, range, warn, t: warn, dmg, color, delay, source, style: this.hazardStyle(source) });
   }
 
   private addSafeCircle(source: Enemy, x: number, y: number, r: number, warn: number, dmg: number, color: number, delay = 0): void {
-    this.pushHazard({ kind: 'safeCircle', gfx: this.graphics(delay), x, y, r, warn, t: warn, dmg, color, delay, source });
+    this.pushHazard({ kind: 'safeCircle', gfx: this.graphics(delay), x, y, r, warn, t: warn, dmg, color, delay, source, style: this.hazardStyle(source) });
   }
 
   private pushHazard(h: Hazard): void {
@@ -579,6 +592,95 @@ export class BossController {
     g.closePath();
     g.fillPath();
     g.strokePath();
+  }
+
+  private drawCircleMotifs(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number, style: BossTelegraphStyle, color: number, alpha: number): void {
+    const n = style === 'clock' ? 12 : 8;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      this.drawMotif(g, style, x + Math.cos(a) * r, y + Math.sin(a) * r, 4.2, color, alpha, a);
+    }
+  }
+
+  private drawLineMotifs(g: Phaser.GameObjects.Graphics, x1: number, y1: number, x2: number, y2: number, width: number, style: BossTelegraphStyle, color: number, alpha: number): void {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy) || 1;
+    const n = Math.max(5, Math.min(14, Math.floor(len / 58)));
+    const nx = -dy / len;
+    const ny = dx / len;
+    const angle = Math.atan2(dy, dx);
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const side = i % 2 === 0 ? 1 : -1;
+      this.drawMotif(g, style, x1 + dx * t + nx * width * 0.34 * side, y1 + dy * t + ny * width * 0.34 * side, 4.5, color, alpha, angle);
+    }
+  }
+
+  private drawRingMotifs(g: Phaser.GameObjects.Graphics, x: number, y: number, r: number, gapA: number | undefined, gapArc: number | undefined, style: BossTelegraphStyle, color: number, alpha: number): void {
+    const n = style === 'clock' ? 16 : 12;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU;
+      if (gapA !== undefined && gapArc !== undefined && Math.abs(angleDelta(a, gapA)) <= gapArc / 2) continue;
+      this.drawMotif(g, style, x + Math.cos(a) * r, y + Math.sin(a) * r, 4.2, color, alpha, a);
+    }
+  }
+
+  private drawSectorMotifs(g: Phaser.GameObjects.Graphics, x: number, y: number, angle: number, arc: number, range: number, style: BossTelegraphStyle, color: number, alpha: number): void {
+    const n = 7;
+    for (let i = 0; i <= n; i++) {
+      const a = angle - arc / 2 + (arc * i) / n;
+      this.drawMotif(g, style, x + Math.cos(a) * range * 0.72, y + Math.sin(a) * range * 0.72, 5, color, alpha, a);
+    }
+  }
+
+  private drawMotif(g: Phaser.GameObjects.Graphics, style: BossTelegraphStyle, x: number, y: number, r: number, color: number, alpha: number, angle: number): void {
+    g.fillStyle(color, alpha);
+    g.lineStyle(1.4, color, Math.min(0.85, alpha + 0.18));
+    if (style === 'bubble' || style === 'spore' || style === 'cider') {
+      g.fillCircle(x, y, r * (style === 'spore' ? 0.7 : 0.9));
+      g.strokeCircle(x, y, r * 1.35);
+      return;
+    }
+    if (style === 'star' || style === 'frost' || style === 'clock') {
+      const pts = style === 'frost' ? 4 : 5;
+      g.beginPath();
+      for (let i = 0; i < pts * 2; i++) {
+        const rr = i % 2 === 0 ? r * 1.45 : r * 0.55;
+        const a = angle + (i / (pts * 2)) * TAU;
+        const px = x + Math.cos(a) * rr;
+        const py = y + Math.sin(a) * rr;
+        if (i === 0) g.moveTo(px, py);
+        else g.lineTo(px, py);
+      }
+      g.closePath();
+      g.fillPath();
+      g.strokePath();
+      return;
+    }
+    if (style === 'mirror') {
+      g.beginPath();
+      g.moveTo(x + Math.cos(angle) * r * 1.6, y + Math.sin(angle) * r * 1.6);
+      g.lineTo(x + Math.cos(angle + Math.PI / 2) * r, y + Math.sin(angle + Math.PI / 2) * r);
+      g.lineTo(x - Math.cos(angle) * r * 1.6, y - Math.sin(angle) * r * 1.6);
+      g.lineTo(x - Math.cos(angle + Math.PI / 2) * r, y - Math.sin(angle + Math.PI / 2) * r);
+      g.closePath();
+      g.fillPath();
+      g.strokePath();
+      return;
+    }
+    g.beginPath();
+    g.moveTo(x + Math.cos(angle) * r * 1.7, y + Math.sin(angle) * r * 1.7);
+    g.lineTo(x + Math.cos(angle + 2.25) * r, y + Math.sin(angle + 2.25) * r);
+    g.lineTo(x - Math.cos(angle) * r * 1.5, y - Math.sin(angle) * r * 1.5);
+    g.lineTo(x + Math.cos(angle - 2.25) * r, y + Math.sin(angle - 2.25) * r);
+    g.closePath();
+    g.fillPath();
+    g.strokePath();
+  }
+
+  private hazardStyle(source: Enemy): BossTelegraphStyle {
+    return this.activeStyle ?? styleForEnemy(source.id);
   }
 
   private sampleTrail(dt: number): void {
@@ -670,4 +772,35 @@ function angleDelta(a: number, b: number): number {
   if (d > Math.PI) d -= TAU;
   if (d < -Math.PI) d += TAU;
   return d;
+}
+
+function styleForMove(id: BossMoveId): BossTelegraphStyle {
+  if (id === 'ink_recall' || id === 'crown_drip') return 'ink';
+  if (id === 'bubble_lane' || id === 'bubble_pressure') return 'bubble';
+  if (id === 'feather_return' || id === 'sidewind_shear') return 'feather';
+  if (id === 'spore_breath' || id === 'mushroom_drop') return 'spore';
+  if (id === 'butterfly_clasp' || id === 'dust_curve') return 'butterfly';
+  if (id === 'bear_paws' || id === 'bramble_rift') return 'bramble';
+  if (id === 'constellation_lines' || id === 'meteor_mark') return 'star';
+  if (id === 'owl_gaze' || id === 'feather_curtain') return 'night';
+  if (id === 'fruit_roll' || id === 'cider_sprout') return 'cider';
+  if (id === 'snow_footsteps' || id === 'frost_breath') return 'frost';
+  if (id === 'mirror_tide' || id === 'mirror_shards') return 'mirror';
+  return 'clock';
+}
+
+function styleForEnemy(id: string): BossTelegraphStyle {
+  if (id === 'boss') return 'ink';
+  if (id === 'bubbleking') return 'bubble';
+  if (id === 'galecrow') return 'feather';
+  if (id === 'sporeking') return 'spore';
+  if (id === 'flutterqueen') return 'butterfly';
+  if (id === 'bramblebear') return 'bramble';
+  if (id === 'starelk') return 'star';
+  if (id === 'nightowl') return 'night';
+  if (id === 'ciderwyrm') return 'cider';
+  if (id === 'frosthare') return 'frost';
+  if (id === 'miragewhale') return 'mirror';
+  if (id === 'clockrooster') return 'clock';
+  return 'ink';
 }

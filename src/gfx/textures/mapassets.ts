@@ -6,6 +6,7 @@ import {
 } from '../palette';
 import type { MapId } from '../../content/ids';
 import { blobBody, Ctx, EyeStyle, eyes, makeBulletTex, makeTex, petalShape, softGlow, star } from './core';
+import { createBossTextures } from './bosses';
 
 function rgba(c: number, a: number): string {
   return `rgba(${(c >> 16) & 0xff},${(c >> 8) & 0xff},${c & 0xff},${a})`;
@@ -2607,6 +2608,7 @@ export function ensureMapAssets(scene: Phaser.Scene, mapId: MapId): void {
   else if (mapId === 'mirage') createMirageAssets(scene);
   else if (mapId === 'clockwork') createClockworkAssets(scene);
   else return;
+  createBossTextures(scene, mapId);
   CREATED[mapId] = scene.textures.getTextureKeys().filter((k) => !before.has(k));
 }
 

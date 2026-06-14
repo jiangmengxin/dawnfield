@@ -10,6 +10,7 @@
     "check:docs": "node scripts/check-docs.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
     "playtest:bosses": "node scripts/run-boss-playtest.mjs",
+    "playtest:boss-art": "node scripts/run-boss-art-preview.mjs",
     "test": "vitest run"
   },
   "dependencies": {

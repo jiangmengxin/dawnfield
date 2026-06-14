@@ -738,19 +738,37 @@ export class GameScene extends Phaser.Scene {
     this.run.elapsed = Math.max(0, this.map.minutes * 60 - 0.5);
     this.waveDir.debugSpawnBossNow();
     const boss = this.enemies.boss;
-    if (boss && phase === 'p2') boss.hp = boss.maxHp * 0.46;
+    if (boss) {
+      boss.setPosition(this.player.x, this.player.y + 210);
+      boss.spd = Math.min(boss.spd, 24);
+      boss.kvx = 0;
+      boss.kvy = 0;
+      if (phase === 'p2') boss.hp = boss.maxHp * 0.46;
+    }
     this.bgmBoostT = Math.max(this.bgmBoostT, 18);
   }
 
-  debugBossTestSnapshot(): { mapId: string; boss: string; active: boolean; phase: 'p1' | 'p2'; hpK: number; bullets: number; zones: number } {
+  debugBossTestSnapshot(): {
+    mapId: string; boss: string; active: boolean; phase: 'p1' | 'p2'; hpK: number;
+    texture: string; radius: number; scaleX: number; scaleY: number; visible: boolean; bullets: number; zones: number;
+  } {
     const boss = this.enemies.boss;
     const hpK = boss && boss.maxHp > 0 ? boss.hp / boss.maxHp : 0;
+    const cam = this.cameras.main;
+    const bx = boss ? (boss.x - cam.scrollX) * cam.zoom : -9999;
+    const by = boss ? (boss.y - cam.scrollY) * cam.zoom : -9999;
+    const margin = boss ? boss.radius * Math.max(Math.abs(boss.scaleX), Math.abs(boss.scaleY), 1) * cam.zoom : 0;
     return {
       mapId: this.map.id,
       boss: this.map.bossId,
       active: Boolean(boss?.active),
       phase: hpK > 0 && hpK < 0.5 ? 'p2' : 'p1',
       hpK,
+      texture: boss?.texture.key ?? '',
+      radius: boss?.radius ?? 0,
+      scaleX: boss?.scaleX ?? 0,
+      scaleY: boss?.scaleY ?? 0,
+      visible: Boolean(boss?.active) && bx >= -margin && bx <= cam.width + margin && by >= -margin && by <= cam.height + margin,
       bullets: this.projectilesRef.activeCount,
       zones: this.zonesRef.count,
     };

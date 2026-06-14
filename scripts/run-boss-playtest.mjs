@@ -3,7 +3,7 @@
 // Requires Playwright to be resolvable by Node (Codex bundled runtime works via NODE_PATH).
 import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
@@ -46,21 +46,36 @@ async function waitForApp(page) {
   await page.waitForFunction(() => Boolean(window.__game?.scene?.getScene('title')), null, { timeout: 30000 });
 }
 
+async function ensureApp(page) {
+  const hasGame = await page.evaluate(() => Boolean(window.__game?.scene)).catch(() => false);
+  if (!hasGame) await waitForApp(page);
+}
+
 async function startBoss(page, mapId, phase) {
-  await page.evaluate(({ mapId, phase }) => {
-    window.__bossPlaytestErrors = [];
-    window.__game.scene.stop('hud');
-    window.__game.scene.stop('game');
-    window.__game.scene.start('game', {
-      charId: 'spark',
-      mapId,
-      bossTest: phase,
-      arcana: false,
-      random: false,
-      speed2x: false,
-      breakthrough: false,
-    });
-  }, { mapId, phase });
+  await ensureApp(page);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      await page.evaluate(({ mapId, phase }) => {
+        window.__bossPlaytestErrors = [];
+        for (const key of ['hud', 'game', 'title', 'charselect', 'mapselect', 'shop', 'codex', 'achievements', 'settings', 'result']) {
+          window.__game.scene.stop(key);
+        }
+        window.__game.scene.start('game', {
+          charId: 'spark',
+          mapId,
+          bossTest: phase,
+          arcana: false,
+          random: false,
+          speed2x: false,
+          breakthrough: false,
+        });
+      }, { mapId, phase });
+      break;
+    } catch (err) {
+      if (attempt > 0 || !String(err?.message ?? err).includes('Execution context was destroyed')) throw err;
+      await waitForApp(page);
+    }
+  }
   await page.waitForFunction(() => {
     const gs = window.__game?.scene?.getScene('game');
     return Boolean(gs?.enemies?.boss?.active);
@@ -90,7 +105,7 @@ async function snapshot(page) {
 async function main() {
   const maps = mapFilter === 'all' ? MAPS : mapFilter.split(',').filter(Boolean);
   const phases = phaseFilter === 'all' ? PHASES : phaseFilter.split(',').filter(Boolean);
-  const absOut = join(root, outDir);
+  const absOut = resolve(root, outDir);
   mkdirSync(absOut, { recursive: true });
 
   const browser = await chromium.launch({ headless: !headful });
@@ -118,7 +133,12 @@ async function main() {
           phase,
           viewport: `${w}x${h}`,
           active: state.active,
+          visible: state.visible,
           hpK: Number(state.hpK.toFixed(3)),
+          texture: state.texture,
+          radius: state.radius,
+          scaleX: Number(state.scaleX.toFixed(3)),
+          scaleY: Number(state.scaleY.toFixed(3)),
           bullets: state.bullets,
           zones: state.zones,
           errors: consoleErrors.slice(beforeErrs),
@@ -135,7 +155,7 @@ async function main() {
     url,
     generatedAt: new Date().toISOString(),
     rows,
-    ok: rows.every((r) => r.active && r.errors.length === 0),
+    ok: rows.every((r) => r.active && r.visible && r.errors.length === 0),
   };
   writeFileSync(join(absOut, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
   if (!summary.ok) process.exit(1);

@@ -45,6 +45,7 @@ describe('BossController 独占招式生命周期', () => {
       });
       ctl.debugCast(harness.boss, move, true);
       expect(ctl.debugHazardCount, move.id).toBeGreaterThan(0);
+      expect(harness.castCalls[0], move.id).toEqual({ role: move.role, id: move.id });
       for (let i = 0; i < 36; i++) ctl.debugTick(0.1);
       expect(ctl.debugHazardCount, move.id).toBe(0);
       expect(harness.destroyed, move.id).toBeGreaterThan(0);
@@ -74,9 +75,11 @@ function makeHarness(): {
   boss: Enemy;
   readonly destroyed: number;
   readonly damageCalls: number;
+  readonly castCalls: Array<{ role: 'main' | 'support'; id: string }>;
 } {
   let destroyed = 0;
   let damageCalls = 0;
+  const castCalls: Array<{ role: 'main' | 'support'; id: string }> = [];
   const graphics = () => ({
     clear() { return this; },
     setDepth() { return this; },
@@ -114,12 +117,16 @@ function makeHarness(): {
     hitStop: () => undefined,
     spawnEnemyBullet: () => undefined,
   } as unknown as CombatContext;
-  const enemies = { spawn: () => boss } as unknown as EnemySystem;
+  const enemies = {
+    spawn: () => boss,
+    notifyBossCast: (role: 'main' | 'support', id: string) => { castCalls.push({ role, id }); },
+  } as unknown as EnemySystem;
   return {
     ctx,
     enemies,
     boss,
     get destroyed() { return destroyed; },
     get damageCalls() { return damageCalls; },
+    get castCalls() { return castCalls; },
   };
 }

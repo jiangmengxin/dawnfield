@@ -6,10 +6,13 @@ import { createEnemyTextures } from './enemies';
 import { createWeaponTextures } from './weapons';
 import { createMiscTextures } from './misc';
 import { createIcons } from './icons';
+import { createBossTextures } from './bosses';
 
 export { makeTex } from './core';
 export { makeCharacter } from './characters';
 export type { CharRecipe } from './characters';
+export { BOSS_ART_BY_ENEMY, BOSS_ART_BY_KEY, BOSS_ART_BY_MAP, BOSS_ART_SPECS, bossFrameKeysFor, bossTextureKey } from './bosses';
+export type { BossFrameState, BossTelegraphStyle } from './bosses';
 export { ensureMapAssets, makeEnemy, releaseMapAssets } from './mapassets';
 export type { EnemyRecipe } from './mapassets';
 
@@ -19,6 +22,7 @@ export function createAllTextures(scene: Phaser.Scene): void {
 
   createCharacterTextures(scene);
   createEnemyTextures(scene);
+  createBossTextures(scene, 'meadow');
   createWeaponTextures(scene);
   createMiscTextures(scene);
   createIcons(scene);
