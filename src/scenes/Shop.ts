@@ -119,7 +119,8 @@ export class ShopScene extends UIScene {
       const avail = panel.view.w - GRID_PAD.l - GRID_PAD.r;
       const cols = Math.max(1, Math.floor((avail + gap) / (minCellW + gap)));
       const cw = (avail - gap * (cols - 1)) / cols;
-      const ch = cw * 1.18;
+      const veryNarrow = vp.portrait && vp.w <= 340;
+      const ch = cw * (veryNarrow ? 0.92 : 1.18);
       let y = GRID_PAD.t;
       for (const grp of SHOP_GROUPS) {
         y += sectionLabel(add, GRID_PAD.l, y, grp.key) + 8;

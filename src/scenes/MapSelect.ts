@@ -52,9 +52,8 @@ export class MapSelectScene extends UIScene {
     const compact = this.vp.bp === 'compact';
     const fontScale = compact ? 0.9 : 1;
 
-    // M20 模式开关：6 个独立 chip（无尽/狂暴/规则/随机/倍速/突破）——恒为单行铺开，
-    // 开启用金色高亮（不再用勾选/文字介绍）；手机上整排超宽时按内容宽统一缩放，
-    // UIButton 自带 fitText 再缩字号兜底，保证六枚始终一排不换行
+    // M20 模式开关：6 个独立 chip（无尽/狂暴/规则/随机/倍速/突破）。
+    // 矮窄屏拆成两行，避免同类按钮被压成不同视觉尺寸；普通宽度仍逐行居中铺开。
     const chipFs = this.vp.fs(15);
     const chipH = Math.max(THEME.hitMin, this.vp.s(44));
     const chips: Array<{ label: string; on: boolean; toggle: () => void }> = [
@@ -89,26 +88,30 @@ export class MapSelectScene extends UIScene {
       t0.destroy();
       return wd;
     };
-    // 自然宽 = 文字 + 内边距；整排（含间距）超出内容宽时统一缩放至刚好放下（手机六枚一排）
     const gap = compact ? THEME.gapXs : THEME.gapSm;
-    const natural = chips.map((c) => measure(c.label) + 34);
-    const sumNatural = natural.reduce((a, b) => a + b, 0);
-    const avail = content.w - gap * (chips.length - 1);
-    const scale = Math.min(1, avail / sumNatural);
-    const widths = natural.map((w) => w * scale);
-    const totalW = widths.reduce((a, b) => a + b, 0) + gap * (chips.length - 1);
-    let chx = content.x + content.w / 2 - totalW / 2;
-    const cy = content.y + chipH / 2;
-    chips.forEach((c, i) => {
-      const wd = widths[i];
-      new UIButton(this, chx + wd / 2, cy, {
-        w: wd, h: chipH, label: c.label, fontSize: chipFs,
-        fill: c.on ? 0xffeec0 : undefined, edge: c.on ? 0xe2b452 : undefined,
-        onTap: c.toggle,
+    const chipModels = chips.map((c) => ({ ...c, natural: measure(c.label) + 34 }));
+    const naturalTotal = chipModels.reduce((a, c) => a + c.natural, 0) + gap * (chipModels.length - 1);
+    const chipRows = compact && naturalTotal > content.w
+      ? [chipModels.slice(0, 3), chipModels.slice(3)]
+      : [chipModels];
+    chipRows.forEach((row, ri) => {
+      const avail = content.w - gap * (row.length - 1);
+      const scale = Math.min(1, avail / row.reduce((a, c) => a + c.natural, 0));
+      const widths = row.map((c) => c.natural * scale);
+      const totalW = widths.reduce((a, b) => a + b, 0) + gap * (row.length - 1);
+      let chx = content.x + content.w / 2 - totalW / 2;
+      const cy = content.y + chipH / 2 + ri * (chipH + gap);
+      row.forEach((c, i) => {
+        const wd = widths[i];
+        new UIButton(this, chx + wd / 2, cy, {
+          w: wd, h: chipH, label: c.label, fontSize: chipFs,
+          fill: c.on ? 0xffeec0 : undefined, edge: c.on ? 0xe2b452 : undefined,
+          onTap: c.toggle,
+        });
+        chx += wd + gap;
       });
-      chx += wd + gap;
     });
-    const top = content.y + chipH + THEME.gapSm;
+    const top = content.y + chipRows.length * chipH + (chipRows.length - 1) * gap + THEME.gapSm;
 
     const panel = new ScrollPanel(this, {
       x: content.x, y: top, w: content.w, h: content.y + content.h - top,

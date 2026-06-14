@@ -811,6 +811,7 @@ const D: Dict = {
 
   // 成就
   achUnlocked: ['成就达成！', 'Achievement!'],
+  achMore: ['还有 {n} 项成就', '+{n} more achievements'],
   ach_count: ['已达成', 'Unlocked'],
   ach_reward: ['解锁角色：{c}', 'Unlocks hero: {c}'],
   ach_rewardMap: ['解锁地图：{m}', 'Unlocks field: {m}'],

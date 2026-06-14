@@ -130,8 +130,10 @@ export class ResultScene extends Phaser.Scene {
     const subText = r.mode === 'endless'
       ? t('map_' + r.mapId) + diffNote
       : (r.win ? t('map_' + r.mapId + '_win') : t('defeatSub')) + (r.win ? diffNote : '');
+    const subMaxW = Math.max(180, Math.min(w - 32, landscape ? w * 0.58 : w - 32));
     this.add.text(cx, titleY + 46, subText, {
       fontFamily: FONT, fontSize: '16px', color: PAL.inkSoft,
+      align: 'center', wordWrap: { width: subMaxW, useAdvancedWrap: true },
     }).setOrigin(0.5).setDepth(2);
     if (this.newEndlessBest) {
       this.add.text(cx, titleY + 70, '★ ' + t('newRecord'), {
@@ -208,25 +210,44 @@ export class ResultScene extends Phaser.Scene {
     // 本局新达成的成就
     let flowBottom = iconY + 24;
     if (this.newAch.length > 0) {
-      const lines = this.newAch.map((id) => '★ ' + t('achUnlocked') + ' ' + t('ach_' + id));
-      const achTxt = this.add.text(dataCx, iconY + 30, lines.join('\n'), {
-        fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#C8902A', align: 'center',
-        stroke: '#FFFFFF', strokeThickness: 4,
-      }).setOrigin(0.5, 0).setDepth(2);
-      flowBottom = iconY + 30 + achTxt.height;
+      const rawLines = this.newAch.map((id) => '★ ' + t('achUnlocked') + ' ' + t('ach_' + id));
+      const achTop = iconY + 30;
+      const buttonReserve = landscape ? 122 : 156;
+      const maxLines = Math.max(0, Math.floor((h - achTop - buttonReserve) / 21));
+      const lines = rawLines.length > maxLines && maxLines > 0
+        ? [
+          ...rawLines.slice(0, Math.max(0, maxLines - 1)),
+          t('achMore').replace('{n}', String(rawLines.length - Math.max(0, maxLines - 1))),
+        ]
+        : rawLines.slice(0, maxLines);
+      if (lines.length > 0) {
+        const achTxt = this.add.text(dataCx, achTop, lines.join('\n'), {
+          fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#C8902A', align: 'center',
+          stroke: '#FFFFFF', strokeThickness: 4,
+          wordWrap: { width: Math.min(360, Math.max(180, w * 0.44)), useAdvancedWrap: true },
+        }).setOrigin(0.5, 0).setDepth(2);
+        flowBottom = achTop + achTxt.height;
+      }
     }
 
     // 按钮：竖屏锚底、横屏接数据栏下方（均与内容拉开间距，避免拥挤）
     const bGap = 64;
-    const byBtn = landscape
+    const shortLandscape = landscape && h < 620;
+    const rawBtnY = landscape
       ? flowBottom + 24 + THEME.btnH / 2
       : Math.max(vy(0.82), flowBottom + 24 + THEME.btnH / 2);
-    const retry = makeButton(this, dataCx, byBtn, THEME.btnW, THEME.btnH, t('retry'), () => {
+    const byBtn = shortLandscape
+      ? Math.min(rawBtnY, h - THEME.gapMd - THEME.btnH / 2)
+      : rawBtnY;
+    const retryX = shortLandscape ? dataCx - THEME.btnW / 2 - THEME.gapSm / 2 : dataCx;
+    const menuX = shortLandscape ? dataCx + THEME.btnW / 2 + THEME.gapSm / 2 : dataCx;
+    const menuY = shortLandscape ? byBtn : byBtn + bGap;
+    const retry = makeButton(this, retryX, byBtn, THEME.btnW, THEME.btnH, t('retry'), () => {
       this.cleanup();
       // 同角色同图再来一局；M11 起沿用模式与狂暴档位
       this.scene.start('game', { charId: r.charId, mapId: r.mapId, mode: r.mode, diff: r.diff });
     }, { fontSize: THEME.btnFs });
-    const menu = makeButton(this, dataCx, byBtn + bGap, THEME.btnW, THEME.btnH, t('quit'), () => {
+    const menu = makeButton(this, menuX, menuY, THEME.btnW, THEME.btnH, t('quit'), () => {
       this.cleanup();
       this.scene.start('title');
     }, { fontSize: THEME.btnFs });

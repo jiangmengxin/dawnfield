@@ -19,6 +19,7 @@ export class CharacterSelectScene extends UIScene {
     const content = this.buildHeader(t('scn_charSelect'));
     const panel = new ScrollPanel(this, content);
     const compact = this.vp.bp === 'compact';
+    const veryNarrow = this.vp.portrait && this.vp.w <= 340;
     const fontScale = compact ? 0.9 : 1;
 
     // M16 隐藏角色：未解锁不占位不显示（与普通 ??? 占位区分——存在本身就是秘密）
@@ -59,7 +60,7 @@ export class CharacterSelectScene extends UIScene {
     buildCardGrid(panel, {
       items,
       minCellW: compact ? 150 : 184,
-      aspect: compact ? 1.08 : 1.14,
+      aspect: compact ? (veryNarrow ? 0.9 : 1.08) : 1.14,
       gap: compact ? undefined : 16,
     });
   }

@@ -41,11 +41,12 @@ export class SettingsScene extends UIScene {
     // 再留 20px 使 rowBg 外扩 ±10 后与页边 ≥16px 安全留白
     const maxW = Math.min(content.w - 20, Math.max(440, Math.min(560, content.w * 0.66)));
     const x0 = content.x + (content.w - maxW) / 2;
-    // 12 行：5 设置 + 1 分区标题 + 5 调试开关 + 2 调试操作行（每行 3 枚，SE1 换行）；行高自适应
-    // （M20 规则卡移出设置 → 选图页「规则」模式开关）
     const sectionH = 34;
-    const fit = (content.h - sectionH - THEME.gapMd * 2) / 12;
-    const rowH = fit >= 44 ? Math.max(44, Math.min(vp.s(60), fit)) : Math.max(26, fit);
+    // 正式设置项不能为了调试区压缩到 44px 以下；矮屏隐藏调试区，避免玩家设置控件掉出触控规范。
+    const showDebug = content.h >= 620;
+    const rowsForFit = showDebug ? 12 : 5;
+    const fit = (content.h - (showDebug ? sectionH : 0) - THEME.gapMd * 2) / rowsForFit;
+    const rowH = Math.max(THEME.hitMin + 8, Math.min(vp.s(60), fit));
     let y = content.y + THEME.gapMd;
 
     const label = (ty: number, key: string): void => {
@@ -105,13 +106,15 @@ export class SettingsScene extends UIScene {
     const langBtnW = Math.min(maxW * 0.62, tmp.width + 36);
     tmp.destroy();
     const langBtn = new UIButton(this, 0, cy, {
-      w: langBtnW, h: Math.min(THEME.hitMin, rowH - 12),
+      w: langBtnW, h: THEME.hitMin,
       label: langLabel,
       fontSize: vp.fs(15),
       onTap: () => this.openLangPicker(),
     });
     langBtn.setX(x0 + maxW - 8 - langBtnW / 2);
     y += rowH;
+
+    if (!showDebug) return;
 
     // ---------- 调试区 ----------
     this.add.text(x0 + 4, y + sectionH / 2 + 4, '🛠 ' + t('set_debugTitle'), {
@@ -127,7 +130,7 @@ export class SettingsScene extends UIScene {
 
     // 调试操作行：加币 / 时间跳跃 / 指定武器 / 波次预览 / 规则卡直给（后四者仅对进行中的局生效）
     // + DPS 基准（M12，仅 DEV 构建出现，随调试隔离一起被 PROD 隐藏）
-    const btnH = Math.min(THEME.hitMin, rowH - 12);
+    const btnH = THEME.hitMin;
     const ops: Array<[string, () => void]> = [
       [t('set_addCoins'), () => {
         Meta.addCoins(1000, false); // 调试加币不计入累计获得（不触发金币成就）

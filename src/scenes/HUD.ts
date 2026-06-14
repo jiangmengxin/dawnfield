@@ -80,6 +80,54 @@ export class HUDScene extends Phaser.Scene {
     return Math.max(THEME.gapMd, this.vp.s(THEME.gapMd));
   }
 
+  private bossBarY(): number {
+    return this.vp.safe.y + (this.compactHud ? 182 : 218);
+  }
+
+  private warnY(): number {
+    const safe = this.vp.safe;
+    // 320x480 cannot fit the warning between the top HUD and boss bar; stack it under the boss bar there.
+    if (this.bossVisible && safe.h < 560) return this.bossBarY() + 46;
+    return safe.y + safe.h * 0.3;
+  }
+
+  private toastY(): number {
+    const safe = this.vp.safe;
+    if (!this.bossVisible || safe.h < 560) return safe.y + safe.h * 0.22;
+    return Math.max(safe.y + 104, this.bossBarY() - 48);
+  }
+
+  private configureBossText(): void {
+    const safe = this.vp.safe;
+    const gut = this.edgeGutter();
+    this.bossName.setStyle({
+      fontFamily: FONT,
+      fontSize: (this.compactHud ? 15 : 16) + 'px',
+      fontStyle: 'bold',
+      color: '#5A6488',
+      stroke: '#FFFFFF',
+      strokeThickness: 4,
+      align: 'center',
+      wordWrap: { width: Math.max(180, safe.w - gut * 2), useAdvancedWrap: true },
+    });
+  }
+
+  private configureWarnText(): void {
+    const safe = this.vp.safe;
+    const gut = this.edgeGutter();
+    const fontSize = this.compactHud ? (safe.w <= 340 ? 17 : 19) : 24;
+    this.warnText.setStyle({
+      fontFamily: FONT,
+      fontSize: fontSize + 'px',
+      fontStyle: 'bold',
+      color: '#C06870',
+      stroke: '#FFFFFF',
+      strokeThickness: this.compactHud ? 5 : 6,
+      align: 'center',
+      wordWrap: { width: Math.max(180, safe.w - gut * 2), useAdvancedWrap: true },
+    });
+  }
+
   /** 竖屏精简形态：只常驻 生命/经验/时间/暂停，构筑详情进暂停面板 */
   private get compactHud(): boolean {
     return this.vp.portrait && this.vp.bp === 'compact';
@@ -96,6 +144,7 @@ export class HUDScene extends Phaser.Scene {
     // busy 卡 true 则本局一切金色横幅（成就/轮次/tips/trait 宣告）永久哑火
     this.toastQueue = [];
     this.toastBusy = false;
+    this.activeToast = null;
 
     this.bars = this.add.graphics().setDepth(10);
     this.dropChipBar = this.add.graphics().setDepth(12); // M19 掉落道具倒计时条
@@ -168,7 +217,11 @@ export class HUDScene extends Phaser.Scene {
       onEvent(this.game, 'hud:levelup', (offers) => this.showLevelUp(offers)),
       onEvent(this.game, 'hud:chest', (reward) => this.showChest(reward)),
       onEvent(this.game, 'hud:arcana', (choices) => this.showArcanaPick(choices)),
-      onEvent(this.game, 'hud:boss', (v) => { this.bossVisible = v; this.bossName.setVisible(v); }),
+      onEvent(this.game, 'hud:boss', (v) => {
+        this.bossVisible = v;
+        this.bossName.setVisible(v);
+        this.repositionActiveToast();
+      }),
       onEvent(this.game, 'hud:warn', (key) => this.showWarn(key)),
       // M11 无尽轮次：走金色 toast 队列（轮边界与 Boss 横幅同帧，warnText 会被覆盖）
       onEvent(this.game, 'hud:cycle', (n) => this.queueToast(t('endlessCycleBanner').replace('{n}', String(n)))),
@@ -240,9 +293,12 @@ export class HUDScene extends Phaser.Scene {
     this.coinIcon.setScale(iconScale).setPosition(statX + iconW / 2, coinY).setVisible(true);
     this.coinText.setOrigin(0, 0.5).setFontSize(compact ? 14 : 15).setPosition(statX + iconW + 5, coinY).setVisible(true);
 
+    this.configureBossText();
+    this.configureWarnText();
     this.bossName.setPosition(cx, coinY + (compact ? 22 : 26));
-    this.warnText.setPosition(cx, safe.y + safe.h * 0.3);
+    this.warnText.setPosition(cx, this.warnY());
     this.debugText.setPosition(safe.x + gut, safe.y + safe.h - 4);
+    this.repositionActiveToast();
     this.buildIconRow();
     if (this.overlayMode !== 'none') {
       // 重新布局开销大，直接关闭重开
@@ -367,7 +423,7 @@ export class HUDScene extends Phaser.Scene {
         // Boss 条居中（两侧 ≥40 留白），位置在左列统计（击杀/金币）与 bossName 之下
         const bw = Math.min(420, safe.w - 80);
         const bx = safe.x + safe.w / 2 - bw / 2;
-        const by = safe.y + (compact ? 182 : 218);
+        const by = this.bossBarY();
         const bh = 12;
         const br = 6;
         const bk = Phaser.Math.Clamp(boss.hp / boss.maxHp, 0, 1);
@@ -548,6 +604,8 @@ export class HUDScene extends Phaser.Scene {
   // ---------- 警告横幅 ----------
 
   private showWarn(key: string): void {
+    this.configureWarnText();
+    this.warnText.setPosition(this.vp.safe.x + this.vp.safe.w / 2, this.warnY());
     this.warnText.setText(t(key)).setVisible(true).setAlpha(0).setScale(0.8);
     this.tweens.add({
       targets: this.warnText, alpha: 1, scale: 1, duration: 250, ease: 'Back.easeOut',
@@ -581,6 +639,7 @@ export class HUDScene extends Phaser.Scene {
 
   private toastQueue: Array<{ text: string; hold: number }> = [];
   private toastBusy = false;
+  private activeToast: Phaser.GameObjects.Text | null = null;
 
   private queueAchToast(id: string): void {
     this.queueToast(t('achUnlocked') + ' ' + t('ach_' + id));
@@ -592,17 +651,24 @@ export class HUDScene extends Phaser.Scene {
     this.pumpToast();
   }
 
+  private repositionActiveToast(): void {
+    if (!this.activeToast || !this.activeToast.active) return;
+    const safe = this.vp.safe;
+    this.activeToast.setPosition(safe.x + safe.w / 2, this.toastY());
+  }
+
   private pumpToast(): void {
     if (this.toastBusy) return;
     const entry = this.toastQueue.shift();
     if (entry === undefined) return;
     this.toastBusy = true;
     const safe = this.vp.safe;
-    const toast = this.add.text(safe.x + safe.w / 2, safe.y + safe.h * 0.22, entry.text, {
+    const toast = this.add.text(safe.x + safe.w / 2, this.toastY(), entry.text, {
       fontFamily: FONT, fontSize: '20px', fontStyle: 'bold', color: '#C8902A',
       stroke: '#FFFFFF', strokeThickness: 6, align: 'center',
       wordWrap: { width: safe.w - 50, useAdvancedWrap: true },
     }).setOrigin(0.5).setDepth(21).setAlpha(0).setScale(0.8);
+    this.activeToast = toast;
     SFX.levelup();
     this.tweens.add({
       targets: toast, alpha: 1, scale: 1, duration: 260, ease: 'Back.easeOut',
@@ -611,6 +677,7 @@ export class HUDScene extends Phaser.Scene {
           targets: toast, alpha: 0, delay: entry.hold, duration: 350,
           onComplete: () => {
             toast.destroy();
+            if (this.activeToast === toast) this.activeToast = null;
             this.toastBusy = false;
             this.pumpToast();
           },
@@ -649,7 +716,7 @@ export class HUDScene extends Phaser.Scene {
     const portrait = this.vp.h > w;
     const bh = Math.max(THEME.hitMin, Math.round(this.vp.s(portrait ? 48 : 50)));
     const titleH = 38;
-    const topPad = 14;
+    const topPad = portrait && safe.h < 560 ? 16 : 14;
     if (portrait) {
       const cw = Math.min(340, w - 40);
       const cardGap = 14;
@@ -699,10 +766,17 @@ export class HUDScene extends Phaser.Scene {
   /** 选卡标题（升级与规则卡共用）：cy 由布局给定，整组居中的一部分。存引用供放逐模式换文案。 */
   private addPickTitle(text: string, cy: number): void {
     const w = this.vp.w;
+    const maxW = this.vp.safe.w - this.edgeGutter() * 2;
+    let fs = Math.min(30, w * 0.062);
     const title = this.add.text(w / 2, cy, text, {
-      fontFamily: FONT, fontSize: Math.min(30, w * 0.062) + 'px', fontStyle: 'bold', color: PAL.inkCss,
-      stroke: '#FFFFFF', strokeThickness: 7,
+      fontFamily: FONT, fontSize: fs + 'px', fontStyle: 'bold', color: PAL.inkCss,
+      stroke: '#FFFFFF', strokeThickness: 7, align: 'center',
     }).setOrigin(0.5).setDepth(101).setScale(0.5);
+    while (fs > 18 && title.width > maxW) {
+      fs -= 1;
+      title.setFontSize(fs);
+    }
+    if (title.width > maxW) title.setWordWrapWidth(maxW, true);
     this.tweens.add({ targets: title, scale: 1, duration: 280, ease: 'Back.easeOut' });
     this.overlay.push(title);
     this.pickTitle = title;
@@ -916,9 +990,10 @@ export class HUDScene extends Phaser.Scene {
     this.openArcanaPicker(choices, (id) => this.chooseArcana(id));
   }
 
-  /** 每页规格：竖屏 2×3=6 / 横屏 4×2=8 */
+  /** 每页规格：竖屏 2×3=6 / 极矮竖屏 2×2=4 / 横屏 4×2=8 */
   private arcanaPageSpec(): { cols: number; rows: number; perPage: number } {
     const portrait = this.vp.h > this.vp.w;
+    if (portrait && this.vp.safe.h < 560) return { cols: 2, rows: 2, perPage: 4 };
     return portrait ? { cols: 2, rows: 3, perPage: 6 } : { cols: 4, rows: 2, perPage: 8 };
   }
 
@@ -950,7 +1025,7 @@ export class HUDScene extends Phaser.Scene {
     const sidePad = portrait ? 18 : 56;
     const cw = Math.min(portrait ? 210 : 220, (safe.w - 2 * sidePad - (cols - 1) * gapX) / cols);
     // 规则描述区压缩到刚好容纳标题 + 至多 2 行规则文字（竖屏最长 2 行、横屏单行）
-    const descH = portrait ? 74 : 58;
+    const descH = portrait ? (safe.h < 560 ? 88 : 74) : 58;
 
     // 卡高：取上限；整组高度超出安全区时再压缩卡高（保留 topPad 下限），保证整组始终能容纳
     const fixed = titleH + gapTitleGrid + gapGridDesc + descH + gapDescCtrl + ctrlH + gapCtrlPage + pageH
@@ -1268,7 +1343,7 @@ export class HUDScene extends Phaser.Scene {
       // 横排条卡：图标在左，名称+描述作为一个块与图标一同**垂直居中**（旧版名称/描述顶贴、
       // 图标却居中 → 错位且下半空荡，B 反馈）。tag 角标随名称同一行右对齐，进化提示固定卡底。
       const textX = -cw / 2 + 72;
-      const hasEvo = !!(info.evoHint && ch >= 96);
+      const hasEvo = !!(info.evoHint && ch >= (this.vp.safe.h < 560 ? 132 : 96));
       const padTop = 10;
       const padBot = hasEvo ? 24 : 10;
       const contentCy = (-ch / 2 + padTop + (ch / 2 - padBot)) / 2; // 图标+文字块的垂直中心
