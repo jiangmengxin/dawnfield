@@ -196,6 +196,7 @@ export class EnemySystem implements RunSystem {
       }
     }
     if (e === this.boss) {
+      this.bossCtl?.destroy();
       this.boss = null;
       this.bossCtl = null;
     }

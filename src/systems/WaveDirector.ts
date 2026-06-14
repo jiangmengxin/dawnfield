@@ -56,6 +56,17 @@ export class WaveDirector implements RunSystem {
     return { wave: this.currentWave(), next };
   }
 
+  /** DEV 自动化：跳过 Boss 前一次性事件并立即刷出 Boss，避免时间跳跃后一帧刷完整张事件表。 */
+  debugSpawnBossNow(): void {
+    const events = this.ctx.map.events;
+    const bossIdx = events.findIndex((ev) => ev.kind === 'boss');
+    if (bossIdx < 0) return;
+    this.eventIdx = bossIdx + 1;
+    this.spawnT = 2;
+    this.surgeGuard = null;
+    this.fire(events[bossIdx], 0);
+  }
+
   private pickType(types: Array<[EnemyId, number]>): EnemyId {
     let sum = 0;
     for (const [, w] of types) sum += w;

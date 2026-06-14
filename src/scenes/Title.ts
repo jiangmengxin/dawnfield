@@ -22,6 +22,13 @@ interface ImageButtonOpts {
   onTap: TapHandler;
 }
 
+interface PortraitContentFrame {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export class TitleScene extends UIScene {
   private petalTimer: Phaser.Time.TimerEvent | null = null;
   private titleCleanups: Array<() => void> = [];
@@ -116,20 +123,23 @@ export class TitleScene extends UIScene {
     const vp = this.vp;
     const safe = vp.safe;
     const compact = safe.h < 560 || safe.w < 360;
-    const cx = safe.x + safe.w / 2;
-    const contentW = Math.min(safe.w - vp.s(28), 420);
-    const logoMaxH = vp.s(compact ? 92 : 128);
-    const logoY = safe.y + vp.s(compact ? 64 : 88);
-    const logo = this.addLogo(cx, logoY, Math.min(contentW * 1.08, safe.w - vp.s(18)), logoMaxH);
+    const frame = this.portraitContentFrame(compact);
+    const cx = frame.x + frame.w / 2;
+    const contentW = Math.min(frame.w, 420);
+    const logoMaxH = Math.min(vp.s(compact ? 78 : 118), frame.h * 0.28);
+    const logoY = frame.y + logoMaxH / 2;
+    const logo = this.addLogo(cx, logoY, Math.min(contentW * 1.08, frame.w), logoMaxH);
     this.tweens.add({ targets: logo, scale: logo.scale * 1.012, duration: 1800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    const startH = Math.max(THEME.hitMin, vp.s(compact ? 58 : 66));
+    const startH = Math.max(THEME.hitMin, vp.s(compact ? 56 : 64));
     const secondH = Math.max(THEME.hitMin, vp.s(compact ? 44 : 48));
     const gridGap = vp.s(compact ? 8 : 10);
     const gapStartGrid = vp.s(compact ? 12 : 15);
-    const bottomPad = vp.s(compact ? 14 : 24);
+    const bottomPad = vp.s(compact ? 6 : 10);
     const groupH = startH + gapStartGrid + secondH * 2 + gridGap;
-    const groupTop = safe.y + safe.h - bottomPad - groupH;
+    const preferredGroupTop = frame.y + frame.h - bottomPad - groupH;
+    const minGroupTop = logoY + logoMaxH / 2 + vp.s(compact ? 14 : 24);
+    const groupTop = Math.max(minGroupTop, preferredGroupTop);
     this.addImageButton({
       key: 'title_btn_primary',
       x: cx,
@@ -168,6 +178,26 @@ export class TitleScene extends UIScene {
         onTap: fn,
       });
     });
+  }
+
+  private portraitContentFrame(compact: boolean): PortraitContentFrame {
+    const vp = this.vp;
+    const safe = vp.safe;
+    // CSS safe-area handles known insets; these optical guards cover browsers/devices
+    // that do not report camera cutouts, rounded corners, or the bottom gesture zone.
+    const topClear = Math.max(vp.s(compact ? 32 : 42), Math.min(compact ? 44 : 62, vp.h * (compact ? 0.07 : 0.068)));
+    const bottomClear = Math.max(vp.s(compact ? 24 : 34), Math.min(compact ? 42 : 60, vp.h * (compact ? 0.055 : 0.06)));
+    const sideClear = Math.max(vp.s(16), Math.min(28, vp.w * 0.055));
+    const x = Math.max(safe.x, sideClear);
+    const y = Math.max(safe.y, topClear);
+    const right = Math.min(safe.x + safe.w, vp.w - sideClear);
+    const bottom = Math.min(safe.y + safe.h, vp.h - bottomClear);
+    return {
+      x,
+      y,
+      w: Math.max(THEME.hitMin, right - x),
+      h: Math.max(THEME.hitMin, bottom - y),
+    };
   }
 
   private addLogo(x: number, y: number, maxW: number, maxH: number): Phaser.GameObjects.Image {

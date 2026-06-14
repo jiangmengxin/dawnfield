@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "check:docs": "node scripts/check-docs.mjs",
     "check:i18n": "node scripts/check-i18n.mjs",
+    "playtest:bosses": "node scripts/run-boss-playtest.mjs",
     "test": "vitest run"
   },
   "dependencies": {

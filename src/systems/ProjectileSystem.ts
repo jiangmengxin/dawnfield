@@ -1,4 +1,4 @@
-// 敌方弹幕系统：池化墨弹（参数化，供喷喷与 8 个 Boss 复用）
+// 敌方弹幕系统：池化墨弹（参数化，供喷喷与 12 个 Boss 低频辅招复用）
 import Phaser from 'phaser';
 import { dmgScale } from '../content/enemies';
 import type { CombatContext, EnemyBulletSpec, RunSystem } from './context';

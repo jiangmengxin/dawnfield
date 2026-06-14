@@ -42,7 +42,8 @@
 - `docs/掉落道具系统设计.md`：当前只作为索引页，正文见 `content-design` / 归档原文。
 - `docs/UI跨平台体验审查-专项报告.md`：当前只作为索引页，体验债见 `ui-ux` / 归档原文。
 - `docs/balance/dps-M12.md`：16 武器历史基准。
-- `docs/balance/dps-M22-32-weapons.md`：32 武器当前基准。
+- `docs/balance/dps-M22-32-weapons.md`：32 武器多场景 DPS 基准。
+- `docs/balance/weapon-evaluation-32.md`：32 武器严格评估报告，覆盖数值、表现、相似性和调参建议。
 
 ## 文档校验
 

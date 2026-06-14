@@ -88,6 +88,7 @@ export class GameScene extends Phaser.Scene {
   private bgmBoostT = 0;
   /** DPS 基准模式（M12，仅 DEV）：无波次/机制/成就，src/dev/bench.ts 驱动 */
   benchMode = false;
+  private bossTestPhase: 'p1' | 'p2' | null = null;
 
   constructor() {
     super('game');
@@ -104,6 +105,7 @@ export class GameScene extends Phaser.Scene {
       arcana: data?.arcana, random: data?.random, speed2x: data?.speed2x, breakthrough: data?.breakthrough,
     };
     this.benchMode = data?.bench === true && import.meta.env.DEV;
+    this.bossTestPhase = import.meta.env.DEV && data?.bossTest ? data.bossTest : null;
   }
 
   get speed(): GameSpeed {
@@ -161,7 +163,7 @@ export class GameScene extends Phaser.Scene {
 
     // M16 草甸秘密花圃彩蛋：每局 35% 概率刷出（站立 5s 绽放 → 隐藏成就 secretBloom）
     this.secretSpot = null;
-    if (!this.benchMode && this.mapId === 'meadow' && Math.random() < 0.35) this.spawnSecretBloom();
+    if (!this.benchMode && !this.bossTestPhase && this.mapId === 'meadow' && Math.random() < 0.35) this.spawnSecretBloom();
 
     this.waveDir = new WaveDirector(this.ctx, this.enemies);
 
@@ -225,6 +227,7 @@ export class GameScene extends Phaser.Scene {
       this.scene.launch('hud');
       this.run.running = true;
       SFX.startBgm(this.map.bgm); // 每图 BGM 主题（调式/速度/音色/打击乐）
+      if (this.bossTestPhase) this.startBossTest(this.bossTestPhase);
     }
 
     this.events.on('shutdown', () => {
@@ -728,6 +731,29 @@ export class GameScene extends Phaser.Scene {
   /** 调试：时间跳跃（波次/事件/成长曲线随 elapsed 前进） */
   debugTimeSkip(sec: number): void {
     this.run.elapsed += sec;
+  }
+
+  /** DEV：自动化直接验证指定地图 Boss。 */
+  private startBossTest(phase: 'p1' | 'p2'): void {
+    this.run.elapsed = Math.max(0, this.map.minutes * 60 - 0.5);
+    this.waveDir.debugSpawnBossNow();
+    const boss = this.enemies.boss;
+    if (boss && phase === 'p2') boss.hp = boss.maxHp * 0.46;
+    this.bgmBoostT = Math.max(this.bgmBoostT, 18);
+  }
+
+  debugBossTestSnapshot(): { mapId: string; boss: string; active: boolean; phase: 'p1' | 'p2'; hpK: number; bullets: number; zones: number } {
+    const boss = this.enemies.boss;
+    const hpK = boss && boss.maxHp > 0 ? boss.hp / boss.maxHp : 0;
+    return {
+      mapId: this.map.id,
+      boss: this.map.bossId,
+      active: Boolean(boss?.active),
+      phase: hpK > 0 && hpK < 0.5 ? 'p2' : 'p1',
+      hpK,
+      bullets: this.projectilesRef.activeCount,
+      zones: this.zonesRef.count,
+    };
   }
 
   // ---------- DPS 基准（M12，仅 DEV；驱动器在 src/dev/bench.ts） ----------

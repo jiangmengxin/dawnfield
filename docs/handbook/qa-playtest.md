@@ -86,11 +86,10 @@ node scripts/shot-receiver.mjs
 DPS bench 在 DEV 构建中由 `src/dev/bench.ts` 驱动。方法：
 
 - 真实 GameScene，`bench:true`。
-- 三环 24 个静止标靶：r56/r110/r260 各 8。
-- 遍历 `WEAPON_META`，每把测 Lv5 与进化形态。
-- 每项 60 秒、3 轮均值。
+- 默认口径：三环 24 个静止标靶，r56/r110/r260 各 8；遍历 `WEAPON_META`，每把测 Lv5 与进化形态。
+- 专项口径：`window.__benchConfig = { preset: 'weaponEval32' }`，覆盖 `lv1/lv3/lv5/evo` 和 `staticRings/movingSwarm/singlePack`。
 - 属性全中性，暴击关闭。
-- 结果输出到 `console.table` 和 `window.__benchResult`。
+- 结果输出到 `console.table`、`window.__benchRows`、`window.__benchResult` 和 `window.__benchJson`。
 
 复现入口：
 
@@ -98,7 +97,27 @@ DPS bench 在 DEV 构建中由 `src/dev/bench.ts` 驱动。方法：
 __game.scene.getScene('title').scene.start('game', { charId: 'spark', mapId: 'meadow', bench: true })
 ```
 
-当前 32 武器基准见 `docs/balance/dps-M22-32-weapons.md`；历史 16 武器基准见 `docs/balance/dps-M12.md`。
+专项入口：
+
+```js
+window.__benchConfig = { preset: 'weaponEval32' }
+__game.scene.getScene('title').scene.start('game', { charId: 'spark', mapId: 'meadow', bench: true })
+```
+
+视觉接触表入口：
+
+```js
+window.__benchConfig = { preset: 'weaponVisualSheets' }
+__game.scene.getScene('title').scene.start('game', { charId: 'spark', mapId: 'meadow', bench: true })
+```
+
+自动化落档：
+
+```bash
+NODE_PATH=/path/to/node_modules node scripts/run-weapon-eval.mjs --url http://127.0.0.1:5183 --dps --visual
+```
+
+当前 32 武器基准见 `docs/balance/dps-M22-32-weapons.md`；严格评估报告见 `docs/balance/weapon-evaluation-32.md`；历史 16 武器基准见 `docs/balance/dps-M12.md`。
 
 ## 手工验收矩阵
 

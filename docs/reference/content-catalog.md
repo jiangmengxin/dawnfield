@@ -119,9 +119,26 @@
 
 ## Boss
 
-源文件：`src/content/bosses.ts`。Boss 以地图为 key 配装，敌人体格仍来自 `EnemyId`。
+源文件：`src/content/bosses.ts`。Boss 以地图为 key 配装，敌人体格仍来自 `EnemyId`；每个 Boss 有独占主招 + 轻辅招，旧四模块只作低频辅压。
 
 `boss`, `bubbleking`, `galecrow`, `sporeking`, `flutterqueen`, `bramblebear`, `starelk`, `nightowl`, `ciderwyrm`, `frosthare`, `miragewhale`, `clockrooster`。
+
+独占招式：
+
+| 地图 | 主招 | 辅招 |
+|---|---|---|
+| meadow | `ink_recall` | `crown_drip` |
+| pond | `bubble_lane` | `bubble_pressure` |
+| hills | `feather_return` | `sidewind_shear` |
+| grove | `spore_breath` | `mushroom_drop` |
+| lavender | `butterfly_clasp` | `dust_curve` |
+| bramble | `bear_paws` | `bramble_rift` |
+| nocturne | `constellation_lines` | `meteor_mark` |
+| summit | `owl_gaze` | `feather_curtain` |
+| orchard | `fruit_roll` | `cider_sprout` |
+| snowbell | `snow_footsteps` | `frost_breath` |
+| mirage | `mirror_tide` | `mirror_shards` |
+| clockwork | `dawn_beat` | `pendulum_sweep` |
 
 ## Arcana
 

@@ -31,6 +31,8 @@ npm run build
 - `docs/handbook/technical-architecture.md`：运行时架构、系统边界、存档、性能与扩展点。
 - `docs/handbook/ui-ux.md`：响应式 UI、HUD、输入、触控和体验债。
 - `docs/handbook/qa-playtest.md`：自动化检查、实机验证、preview 技巧与 DPS bench。
+- `docs/balance/dps-M22-32-weapons.md`：32 武器多场景 DPS 基准。
+- `docs/balance/weapon-evaluation-32.md`：32 武器严格评估报告。
 - `docs/reference/content-catalog.md`：当前内容目录，覆盖全部核心 ID。
 - `docs/reference/extension-playbooks.md`：新增内容与系统扩展步骤。
 - `docs/reference/glossary.md`：术语表。

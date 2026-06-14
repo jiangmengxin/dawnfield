@@ -31,7 +31,7 @@ export interface ZoneSpec {
   src?: string; // 伤害归账来源（武器 id，DPS 调试统计用；武器子上下文自动注入）
 }
 
-/** 敌方弹幕（参数化，供喷喷与 8 个 Boss 复用） */
+/** 敌方弹幕（参数化，供喷喷与 12 个 Boss 低频辅招复用） */
 export interface EnemyBulletSpec {
   x: number;
   y: number;
@@ -95,6 +95,7 @@ export interface RunLaunchData {
   random?: boolean; // 随机：自动随机三选一 / 自动随机开局规则卡，跳过选卡界面
   speed2x?: boolean; // 倍速：开局 2×，局内倍速按钮在 2× / 4× 间切换
   breakthrough?: boolean; // 突破：已进化超武可无限继续升级
+  bossTest?: 'p1' | 'p2'; // DEV-only：直接进入指定地图 Boss 战验证窗口
 }
 
 export interface RunResult {
