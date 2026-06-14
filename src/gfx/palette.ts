@@ -353,6 +353,21 @@ export const CHAR_PAL: Record<Exclude<CharacterId, 'spark'>, { body: number; edg
   berry:  { body: 0xf4a8b0, edge: 0xc86878 },
   wisp:   { body: 0xc6ecd8, edge: 0x76b896 }, // 幽光淡青：浅色身体走弱渐变
   toot:   { body: 0xa8bce8, edge: 0x7088c8 },
+  // M22 武器配对角色（14 常规）
+  willow: { body: 0xc8e6a0, edge: 0x8eb86c },
+  samara: { body: 0xd8c080, edge: 0xb09050 },
+  cinder: { body: 0xffcc78, edge: 0xd89048 },
+  tidey:  { body: 0xa8e0dc, edge: 0x70b8b0 },
+  ray:    { body: 0xffe8b0, edge: 0xd8b858 },
+  pipit:  { body: 0xc6d4f2, edge: 0x8498d0 },
+  beanie: { body: 0xf2a8d8, edge: 0xc868a8 },
+  wish:   { body: 0xffe8b8, edge: 0xd8b068 },
+  pollen: { body: 0xf4dc88, edge: 0xc8a850 },
+  vorty:  { body: 0xc4a8e8, edge: 0x8e70c8 },
+  lancey: { body: 0xfff2c8, edge: 0xd8bc70 },
+  beebee: { body: 0xf8d878, edge: 0xc89c40 },
+  frosty: { body: 0xc8ecf4, edge: 0x78bfd0 },
+  twirl:  { body: 0xc4d8ac, edge: 0x8aa070 },
   // M16 隐藏角色：小蓝团（草甸蓝团彩蛋色）+ 小流星（彗星暖金）
   blobby: { body: 0x9cc8ec, edge: 0x6a98c8 },
   nova:   { body: 0xffe2a0, edge: 0xe0a040 },

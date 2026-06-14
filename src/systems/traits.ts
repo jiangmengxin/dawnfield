@@ -163,5 +163,126 @@ export function createTraitModifier(id: TraitId, ctx: CombatContext, weapons: We
         },
       };
     }
+
+    case 'moonwell': { // 涡涡：每 12s 牵引身周敌人并造成轻伤害
+      let tLeft = TRAIT_FX.moonwellEvery;
+      return {
+        onTick: (dt, c) => {
+          tLeft -= dt;
+          if (tLeft > 0) return;
+          tLeft = TRAIT_FX.moonwellEvery;
+          const px = c.player.x;
+          const py = c.player.y;
+          const out: Enemy[] = [];
+          c.grid.queryCircle(px, py, TRAIT_FX.moonwellR, out);
+          const dmg = TRAIT_FX.moonwellDmg * c.stats.dmg;
+          for (const e of out) {
+            if (!e.active || e.dying) continue;
+            const dx = px - e.x;
+            const dy = py - e.y;
+            const len = Math.hypot(dx, dy) || 1;
+            e.kvx += (dx / len) * TRAIT_FX.moonwellPull * e.knockMul;
+            e.kvy += (dy / len) * TRAIT_FX.moonwellPull * e.knockMul;
+            const ap = c.hitEnemy(e, dmg, { quiet: true, noHook: true });
+            if (ap > 0) c.dmgLog('trait_moonwell', ap);
+          }
+          c.fx.ring(px, py, 0x8e70c8, 7, 0.55);
+          c.fx.burst(px, py, { tex: 'p_star', color: 0xc4a8e8, count: 16, speed: 180, life: 0.45, scale: 0.85 });
+          SFX.chime();
+        },
+      };
+    }
+
+    case 'sunlance': { // 矛矛：持续移动蓄势，下一次武器命中追加光矛新星
+      let moveT = 0;
+      let ready = false;
+      let px = NaN;
+      let py = NaN;
+      return {
+        onTick: (dt, c) => {
+          const x = c.player.x;
+          const y = c.player.y;
+          if (!Number.isNaN(px)) {
+            const moving = Math.hypot(x - px, y - py) > c.stats.moveSpeed * dt * 0.3;
+            moveT = moving ? Math.min(TRAIT_FX.sunlanceMoveT, moveT + dt) : 0;
+            if (moveT >= TRAIT_FX.sunlanceMoveT) ready = true;
+          }
+          px = x;
+          py = y;
+        },
+        onWeaponHit: (target, _applied, c) => {
+          if (!ready || !target.active || target.dying) return;
+          ready = false;
+          moveT = 0;
+          const out: Enemy[] = [];
+          c.grid.queryCircle(target.x, target.y, TRAIT_FX.sunlanceR, out);
+          const dmg = TRAIT_FX.sunlanceDmg * c.stats.dmg;
+          for (const e of out) {
+            if (!e.active || e.dying) continue;
+            const ap = c.hitEnemy(e, dmg, { quiet: true, noHook: true });
+            if (ap > 0) c.dmgLog('trait_sunlance', ap);
+          }
+          c.fx.ring(target.x, target.y, 0xd8bc70, 6, 0.4);
+          c.fx.burst(target.x, target.y, { tex: 'p_star', color: 0xfff2c8, count: 10, speed: 190, life: 0.35, scale: 0.8 });
+          SFX.swish();
+        },
+      };
+    }
+
+    case 'hivecall': { // 蜜蜜：拾取经验蓄蜂，满额后附近敌人被蜂群叮咬
+      let gems = 0;
+      return {
+        onGemPicked: (value, c) => {
+          gems += Math.max(1, value);
+          if (gems < TRAIT_FX.hiveGemNeed) return;
+          gems -= TRAIT_FX.hiveGemNeed;
+          const px = c.player.x;
+          const py = c.player.y;
+          const out: Enemy[] = [];
+          c.grid.queryCircle(px, py, TRAIT_FX.hiveSeekR, out);
+          const targets = out
+            .filter((e) => e.active && !e.dying)
+            .sort((a, b) => ((a.x - px) ** 2 + (a.y - py) ** 2) - ((b.x - px) ** 2 + (b.y - py) ** 2))
+            .slice(0, TRAIT_FX.hiveTargets);
+          const dmg = TRAIT_FX.hiveDmg * c.stats.dmg;
+          for (const e of targets) {
+            const ap = c.hitEnemy(e, dmg, { quiet: true, noHook: true });
+            if (ap > 0) c.dmgLog('trait_hivecall', ap);
+            c.fx.burst(e.x, e.y, { tex: 'p_dot', color: 0xf8d878, count: 3, speed: 80, life: 0.25, scale: 0.45 });
+          }
+          if (targets.length > 0) {
+            c.fx.ring(px, py, 0xc89c40, 4.5, 0.35);
+            SFX.swish();
+          }
+        },
+      };
+    }
+
+    case 'frostguard': { // 霜霜：受击触发寒霜新星并留下减速霜地
+      let cd = 0;
+      return {
+        onTick: (dt) => {
+          cd = Math.max(0, cd - dt);
+        },
+        onPlayerDamaged: (_raw, applied, c) => {
+          if (applied <= 0 || cd > 0) return;
+          cd = TRAIT_FX.frostguardCd;
+          const px = c.player.x;
+          const py = c.player.y;
+          const out: Enemy[] = [];
+          c.grid.queryCircle(px, py, TRAIT_FX.frostguardR, out);
+          const dmg = TRAIT_FX.frostguardDmg * c.stats.dmg;
+          for (const e of out) {
+            if (!e.active || e.dying) continue;
+            const ap = c.hitEnemy(e, dmg, { quiet: true, noHook: true });
+            if (ap > 0) c.dmgLog('trait_frostguard', ap);
+          }
+          c.addZone({ x: px, y: py, r: TRAIT_FX.frostguardSlowR, dur: TRAIT_FX.frostguardSlowDur, effect: 'slow' });
+          c.fx.ring(px, py, 0x78bfd0, 6, 0.45);
+          c.fx.burst(px, py, { tex: 'p_dot', color: 0xc8ecf4, count: 14, speed: 170, life: 0.4, scale: 0.75 });
+          SFX.splash();
+        },
+      };
+    }
   }
 }

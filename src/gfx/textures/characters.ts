@@ -1,13 +1,13 @@
 // 角色纹理：makeCharacter 参数化配方（剪影/配色/眼型/嘴型/饰件）
 // 与敌人（扁平粉彩圆团）刻意拉开表现力：
 //   体色径向渐变 + 异形剪影（水滴/宝石/岩石/蛋形…）+ 大高光眼 + 专属饰件
-// 每角色生成 4 帧动效纹理：姿态 A/B（饰件摆动）× 睁眼/眨眼，由 PlayerSystem 驱动切换
-//   key（姿态A） / key_p1（姿态B） / key_k（眨眼A） / key_p1_k（眨眼B）
+// 每角色生成 8 帧动效纹理：4 个姿态相位（饰件摆动）× 睁眼/眨眼，由 PlayerSystem 驱动切换
+//   key / key_p1 / key_p2 / key_p3 与各自 _k 眨眼帧
 // 体积差异直接画进纹理（半径 r 即 content/characters 的 artR；接触判定走更小的 radius，M17 解耦）
 import { CHAR_PAL, PAL, cssOf } from '../palette';
 import { Ctx, makeTex, petalShape, silhouettePass, softGlow } from './core';
 
-type Shape = 'round' | 'drop' | 'gem' | 'stone' | 'egg';
+type Shape = 'round' | 'drop' | 'gem' | 'stone' | 'egg' | 'seed' | 'kite';
 type Eye = 'sparkle' | 'happy' | 'sleepy' | 'surprised';
 type Mouth = 'smile' | 'open' | 'pout' | 'cat';
 type Deco =
@@ -26,7 +26,11 @@ type Deco =
   | 'vineCurl'                     // 藤藤：卷须呆毛 + 肩头小叶（M7）
   | 'berryCap'                     // 莓莓：草莓小帽（M7）
   | 'wispFlame'                    // 悠悠：头顶幽光苗 + 飘浮光点（M7）
-  | 'bugleBloom';                  // 嘟嘟：头顶喇叭花 + 音符（M7）
+  | 'bugleBloom'                   // 嘟嘟：头顶喇叭花 + 音符（M7）
+  | 'willowCape' | 'samaraCap' | 'emberCore' | 'flaskPack'
+  | 'rayCrown' | 'birdCowl' | 'beanBounce' | 'wishRibbon'
+  | 'pollenPuffs' | 'moonWell' | 'lanceHelm' | 'beeHood'
+  | 'frostScarf' | 'leafWhirl';     // M22：32 武器配对角色专属饰件
 
 export interface CharRecipe {
   r: number;            // 身体半径（= content/characters 的 artR，纯视觉口径）
@@ -207,6 +211,20 @@ function buildShape(ctx: Ctx, shape: Shape, cx: number, cy: number, r: number): 
         ctx.beginPath();
         ctx.ellipse(cx, cy, r * 0.95, r * 1.08, 0, 0, Math.PI * 2);
       };
+    case 'seed':
+      return () => {
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + r * 0.02, r * 0.82, r * 1.12, -0.28, 0, Math.PI * 2);
+      };
+    case 'kite':
+      return () => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r * 1.2);
+        ctx.quadraticCurveTo(cx + r * 0.9, cy - r * 0.38, cx + r * 0.58, cy + r * 0.78);
+        ctx.quadraticCurveTo(cx, cy + r * 1.08, cx - r * 0.58, cy + r * 0.78);
+        ctx.quadraticCurveTo(cx - r * 0.9, cy - r * 0.38, cx, cy - r * 1.2);
+        ctx.closePath();
+      };
     default: // round
       return () => {
         ctx.beginPath();
@@ -217,7 +235,7 @@ function buildShape(ctx: Ctx, shape: Shape, cx: number, cy: number, r: number): 
 
 // ---------- 饰件（behind = 身体之下；ph 为姿态相位 0/1，两帧交替产生摆动） ----------
 
-const BEHIND: ReadonlySet<Deco> = new Set<Deco>(['wings', 'petalSkirt', 'leafWings']);
+const BEHIND: ReadonlySet<Deco> = new Set<Deco>(['wings', 'petalSkirt', 'leafWings', 'willowCape', 'birdCowl', 'leafWhirl']);
 
 function drawDeco(ctx: Ctx, deco: Deco, rec: CharRecipe, cx: number, cy: number, phase: number): void {
   const r = rec.r;
@@ -763,6 +781,296 @@ function drawDeco(ctx: Ctx, deco: Deco, rec: CharRecipe, cx: number, cy: number,
       ctx.stroke();
       break;
     }
+    case 'willowCape': { // 柳叶披肩：身后两片长柳叶 + 头顶小枝
+      for (const s of [-1, 1]) {
+        petalShape(ctx, cx + s * r * 0.62, cy + r * 0.08 + sway * 0.8,
+          r * 1.55, r * 0.28, s * (0.52 + sway * 0.04), '#D8ECA8', '#8EB86C');
+      }
+      ctx.strokeStyle = '#6E9854';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx - r * 0.12, topY + 2);
+      ctx.quadraticCurveTo(cx + sway * 2, topY - 7, cx + sway * 3, topY - 13);
+      ctx.stroke();
+      petalShape(ctx, cx + sway * 3.5, topY - 13, 8, 2.5, sway * 0.15, '#D8ECA8', '#8EB86C');
+      break;
+    }
+    case 'samaraCap': { // 旋翅果帽：两枚翅果绕头转动
+      const ay = topY - 4;
+      ctx.strokeStyle = '#8A7038';
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.arc(cx, ay, r * 0.38, 0.1, Math.PI * 1.05);
+      ctx.stroke();
+      for (const s of [-1, 1]) {
+        ctx.save();
+        ctx.translate(cx + s * (r * 0.35 + sway * 1.2), ay - r * 0.18);
+        ctx.rotate(s * (0.65 + sway * 0.08));
+        petalShape(ctx, 0, 0, r * 0.78, r * 0.2, -0.15, '#E6D090', '#B09050');
+        ctx.restore();
+      }
+      ctx.fillStyle = '#B09050';
+      ctx.beginPath();
+      ctx.arc(cx, ay, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'emberCore': { // 晨火核心：胸前光球 + 小火苗
+      const fy = topY - 3;
+      softGlow(ctx, cx, fy - 5, 9, 'rgba(255,204,120,0.95)');
+      ctx.beginPath();
+      ctx.moveTo(cx, fy - 13 - ph * 1.5);
+      ctx.quadraticCurveTo(cx + 6, fy - 5, cx, fy + 2);
+      ctx.quadraticCurveTo(cx - 6, fy - 5, cx, fy - 13 - ph * 1.5);
+      ctx.closePath();
+      ctx.fillStyle = '#FFD28A';
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#D89048';
+      ctx.stroke();
+      softGlow(ctx, cx, cy + r * 0.18, r * 0.36, 'rgba(255,210,138,0.75)');
+      ctx.fillStyle = '#FFE6B0';
+      ctx.beginPath();
+      ctx.arc(cx, cy + r * 0.18, r * 0.18, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'flaskPack': { // 朝露瓶背包：侧挂小瓶 + 气泡
+      const bx = cx + r * 0.78;
+      const by = cy - r * 0.34 + sway;
+      ctx.strokeStyle = '#5C9C98';
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.moveTo(cx + r * 0.22, cy - r * 0.55);
+      ctx.quadraticCurveTo(cx + r * 0.58, cy - r * 0.5, bx, by - 6);
+      ctx.stroke();
+      fillShape(ctx, () => {
+        ctx.beginPath();
+        ctx.moveTo(bx - 3.5, by - 8);
+        ctx.lineTo(bx + 3.5, by - 8);
+        ctx.lineTo(bx + 5.5, by + 1);
+        ctx.quadraticCurveTo(bx, by + 6, bx - 5.5, by + 1);
+        ctx.closePath();
+      }, '#BEEDEA', '#70B8B0');
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      for (const [dx, dy, rr] of [[-r * 1.1, -r * 0.8, 2.4], [r * 1.12, -r * 0.95, 1.8], [r * 1.25, -r * 0.3, 2.1]] as Array<[number, number, number]>) {
+        ctx.beginPath();
+        ctx.arc(cx + dx, cy + dy + sway * 0.9, rr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+    case 'rayCrown': { // 落晖光冠：头顶晨光束
+      softGlow(ctx, cx, topY - 8, 11, 'rgba(255,232,176,0.9)');
+      ctx.strokeStyle = '#D8B858';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      for (let i = -2; i <= 2; i++) {
+        const a = -Math.PI / 2 + i * 0.28 + sway * 0.03;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * r * 0.45, topY + Math.sin(a) * r * 0.35);
+        ctx.lineTo(cx + Math.cos(a) * r * 0.92, topY + Math.sin(a) * r * 0.82 - 3);
+        ctx.stroke();
+      }
+      ctx.fillStyle = '#FFF2C8';
+      ctx.beginPath();
+      ctx.arc(cx, topY - 4, 3.5 + ph * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+    case 'birdCowl': { // 候鸟羽披：身后小翅披风 + 头顶羽
+      for (const s of [-1, 1]) {
+        for (let i = 0; i < 3; i++) {
+          petalShape(ctx, cx + s * (r * 0.72 + i * 2), cy - r * (0.34 - i * 0.18) + sway,
+            r * (0.82 - i * 0.08), r * 0.22, s * (0.9 + i * 0.18), '#D8E2F8', '#8498D0');
+        }
+      }
+      petalShape(ctx, cx + sway, topY - 8, 11, 3.2, -0.2 + sway * 0.08, '#F4F7FF', '#8498D0');
+      break;
+    }
+    case 'beanBounce': { // 跳豆环：两颗弹豆绕身
+      for (const [a0, k] of [[0.1, 1], [Math.PI + 0.35, 0.75]] as Array<[number, number]>) {
+        const a = a0 + sway * 0.22;
+        const x = cx + Math.cos(a) * r * 1.15;
+        const y = cy + Math.sin(a) * r * 0.9;
+        softGlow(ctx, x, y, 5 * k, 'rgba(242,168,216,0.8)');
+        ctx.fillStyle = '#F8BCD8';
+        ctx.beginPath();
+        ctx.ellipse(x, y, 3.8 * k, 5.2 * k, a, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = '#C868A8';
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'wishRibbon': { // 晨星杖缎带：头侧星杖 + 飘带
+      const sx = cx + r * 0.78;
+      const sy = topY - 8 + sway;
+      ctx.strokeStyle = '#A88448';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(sx - 5, sy + 12);
+      ctx.lineTo(sx + 2, sy - 4);
+      ctx.stroke();
+      ctx.fillStyle = '#FFF2C8';
+      ctx.beginPath();
+      ctx.moveTo(sx + 2, sy - 10);
+      ctx.lineTo(sx + 4.5, sy - 4);
+      ctx.lineTo(sx + 10, sy - 3);
+      ctx.lineTo(sx + 5.2, sy + 1);
+      ctx.lineTo(sx + 6.5, sy + 7);
+      ctx.lineTo(sx + 1.5, sy + 3.8);
+      ctx.lineTo(sx - 3.5, sy + 7);
+      ctx.lineTo(sx - 2.2, sy + 1);
+      ctx.lineTo(sx - 7, sy - 3);
+      ctx.lineTo(sx - 1.5, sy - 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#D8B068';
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(216,176,104,0.8)';
+      ctx.beginPath();
+      ctx.moveTo(sx - 4, sy + 5);
+      ctx.quadraticCurveTo(cx + sway * 3, topY + 3, cx - r * 0.55, topY + 7);
+      ctx.stroke();
+      break;
+    }
+    case 'pollenPuffs': { // 花粉绒球：肩侧绒粉云
+      for (const s of [-1, 1]) {
+        for (let i = 0; i < 4; i++) {
+          const x = cx + s * (r * 0.85 + (i % 2) * 3);
+          const y = cy - r * 0.45 + i * r * 0.18 + sway * s;
+          ctx.fillStyle = i % 2 === 0 ? '#FFF2B8' : '#F4DC88';
+          ctx.beginPath();
+          ctx.arc(x, y, 3.2 - i * 0.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.strokeStyle = 'rgba(200,168,80,0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy + r * 0.18, r * 0.86, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+      break;
+    }
+    case 'moonWell': { // 月华漩涡：脚边涡纹 + 月牙
+      ctx.strokeStyle = 'rgba(142,112,200,0.8)';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy + r * 0.72, r * 0.7, 0.2 + sway * 0.08, Math.PI * 1.55 + sway * 0.08);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy + r * 0.72, r * 0.38, Math.PI * 0.3 - sway * 0.08, Math.PI * 1.8 - sway * 0.08);
+      ctx.stroke();
+      const mx = cx - r * 0.86;
+      const my = topY - 5;
+      ctx.beginPath();
+      ctx.arc(mx, my, 5, 0.65, Math.PI * 2 - 0.65);
+      ctx.arc(mx + 2.5, my, 3.8, Math.PI * 2 - 0.95, 0.95, true);
+      ctx.closePath();
+      ctx.fillStyle = '#E8D8FF';
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#8E70C8';
+      ctx.stroke();
+      break;
+    }
+    case 'lanceHelm': { // 光矛骑士：小盔羽 + 身侧细矛
+      const hy = topY + r * 0.08;
+      fillShape(ctx, () => {
+        ctx.beginPath();
+        ctx.moveTo(cx - r * 0.58, hy);
+        ctx.quadraticCurveTo(cx - r * 0.35, hy - r * 0.52, cx, hy - r * 0.56);
+        ctx.quadraticCurveTo(cx + r * 0.35, hy - r * 0.52, cx + r * 0.58, hy);
+        ctx.quadraticCurveTo(cx, hy + r * 0.16, cx - r * 0.58, hy);
+        ctx.closePath();
+      }, '#FFF6D8', '#D8BC70');
+      petalShape(ctx, cx + sway, hy - r * 0.62, 12, 3.2, -0.05 + sway * 0.08, '#FFE898', '#D8BC70');
+      ctx.strokeStyle = '#D8BC70';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx + r * 0.9, cy + r * 0.52);
+      ctx.lineTo(cx + r * 1.18, cy - r * 0.52);
+      ctx.stroke();
+      ctx.fillStyle = '#FFF2C8';
+      ctx.beginPath();
+      ctx.moveTo(cx + r * 1.18, cy - r * 0.62);
+      ctx.lineTo(cx + r * 1.25, cy - r * 0.42);
+      ctx.lineTo(cx + r * 1.1, cy - r * 0.45);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    }
+    case 'beeHood': { // 蜂巢帽：条纹兜帽 + 小翅
+      const hy = topY + r * 0.2;
+      fillShape(ctx, () => {
+        ctx.beginPath();
+        ctx.ellipse(cx, hy, r * 0.72, r * 0.34, 0, 0, Math.PI * 2);
+      }, '#F8D878', '#C89C40');
+      ctx.strokeStyle = 'rgba(120,86,32,0.5)';
+      ctx.lineWidth = 1.4;
+      for (const dx of [-r * 0.3, 0, r * 0.3]) {
+        ctx.beginPath();
+        ctx.moveTo(cx + dx, hy - r * 0.28);
+        ctx.quadraticCurveTo(cx + dx * 1.1, hy, cx + dx, hy + r * 0.28);
+        ctx.stroke();
+      }
+      for (const s of [-1, 1]) {
+        ctx.fillStyle = 'rgba(255,255,255,0.72)';
+        ctx.beginPath();
+        ctx.ellipse(cx + s * r * 1.03, cy - r * 0.25 + sway, r * 0.25, r * 0.45, s * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 1.1;
+        ctx.strokeStyle = 'rgba(200,156,64,0.5)';
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'frostScarf': { // 雪铃围巾：横绕围巾 + 雪花角
+      ctx.strokeStyle = '#78BFD0';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(cx, cy + r * 0.22, r * 0.7, 0.08 * Math.PI, 0.92 * Math.PI);
+      ctx.stroke();
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(cx + r * 0.42, cy + r * 0.56);
+      ctx.quadraticCurveTo(cx + r * 0.9, cy + r * 0.75 + sway, cx + r * 1.1, cy + r * 0.42);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+      ctx.lineWidth = 1.3;
+      const sx = cx - r * 0.82;
+      const sy = topY - 2;
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2 + sway * 0.08;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + Math.cos(a) * 5, sy + Math.sin(a) * 5);
+        ctx.stroke();
+      }
+      break;
+    }
+    case 'leafWhirl': { // 卷叶风披风：身后环形落叶
+      ctx.strokeStyle = 'rgba(138,160,112,0.65)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.18, -0.3 + sway * 0.08, Math.PI * 1.35 + sway * 0.08);
+      ctx.stroke();
+      for (let i = 0; i < 5; i++) {
+        const a = -0.5 + i * 0.48 + sway * 0.08;
+        petalShape(ctx, cx + Math.cos(a) * r * 1.12, cy + Math.sin(a) * r * 0.94,
+          9, 2.8, a + Math.PI / 2, '#D8E2B8', '#8AA070');
+      }
+      break;
+    }
     case 'seeds': // 身侧飘絮（两帧漂移）
       ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.lineWidth = 1.2;
@@ -796,7 +1104,7 @@ export const CHAR_FRAMES: ReadonlyArray<{ suffix: string; ph: number; blink: boo
   { suffix: '_p3_k', ph: 0.75, blink: true },
 ];
 
-/** 参数化角色生成：画布按半径与饰件外延自适应；一次生成 4 帧动效纹理 */
+/** 参数化角色生成：画布按半径与饰件外延自适应；一次生成 8 帧动效纹理 */
 export function makeCharacter(scene: Phaser.Scene, key: string, rec: CharRecipe): void {
   const r = rec.r;
   const tall = rec.shape === 'drop' || rec.shape === 'gem';
@@ -875,6 +1183,48 @@ export function createCharacterTextures(scene: Phaser.Scene): void {
   // 嘟嘟：头顶喇叭花 + 音符（M7）
   makeCharacter(scene, 'char_toot', { r: 23, ...C.toot, glow: 'rgba(168,188,232,0.6)',
     shape: 'egg', eye: 'surprised', mouth: 'open', faceDy: 0.05, deco: ['bugleBloom'] });
+  // 柳柳：柳叶披肩（M22）
+  makeCharacter(scene, 'char_willow', { r: 17, ...C.willow, glow: 'rgba(200,230,160,0.62)',
+    shape: 'seed', lean: -0.08, eye: 'sparkle', mouth: 'smile', deco: ['willowCape'] });
+  // 翅翅：旋翅果帽（M22）
+  makeCharacter(scene, 'char_samara', { r: 22, ...C.samara, glow: 'rgba(216,192,128,0.58)',
+    shape: 'seed', eye: 'happy', mouth: 'pout', faceDy: 0.04, deco: ['samaraCap'] });
+  // 熠熠：晨火核心（M22）
+  makeCharacter(scene, 'char_cinder', { r: 19, ...C.cinder, glow: 'rgba(255,204,120,0.78)',
+    shape: 'drop', eye: 'surprised', mouth: 'open', faceDy: 0.05, deco: ['emberCore', 'glints'] });
+  // 汐汐：朝露瓶背包（M22）
+  makeCharacter(scene, 'char_tidey', { r: 20, ...C.tidey, glow: 'rgba(168,224,220,0.7)',
+    shape: 'egg', eye: 'sleepy', mouth: 'smile', deco: ['flaskPack', 'shine'] });
+  // 晖晖：落晖光冠（M22）
+  makeCharacter(scene, 'char_ray', { r: 17, ...C.ray, glow: 'rgba(255,232,176,0.85)',
+    shape: 'kite', eye: 'sparkle', mouth: 'open', deco: ['rayCrown'] });
+  // 啾啾：候鸟羽披（M22）
+  makeCharacter(scene, 'char_pipit', { r: 17, ...C.pipit, glow: 'rgba(198,212,242,0.64)',
+    shape: 'egg', lean: -0.1, eye: 'happy', mouth: 'smile', deco: ['birdCowl'] });
+  // 豆豆：跳豆环（M22）
+  makeCharacter(scene, 'char_beanie', { r: 19, ...C.beanie, glow: 'rgba(242,168,216,0.68)',
+    shape: 'seed', eye: 'surprised', mouth: 'cat', faceDy: 0.04, deco: ['beanBounce'] });
+  // 祈祈：晨星杖缎带（M22）
+  makeCharacter(scene, 'char_wish', { r: 17, ...C.wish, glow: 'rgba(255,232,184,0.78)',
+    shape: 'round', eye: 'sleepy', mouth: 'smile', softGrad: true, deco: ['wishRibbon', 'glints'] });
+  // 粉粉：花粉绒球（M22）
+  makeCharacter(scene, 'char_pollen', { r: 21, ...C.pollen, glow: 'rgba(244,220,136,0.62)',
+    shape: 'round', eye: 'happy', mouth: 'open', deco: ['pollenPuffs'] });
+  // 涡涡：月华漩涡（M22）
+  makeCharacter(scene, 'char_vorty', { r: 22, ...C.vorty, glow: 'rgba(196,168,232,0.75)',
+    shape: 'drop', eye: 'sleepy', mouth: 'pout', faceDy: 0.06, deco: ['moonWell'] });
+  // 矛矛：光矛小骑士（M22）
+  makeCharacter(scene, 'char_lancey', { r: 19, ...C.lancey, glow: 'rgba(255,242,200,0.75)',
+    shape: 'kite', lean: -0.04, eye: 'sparkle', mouth: 'smile', deco: ['lanceHelm'] });
+  // 蜜蜜：蜂巢帽（M22）
+  makeCharacter(scene, 'char_beebee', { r: 17, ...C.beebee, glow: 'rgba(248,216,120,0.7)',
+    shape: 'round', eye: 'happy', mouth: 'cat', deco: ['beeHood'] });
+  // 霜霜：雪铃围巾（M22）
+  makeCharacter(scene, 'char_frosty', { r: 22, ...C.frosty, glow: 'rgba(200,236,244,0.72)',
+    shape: 'egg', eye: 'sleepy', mouth: 'smile', softGrad: true, deco: ['frostScarf'] });
+  // 旋旋：卷叶风披风（M22）
+  makeCharacter(scene, 'char_twirl', { r: 17, ...C.twirl, glow: 'rgba(196,216,172,0.62)',
+    shape: 'seed', lean: -0.16, eye: 'sparkle', mouth: 'open', deco: ['leafWhirl', 'windLines'] });
   // 小蓝团：草甸蓝团彩蛋造型 — 圆团 + 水光（角色管线渐变+大眼，与敌人 blob 仅神似）（M16）
   makeCharacter(scene, 'char_blobby', { r: 23, ...C.blobby, glow: 'rgba(156,200,236,0.7)',
     shape: 'round', eye: 'happy', mouth: 'smile', faceDy: 0.04, deco: ['shine', 'droplets'] });

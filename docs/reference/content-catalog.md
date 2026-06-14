@@ -3,7 +3,7 @@
 > 更新日期：2026-06-14  
 > 校验：本文件由 `npm run check:docs` 机械检查 ID 覆盖。表格只记录核心信息，不复制完整数值数组；完整数值以 `src/content/*` 为准。
 
-当前规模：18 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 31 掉落道具 / 16 商店强化 / 59 成就 ID（52 当前成就 + 7 legacy）。
+当前规模：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 31 掉落道具 / 16 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
 
 ## 角色
 
@@ -27,8 +27,22 @@
 | `berry` | 莓莓 | `sling` | trait `sweettooth` |
 | `wisp` | 悠悠 | `wisp` | trait `flicker` |
 | `toot` | 嘟嘟 | `bugle` | trait `fanfare` |
-| `blobby` | 小蓝团 | `lantern` | 隐藏，trait `bouncy` |
-| `nova` | 小流星 | `star` | 隐藏，trait `comet` |
+| `willow` | 柳柳 | `dagger` | 柳叶镖配对角色 |
+| `samara` | 翅翅 | `axe` | 旋翅果配对角色 |
+| `cinder` | 熠熠 | `fireball` | 流光球配对角色 |
+| `tidey` | 汐汐 | `flask` | 朝露瓶配对角色 |
+| `ray` | 晖晖 | `bolt` | 落晖配对角色 |
+| `pipit` | 啾啾 | `bird` | 候鸟配对角色 |
+| `beanie` | 豆豆 | `ricochet` | 跳跳豆配对角色 |
+| `wish` | 祈祈 | `wand` | 晨星杖配对角色 |
+| `pollen` | 粉粉 | `breath` | 花粉拂配对角色 |
+| `vorty` | 涡涡 | `gravity` | trait `moonwell` |
+| `lancey` | 矛矛 | `sword` | trait `sunlance` |
+| `beebee` | 蜜蜜 | `swarm` | trait `hivecall` |
+| `frosty` | 霜霜 | `frost` | trait `frostguard` |
+| `twirl` | 旋旋 | `tornado` | 卷叶风配对角色 |
+| `blobby` | 小蓝团 | `bomb` | 隐藏，trait `bouncy` |
+| `nova` | 小流星 | `meteor` | 隐藏，trait `comet` |
 
 ## 地图
 
@@ -166,6 +180,6 @@ mechanic：`splinter`, `thorncore`, `vow`, `allin`, `slowburn`, `dawnfield`, `st
 
 源文件：`src/content/achievements.ts`。
 
-当前成就：`swarm100`, `survive5`, `level20`, `eliteSlayer`, `firstEvolve`, `maxWeapon`, `fullArsenal`, `fullCharms`, `meadowClear`, `kills1000`, `coins500`, `firstBuy`, `pondClear`, `hillsClear`, `groveClear`, `lavenderClear`, `survive15`, `level30`, `kills300`, `evolve3`, `eliteHunter`, `coins2000`, `wins5`, `fullHouse`, `maxPassive`, `brambleClear`, `nocturneClear`, `summitClear`, `orchardClear`, `snowbellClear`, `mirageClear`, `clockworkClear`, `survive20`, `kills500`, `level40`, `evolve6`, `wins10`, `hyperClear1`, `hyperAll`, `endless3`, `endless6`, `flawlessBoss`, `fiveCharWins`, `noPassiveClear`, `untouchable10`, `evolveRush`, `soloWeaponClear`, `arcanaTrio`, `affixSlayer`, `graviticEscape`, `secretBloom`, `stargazer`。
+当前成就：`swarm100`, `survive5`, `level20`, `eliteSlayer`, `firstEvolve`, `maxWeapon`, `fullArsenal`, `fullCharms`, `meadowClear`, `kills1000`, `coins500`, `firstBuy`, `pondClear`, `hillsClear`, `groveClear`, `lavenderClear`, `survive15`, `level30`, `kills300`, `evolve3`, `eliteHunter`, `coins2000`, `wins5`, `fullHouse`, `maxPassive`, `brambleClear`, `nocturneClear`, `summitClear`, `orchardClear`, `snowbellClear`, `mirageClear`, `clockworkClear`, `survive20`, `kills500`, `level40`, `evolve6`, `wins10`, `hyperClear1`, `hyperAll`, `endless3`, `endless6`, `flawlessBoss`, `fiveCharWins`, `noPassiveClear`, `untouchable10`, `evolveRush`, `soloWeaponClear`, `arcanaTrio`, `affixSlayer`, `graviticEscape`, `secretBloom`, `stargazer`, `survive10`, `kills750`, `level35`, `evolve4`, `evolve5`, `arcanaDuo`, `endless1`, `endless2`, `hyperClear2`, `wins15`, `charWins10`, `affixHunter50`, `flawlessHyperBoss`, `fullBuildClear`。
 
 legacy 成就：`kills5000`, `kills10000`, `coins5000`, `runs20`, `runs50`, `buy10`, `buy25`。

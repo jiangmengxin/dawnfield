@@ -1,4 +1,4 @@
-// 角色选择：16 格（8 真实 + 8 锁定占位）；解锁状态读存档（成就解锁，M4 接入）
+// 角色选择：30 常规格 + 隐藏角色解锁后无痕加入；解锁状态读存档（成就解锁，M4 接入）
 // 未解锁角色显示 ??? + 解锁条件（对应成就名）
 import { t } from '../i18n';
 import { CHARACTERS } from '../content/characters';
@@ -8,7 +8,7 @@ import { UIScene } from '../ui/UIScene';
 import { ScrollPanel } from '../ui/widgets/ScrollPanel';
 import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
 
-const TARGET_CHARS = 16; // 1.0 目标量级
+const TARGET_CHARS = 30; // 常规角色目标量级；隐藏角色未解锁前不占位
 
 export class CharacterSelectScene extends UIScene {
   constructor() {

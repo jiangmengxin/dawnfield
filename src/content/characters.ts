@@ -1,5 +1,5 @@
 // 角色表（纯数据层，禁止依赖 Phaser）
-// VS 式差异化：初始武器 + 基础体格（HP/移速/体积）+ 属性偏移；16 角色 ↔ 16 武器一一配对
+// VS 式差异化：初始武器 + 基础体格（HP/移速/体积）+ 属性偏移；32 角色 ↔ 32 武器一一配对
 // M17 视觉/碰撞解耦：artR 决定纹理观感（画进贴图），radius 仅接触判定；数值调参只改此处
 // 体型阶梯：蜂群杂兵 8–9 < 标准杂兵 11–15 < 中坚 15–19 < 玩家 artR 16–26 < 精英 40+ < Boss 60+
 import type { AchievementId, CharacterId, TraitId, WeaponId } from './ids';
@@ -68,6 +68,26 @@ export const TRAIT_FX = {
   // M16 nova 流星之躯：持续移动 moveT 秒后获得 dr 减伤
   cometMoveT: 0.8,
   cometDr: 0.1,
+  // M22 vorty 月华回旋：周期牵引身周敌人并造成轻伤害
+  moonwellEvery: 12,
+  moonwellR: 240,
+  moonwellPull: 190,
+  moonwellDmg: 18, // × stats.dmg
+  // M22 lancey 日枪蓄势：持续移动后下一次武器命中追加光矛新星
+  sunlanceMoveT: 1.4,
+  sunlanceDmg: 28, // × stats.dmg
+  sunlanceR: 78,
+  // M22 beebee 蜂巢召唤：拾取经验蓄蜂，满额后触发蜂群叮咬
+  hiveGemNeed: 28,
+  hiveSeekR: 520,
+  hiveDmg: 10, // × stats.dmg，最多命中 hiveTargets 个敌人
+  hiveTargets: 5,
+  // M22 frosty 霜花守护：受击触发寒霜新星，短冷却
+  frostguardCd: 14,
+  frostguardR: 150,
+  frostguardDmg: 24, // × stats.dmg
+  frostguardSlowR: 130,
+  frostguardSlowDur: 2.2,
 };
 
 export const CHARACTERS: CharacterSpec[] = [
@@ -152,14 +172,85 @@ export const CHARACTERS: CharacterSpec[] = [
     hp: 130, speed: 158, radius: 18, artR: 23,
     trail: { tex: 'p_dot', color: 0xb8c8f0, every: 0.14 },
     mods: { area: 1.18, armor: 1 }, trait: 'fanfare', unlockAch: 'kills500' },
+  // ---------- M22 32 武器配对角色（14 常规；不做数值膨胀，靠起手武器/体型/外观/少量 trait 区分） ----------
+  // 柳柳：柳叶小斥候 — 飞叶更急，身手轻快
+  { id: 'willow', weapon: 'dagger', tex: 'char_willow', texScale: 1.05, color: 0x8eb86c,
+    hp: 90, speed: 198, radius: 13, artR: 17,
+    trail: { tex: 'p_petal', color: 0xc8e6a0, every: 0.08 },
+    mods: { projSpeed: 1.12, cd: 0.95 }, unlockAch: 'survive10' },
+  // 翅翅：旋翅果小守卫 — 稳重耐打，抛物打击更重
+  { id: 'samara', weapon: 'axe', tex: 'char_samara', texScale: 0.95, color: 0xb09050,
+    hp: 120, speed: 162, radius: 17, artR: 22,
+    trail: { tex: 'p_dot', color: 0xd8c080, every: 0.15 },
+    mods: { dmg: 1.08, armor: 1 }, unlockAch: 'kills750' },
+  // 熠熠：晨火小精灵 — 伤害偏高但身板偏薄
+  { id: 'cinder', weapon: 'fireball', tex: 'char_cinder', texScale: 1.0, color: 0xd89048,
+    hp: 85, speed: 172, radius: 14, artR: 19,
+    trail: { tex: 'p_star', color: 0xffcc78, every: 0.1 },
+    mods: { dmg: 1.12, regen: 0.2 }, unlockAch: 'level35' },
+  // 汐汐：朝露瓶小炼金 — 水洼更广，能慢慢回气
+  { id: 'tidey', weapon: 'flask', tex: 'char_tidey', texScale: 0.98, color: 0x70b8b0,
+    hp: 110, speed: 168, radius: 15, artR: 20,
+    trail: { tex: 'p_dot', color: 0xa8e0dc, every: 0.12 },
+    mods: { area: 1.08, regen: 0.3 }, unlockAch: 'evolve4' },
+  // 晖晖：落晖小使者 — 施法很快，血量偏少
+  { id: 'ray', weapon: 'bolt', tex: 'char_ray', texScale: 1.05, color: 0xd8b858,
+    hp: 80, speed: 188, radius: 13, artR: 17,
+    trail: { tex: 'p_star', color: 0xffe8b0, every: 0.08 },
+    mods: { cd: 0.9, magnet: 1.1, dmg: 0.95 }, unlockAch: 'evolve5' },
+  // 啾啾：候鸟小旅伴 — 跑得快，飞行物更灵
+  { id: 'pipit', weapon: 'bird', tex: 'char_pipit', texScale: 1.05, color: 0x8498d0,
+    hp: 95, speed: 205, radius: 13, artR: 17,
+    trail: { tex: 'p_dot', color: 0xc6d4f2, every: 0.07 },
+    mods: { projSpeed: 1.15, dmg: 0.95 }, unlockAch: 'arcanaDuo' },
+  // 豆豆：跳豆小顽皮 — 弹得更快，小有暴击
+  { id: 'beanie', weapon: 'ricochet', tex: 'char_beanie', texScale: 1.05, color: 0xc868a8,
+    hp: 105, speed: 180, radius: 14, artR: 19,
+    trail: { tex: 'p_star', color: 0xf2a8d8, every: 0.1 },
+    mods: { projSpeed: 1.1, crit: 0.05 }, unlockAch: 'endless1' },
+  // 祈祈：晨星许愿灵 — 冷却极短，身体脆
+  { id: 'wish', weapon: 'wand', tex: 'char_wish', texScale: 1.05, color: 0xd8b068,
+    hp: 75, speed: 170, radius: 13, artR: 17,
+    trail: { tex: 'p_star', color: 0xffe8b8, every: 0.09 },
+    mods: { cd: 0.82, dmg: 0.92 }, unlockAch: 'endless2' },
+  // 粉粉：花粉绒面小灵 — 喷吐范围很大但脚步慢
+  { id: 'pollen', weapon: 'breath', tex: 'char_pollen', texScale: 0.98, color: 0xc8a850,
+    hp: 115, speed: 160, radius: 16, artR: 21,
+    trail: { tex: 'p_petal', color: 0xf4dc88, every: 0.13 },
+    mods: { area: 1.2, dmg: 0.95 }, unlockAch: 'hyperClear2' },
+  // 涡涡：月华漩涡小灵 — 周期牵引敌群
+  { id: 'vorty', weapon: 'gravity', tex: 'char_vorty', texScale: 0.95, color: 0x8e70c8,
+    hp: 125, speed: 154, radius: 17, artR: 22,
+    trail: { tex: 'p_star', color: 0xc4a8e8, every: 0.12 },
+    mods: { magnet: 1.22, area: 1.05 }, trait: 'moonwell', unlockAch: 'wins15' },
+  // 矛矛：光矛小骑士 — 移动蓄势后追加突刺新星
+  { id: 'lancey', weapon: 'sword', tex: 'char_lancey', texScale: 1.05, color: 0xd8bc70,
+    hp: 100, speed: 184, radius: 14, artR: 19,
+    trail: { tex: 'p_dot', color: 0xfff2c8, every: 0.09 },
+    mods: { dmg: 1.12, cd: 0.96 }, trait: 'sunlance', unlockAch: 'charWins10' },
+  // 蜜蜜：蜂巢小看护 — 拾取经验会招来一小阵蜂群
+  { id: 'beebee', weapon: 'swarm', tex: 'char_beebee', texScale: 1.0, color: 0xc89c40,
+    hp: 90, speed: 190, radius: 13, artR: 17,
+    trail: { tex: 'p_dot', color: 0xf8d878, every: 0.08 },
+    mods: { area: 1.05, crit: 0.04 }, trait: 'hivecall', unlockAch: 'affixHunter50' },
+  // 霜霜：雪铃围巾小灵 — 受击时迸出寒霜守护
+  { id: 'frosty', weapon: 'frost', tex: 'char_frosty', texScale: 0.95, color: 0x78bfd0,
+    hp: 130, speed: 156, radius: 17, artR: 22,
+    trail: { tex: 'p_dot', color: 0xc8ecf4, every: 0.14 },
+    mods: { armor: 1, regen: 0.3 }, trait: 'frostguard', unlockAch: 'flawlessHyperBoss' },
+  // 旋旋：卷叶风小舞者 — 全场轻快，冷却略短
+  { id: 'twirl', weapon: 'tornado', tex: 'char_twirl', texScale: 1.05, color: 0x8aa070,
+    hp: 95, speed: 208, radius: 13, artR: 17,
+    trail: { tex: 'p_petal', color: 0xc4d8ac, every: 0.07 },
+    mods: { projSpeed: 1.1, cd: 0.94, dmg: 0.95 }, unlockAch: 'fullBuildClear' },
   // ---------- M16 隐藏角色（secret：未解锁不占位不显示；解锁走彩蛋链隐藏成就） ----------
-  // 小蓝团：草甸花圃里睡醒的蓝色小团子 — 厚实软弹，提灯暖光更大
-  { id: 'blobby', weapon: 'lantern', tex: 'char_blobby', texScale: 0.9, color: 0x6a98c8,
+  // 小蓝团：草甸花圃里睡醒的蓝色小团子 — 厚实软弹，泡泡更大
+  { id: 'blobby', weapon: 'bomb', tex: 'char_blobby', texScale: 0.9, color: 0x6a98c8,
     hp: 160, speed: 150, radius: 18, artR: 23,
     trail: { tex: 'p_dot', color: 0x9cc8ec, every: 0.13 },
-    mods: { area: 1.1, dmg: 0.92 }, trait: 'bouncy', secret: true, unlockAch: 'secretBloom' },
+    mods: { area: 1.08, dmg: 0.92 }, trait: 'bouncy', secret: true, unlockAch: 'secretBloom' },
   // 小流星：被流星雨砸出来的小火花 — 跑得快弹得急，跑起来更耐砸
-  { id: 'nova', weapon: 'star', tex: 'char_nova', texScale: 1.05, color: 0xe0a040,
+  { id: 'nova', weapon: 'meteor', tex: 'char_nova', texScale: 1.05, color: 0xe0a040,
     hp: 78, speed: 200, radius: 13, artR: 17,
     trail: { tex: 'p_star', color: 0xffe070, every: 0.07 },
     mods: { projSpeed: 1.2, cd: 0.9, dmg: 0.92 }, trait: 'comet', secret: true, unlockAch: 'stargazer' },

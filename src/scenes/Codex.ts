@@ -15,7 +15,7 @@ import { THEME } from '../ui/theme';
 
 // 1.0 目标量级（锁定占位补齐到这些数字；敌人按实装量展示，未遇见即 ???）
 // M13：规则卡 10→16（6 张机制卡）
-const TARGET = { weapons: 32, passives: 16, chars: 16, maps: 8, arcana: 16 } as const;
+const TARGET = { weapons: 32, passives: 16, chars: 30, maps: 12, arcana: 24 } as const;
 
 export class CodexScene extends UIScene {
   private tab: CodexCat = 'weapons';
@@ -118,7 +118,7 @@ export class CodexScene extends UIScene {
         }));
       }
     } else if (tab === 'chars') {
-      // M16 隐藏角色：未解锁不占位不显示（与 CharacterSelect 同口径）；解锁后 16→18
+      // M16 隐藏角色：未解锁不占位不显示（与 CharacterSelect 同口径）；解锁后 30→32
       const chars = CHARACTERS.filter((c) => !c.secret || Meta.isUnlocked('chars', c.id));
       for (const c of chars) {
         // M14 角色专属机制：图鉴展示机制全文（选人页只露机制名，详情在此）
