@@ -1,4 +1,4 @@
-// 武器系统：16 种机制完全不同的武器 + 各自的进化形态
+// 武器系统：32 种机制完全不同的武器 + 各自的进化形态
 // 行为代码按武器分文件；平衡数值在 content/weapons.ts
 import { PASSIVE_MAX_LEVEL } from '../../content/passives';
 import { BREAKTHROUGH, WEAPON_MAX_LEVEL, WEAPON_META } from '../../content/weapons';
@@ -22,6 +22,22 @@ import { VineWeapon } from './vine';
 import { SlingWeapon } from './sling';
 import { WispWeapon } from './wisp';
 import { BugleWeapon } from './bugle';
+import { DaggerWeapon } from './dagger';
+import { AxeWeapon } from './axe';
+import { FireballWeapon } from './fireball';
+import { FlaskWeapon } from './flask';
+import { BoltWeapon } from './bolt';
+import { BirdWeapon } from './bird';
+import { RicochetWeapon } from './ricochet';
+import { WandWeapon } from './wand';
+import { BreathWeapon } from './breath';
+import { BombWeapon } from './bomb';
+import { GravityWeapon } from './gravity';
+import { SwordWeapon } from './sword';
+import { SwarmWeapon } from './swarm';
+import { MeteorWeapon } from './meteor';
+import { FrostWeapon } from './frost';
+import { TornadoWeapon } from './tornado';
 
 export { Weapon } from './base';
 
@@ -42,6 +58,22 @@ const FACTORY: Record<WeaponId, new (ctx: CombatContext, id: WeaponId) => Weapon
   sling: SlingWeapon,
   wisp: WispWeapon,
   bugle: BugleWeapon,
+  dagger: DaggerWeapon,
+  axe: AxeWeapon,
+  fireball: FireballWeapon,
+  flask: FlaskWeapon,
+  bolt: BoltWeapon,
+  bird: BirdWeapon,
+  ricochet: RicochetWeapon,
+  wand: WandWeapon,
+  breath: BreathWeapon,
+  bomb: BombWeapon,
+  gravity: GravityWeapon,
+  sword: SwordWeapon,
+  swarm: SwarmWeapon,
+  meteor: MeteorWeapon,
+  frost: FrostWeapon,
+  tornado: TornadoWeapon,
 };
 
 export class WeaponManager implements RunSystem {

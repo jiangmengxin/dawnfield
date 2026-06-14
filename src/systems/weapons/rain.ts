@@ -8,6 +8,10 @@ import { Weapon, queryOut } from './base';
 export class RainWeapon extends Weapon {
   private cloud: Phaser.GameObjects.Image | null = null;
   private cloudBob = 0;
+  // 进化雨云的固定停驻点（不随玩家；周期挪到新的敌群上空）
+  private cgx = 0;
+  private cgy = 0;
+  private relocT = 0;
 
   protected cooldown(): number {
     return this.evolved ? W_RAIN.evoCd : W_RAIN.cd[this.level - 1];
@@ -24,9 +28,8 @@ export class RainWeapon extends Weapon {
   protected fire(): void {
     const ctx = this.ctx;
     if (this.evolved) {
-      const a = Math.random() * Math.PI * 2;
-      const d = Math.random() * 190;
-      this.drop(ctx.player.x + Math.cos(a) * d, ctx.player.y + Math.sin(a) * d);
+      // 在固定雨云下方落雨（不再以玩家为中心）
+      this.drop(this.cgx + (Math.random() - 0.5) * 150, this.cgy + (Math.random() - 0.5) * 110);
       return;
     }
     const n = W_RAIN.n[this.level - 1];
@@ -72,15 +75,35 @@ export class RainWeapon extends Weapon {
 
   onEvolve(): void {
     super.onEvolve();
-    this.cloud = this.ctx.scene.add.image(this.ctx.player.x, this.ctx.player.y - 90, 'w_cloud').setDepth(1e6 + 5).setAlpha(0.92);
+    const ctx = this.ctx;
+    const near = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 380);
+    this.cgx = near ? near.x : ctx.player.x;
+    this.cgy = near ? near.y : ctx.player.y;
+    this.relocT = 3;
+    this.cloud = ctx.scene.add.image(this.cgx, this.cgy - 90, 'w_cloud').setDepth(1e6 + 5).setAlpha(0.92);
   }
 
   protected tick(dt: number): void {
-    if (this.cloud) {
-      this.cloudBob += dt * 2;
-      const ctx = this.ctx;
-      this.cloud.x += (ctx.player.x - this.cloud.x) * Math.min(1, dt * 4);
-      this.cloud.y += (ctx.player.y - 92 + Math.sin(this.cloudBob) * 6 - this.cloud.y) * Math.min(1, dt * 4);
+    if (!this.cloud) return;
+    const ctx = this.ctx;
+    this.cloudBob += dt * 2;
+    // 雨云停驻在固定点、只原地轻浮（不随玩家移动）
+    this.cloud.x += (this.cgx - this.cloud.x) * Math.min(1, dt * 3);
+    this.cloud.y += (this.cgy - 92 + Math.sin(this.cloudBob) * 6 - this.cloud.y) * Math.min(1, dt * 3);
+    // 周期挪到新的敌群上空（无敌则落在玩家附近一处，仍不黏身）
+    this.relocT -= dt;
+    if (this.relocT <= 0) {
+      this.relocT = 3.5;
+      const near = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 460);
+      if (near) {
+        this.cgx = near.x;
+        this.cgy = near.y;
+      } else {
+        const a = Math.random() * Math.PI * 2;
+        const d = 120 + Math.random() * 160;
+        this.cgx = ctx.player.x + Math.cos(a) * d;
+        this.cgy = ctx.player.y + Math.sin(a) * d;
+      }
     }
   }
 

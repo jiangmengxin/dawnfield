@@ -1716,4 +1716,500 @@ export function createIcons(scene: Phaser.Scene): void {
       }
     }
   });
+
+  // ===== M22 批次 D/E/F 武器图标 =====
+
+  // 柳叶镖：锋利的柳叶 + 叶脉
+  makeTex(scene, 'icon_dagger', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.save();
+    ctx.translate(20, 20);
+    ctx.rotate(-0.7);
+    // 叶身（细长尖叶）
+    ctx.beginPath();
+    ctx.moveTo(0, -14);
+    ctx.quadraticCurveTo(7, 0, 2, 13);
+    ctx.quadraticCurveTo(0, 15, -2, 13);
+    ctx.quadraticCurveTo(-7, 0, 0, -14);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0xa8d088);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(0x74a858);
+    ctx.stroke();
+    // 主叶脉
+    ctx.strokeStyle = cssOf(0x74a858);
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(0, -12);
+    ctx.lineTo(0, 12);
+    ctx.stroke();
+    // 侧脉
+    ctx.lineWidth = 0.9;
+    for (const dy of [-6, -1, 4]) {
+      ctx.beginPath();
+      ctx.moveTo(0, dy);
+      ctx.lineTo(3, dy + 3);
+      ctx.moveTo(0, dy);
+      ctx.lineTo(-3, dy + 3);
+      ctx.stroke();
+    }
+    ctx.restore();
+  });
+
+  // 旋翅果：枫树翅果（鼓鼓种子 + 透翅 + 翅脉）
+  makeTex(scene, 'icon_axe', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.save();
+    ctx.translate(20, 21);
+    ctx.rotate(-0.5);
+    // 翅（细长水滴翼）
+    ctx.beginPath();
+    ctx.moveTo(-9, 4);
+    ctx.quadraticCurveTo(2, -10, 15, -7);
+    ctx.quadraticCurveTo(8, 2, -9, 4);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0xe8d8a8);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(0xb89858);
+    ctx.stroke();
+    // 翅脉
+    ctx.strokeStyle = 'rgba(184,152,88,0.8)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-7, 3.4);
+      ctx.lineTo(2 + i * 4, -6 + i * 2);
+      ctx.stroke();
+    }
+    // 种子（鼓鼓的果实）
+    ctx.beginPath();
+    ctx.arc(-10, 4, 5, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xb88a58);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(0x86603c);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(-12, 2, 1.6, 1, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // 流光球：晨光暖球 + 光晕 + 流光弧
+  makeTex(scene, 'icon_fireball', 40, 40, (ctx) => {
+    bg(ctx);
+    softGlow(ctx, 20, 20, 14, 'rgba(248,200,110,0.6)');
+    ctx.beginPath();
+    ctx.arc(20, 20, 9, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xf8c060);
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = cssOf(0xd09838);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(20, 20, 4.5, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xfff0c0);
+    ctx.fill();
+    // 流光弧
+    ctx.strokeStyle = 'rgba(255,240,190,0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(20, 20, 13, -0.4, 0.8);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(20, 20, 13, Math.PI - 0.4, Math.PI + 0.8);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(17, 17, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 朝露瓶：圆腹小瓶 + 瓶颈 + 液面
+  makeTex(scene, 'icon_flask', 40, 40, (ctx) => {
+    bg(ctx);
+    // 瓶身
+    ctx.beginPath();
+    ctx.moveTo(16, 13);
+    ctx.lineTo(16, 18);
+    ctx.quadraticCurveTo(9, 23, 11, 30);
+    ctx.quadraticCurveTo(13, 34, 20, 34);
+    ctx.quadraticCurveTo(27, 34, 29, 30);
+    ctx.quadraticCurveTo(31, 23, 24, 18);
+    ctx.lineTo(24, 13);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(200,236,232,0.9)';
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = cssOf(0x5fa8a0);
+    ctx.stroke();
+    // 液面
+    ctx.beginPath();
+    ctx.moveTo(13.5, 25);
+    ctx.quadraticCurveTo(20, 23, 26.5, 25);
+    ctx.quadraticCurveTo(28.5, 31, 20, 33);
+    ctx.quadraticCurveTo(11.5, 31, 13.5, 25);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0x88d0c8);
+    ctx.fill();
+    // 瓶塞
+    ctx.fillStyle = '#A07048';
+    ctx.fillRect(15, 9, 10, 4.5);
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.ellipse(16, 27, 1.6, 3, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 落晖：自上而降的晨光柱 + 落点光芒
+  makeTex(scene, 'icon_bolt', 40, 40, (ctx) => {
+    bg(ctx);
+    softGlow(ctx, 20, 24, 11, 'rgba(248,224,160,0.55)');
+    // 光柱（上窄下宽）
+    const g = ctx.createLinearGradient(0, 6, 0, 27);
+    g.addColorStop(0, 'rgba(255,250,224,0.95)');
+    g.addColorStop(1, 'rgba(248,216,120,0.5)');
+    ctx.beginPath();
+    ctx.moveTo(18, 6);
+    ctx.lineTo(22, 6);
+    ctx.lineTo(26, 26);
+    ctx.lineTo(14, 26);
+    ctx.closePath();
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(20, 6);
+    ctx.lineTo(20, 26);
+    ctx.stroke();
+    // 落点光芒（向下外扩短芒）
+    ctx.strokeStyle = cssOf(0xf0c860);
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    for (const [dx, dy] of [[-7, 3], [-4, 6], [0, 7], [4, 6], [7, 3]] as const) {
+      ctx.beginPath();
+      ctx.moveTo(20, 27);
+      ctx.lineTo(20 + dx, 28 + dy);
+      ctx.stroke();
+    }
+  });
+
+  // 候鸟：俯冲海鸥剪影（双弧翼）
+  makeTex(scene, 'icon_bird', 40, 40, (ctx) => {
+    bg(ctx);
+    // 身体
+    ctx.beginPath();
+    ctx.ellipse(20, 22, 5, 7, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xc4d2ee);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(0x7e8eb8);
+    ctx.stroke();
+    // 双翼（上扬弧）
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = cssOf(0x9aa8d4);
+    ctx.beginPath();
+    ctx.moveTo(16, 18);
+    ctx.quadraticCurveTo(8, 9, 6, 16);
+    ctx.moveTo(24, 18);
+    ctx.quadraticCurveTo(32, 9, 34, 16);
+    ctx.stroke();
+    // 喙 + 眼
+    ctx.fillStyle = cssOf(0xf0c060);
+    ctx.beginPath();
+    ctx.moveTo(20, 28);
+    ctx.lineTo(17.5, 32);
+    ctx.lineTo(22.5, 32);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = cssOf(PAL.ink);
+    ctx.beginPath();
+    ctx.arc(18, 21, 1.3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 跳跳豆：发光弹珠 + 折线弹迹
+  makeTex(scene, 'icon_ricochet', 40, 40, (ctx) => {
+    bg(ctx);
+    // 弹迹
+    ctx.strokeStyle = 'rgba(232,124,192,0.55)';
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath();
+    ctx.moveTo(8, 30);
+    ctx.lineTo(16, 14);
+    ctx.lineTo(26, 24);
+    ctx.lineTo(33, 11);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 弹珠
+    softGlow(ctx, 16, 14, 9, 'rgba(232,124,192,0.6)');
+    ctx.beginPath();
+    ctx.arc(16, 14, 6, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xf0a0d8);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(0xc05898);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(14, 12, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 晨星杖：杖身 + 星头
+  makeTex(scene, 'icon_wand', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = '#B08840';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(13, 31);
+    ctx.lineTo(24, 16);
+    ctx.stroke();
+    softGlow(ctx, 26, 13, 10, 'rgba(255,224,160,0.7)');
+    star(ctx, 26, 13, 5, 8, 3.4, cssOf(0xffe8a8), cssOf(0xd0a040));
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(26, 12, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 花粉拂：朝右扩散的发光花粉锥
+  makeTex(scene, 'icon_breath', 40, 40, (ctx) => {
+    bg(ctx);
+    softGlow(ctx, 24, 20, 12, 'rgba(240,216,120,0.5)');
+    // 喷口小花
+    ctx.beginPath();
+    ctx.arc(9, 20, 3.4, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xe0b850);
+    ctx.fill();
+    // 花粉点（锥形铺开）
+    for (const [x, y, r] of [[16, 20, 2.6], [21, 16, 2.2], [21, 24, 2.2], [26, 13, 1.9], [27, 20, 2.4], [26, 27, 1.9], [31, 17, 1.6], [32, 23, 1.6]] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = cssOf(0xf8e0a0);
+      ctx.fill();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = 'rgba(208,168,80,0.6)';
+      ctx.stroke();
+    }
+  });
+
+  // 泡泡弹：晶莹大泡 + 高光 + 小泡
+  makeTex(scene, 'icon_bomb', 40, 40, (ctx) => {
+    bg(ctx);
+    // 大泡
+    ctx.beginPath();
+    ctx.arc(19, 22, 11, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(168,216,236,0.45)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = cssOf(0x6aa8c8);
+    ctx.stroke();
+    // 薄膜内圈
+    ctx.beginPath();
+    ctx.arc(19, 22, 8, 0, Math.PI * 2);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.stroke();
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(15, 17, 3, 2, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    // 小泡
+    ctx.beginPath();
+    ctx.arc(30, 12, 3.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(168,216,236,0.5)';
+    ctx.fill();
+    ctx.lineWidth = 1.4;
+    ctx.strokeStyle = cssOf(0x6aa8c8);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(29, 11, 1, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 月华引：向心螺旋
+  makeTex(scene, 'icon_gravity', 40, 40, (ctx) => {
+    bg(ctx);
+    softGlow(ctx, 20, 20, 13, 'rgba(152,120,208,0.45)');
+    ctx.strokeStyle = cssOf(0x9878d0);
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const a0 = (i / 3) * Math.PI * 2;
+      ctx.beginPath();
+      for (let t = 0; t <= 1; t += 0.08) {
+        const a = a0 + t * Math.PI * 1.6;
+        const r = 13 * (1 - t);
+        const x = 20 + Math.cos(a) * r;
+        const y = 20 + Math.sin(a) * r;
+        if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(20, 20, 3, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0x5a4880);
+    ctx.fill();
+  });
+
+  // 光矛：晨光长矛（发光锥尖 + 柔光 + 光杆）
+  makeTex(scene, 'icon_sword', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.save();
+    ctx.translate(20, 20);
+    ctx.rotate(-0.78);
+    softGlow(ctx, 0, -2, 13, 'rgba(248,238,192,0.6)');
+    // 矛身（长三角光刃）
+    ctx.beginPath();
+    ctx.moveTo(0, -15);
+    ctx.lineTo(3, 8);
+    ctx.lineTo(0, 12);
+    ctx.lineTo(-3, 8);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0xfaf0c8);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(0xd8c068);
+    ctx.stroke();
+    // 中脊亮线
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(0, -13);
+    ctx.lineTo(0, 9);
+    ctx.stroke();
+    // 光杆
+    ctx.strokeStyle = cssOf(0xe0c878);
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 12);
+    ctx.lineTo(0, 16);
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // 群蜂：条纹小蜂 + 翅 + 飞迹
+  makeTex(scene, 'icon_swarm', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = 'rgba(192,156,72,0.5)';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([2, 3]);
+    ctx.beginPath();
+    ctx.moveTo(8, 30);
+    ctx.quadraticCurveTo(16, 22, 14, 14);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 翅
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    for (const dx of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(22 + dx * 4, 14, 4, 6, dx * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // 身体
+    ctx.beginPath();
+    ctx.ellipse(22, 22, 7.5, 6, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xf0c850);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(0xb08828);
+    ctx.stroke();
+    // 条纹
+    ctx.strokeStyle = cssOf(0x6a5a48);
+    ctx.lineWidth = 1.8;
+    for (const dx of [-2, 2]) {
+      ctx.beginPath();
+      ctx.moveTo(22 + dx, 17);
+      ctx.lineTo(22 + dx, 27);
+      ctx.stroke();
+    }
+  });
+
+  // 坠星：拖光尾的发光流星
+  makeTex(scene, 'icon_meteor', 40, 40, (ctx) => {
+    bg(ctx);
+    // 光尾
+    ctx.lineCap = 'round';
+    for (const [w, a] of [[6, 0.35], [3, 0.7]] as const) {
+      ctx.lineWidth = w;
+      ctx.strokeStyle = `rgba(248,232,170,${a})`;
+      ctx.beginPath();
+      ctx.moveTo(9, 9);
+      ctx.lineTo(23, 23);
+      ctx.stroke();
+    }
+    // 发光流星
+    softGlow(ctx, 25, 25, 11, 'rgba(248,232,170,0.6)');
+    star(ctx, 25, 25, 5, 8.5, 3.6, cssOf(0xfaf0c0), cssOf(0xd0b860));
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(25, 24, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 凛霜：六角雪花/冰晶
+  makeTex(scene, 'icon_frost', 40, 40, (ctx) => {
+    bg(ctx);
+    softGlow(ctx, 20, 20, 12, 'rgba(168,224,240,0.5)');
+    ctx.strokeStyle = cssOf(0x7ec4dc);
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      const ex = 20 + Math.cos(a) * 13;
+      const ey = 20 + Math.sin(a) * 13;
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(20, 20);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      // 分叉
+      ctx.lineWidth = 1.6;
+      const bx = 20 + Math.cos(a) * 8;
+      const by = 20 + Math.sin(a) * 8;
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx + Math.cos(a + s * 0.7) * 4, by + Math.sin(a + s * 0.7) * 4);
+        ctx.stroke();
+      }
+    }
+    ctx.fillStyle = cssOf(0xeaf8ff);
+    ctx.beginPath();
+    ctx.arc(20, 20, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 卷叶风：漏斗形旋风（堆叠收窄弧）
+  makeTex(scene, 'icon_tornado', 40, 40, (ctx) => {
+    bg(ctx);
+    ctx.strokeStyle = cssOf(0x88a878);
+    ctx.lineCap = 'round';
+    const rows: Array<[number, number]> = [[9, 13], [13, 11.5], [17, 9.5], [21, 7.5], [25, 5.5], [29, 3.5]];
+    for (let i = 0; i < rows.length; i++) {
+      const [y, w] = rows[i];
+      ctx.lineWidth = 2.4 - i * 0.2;
+      ctx.beginPath();
+      ctx.ellipse(20, y, w, 2.2, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // 卷叶
+    petalShape(ctx, 12, 12, 7, 2.6, -0.6, '#A8D088', '#74A858');
+    petalShape(ctx, 29, 15, 6, 2.2, 0.8, '#A8D088', '#74A858');
+  });
 }

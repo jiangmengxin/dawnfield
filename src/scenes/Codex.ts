@@ -15,7 +15,7 @@ import { THEME } from '../ui/theme';
 
 // 1.0 目标量级（锁定占位补齐到这些数字；敌人按实装量展示，未遇见即 ???）
 // M13：规则卡 10→16（6 张机制卡）
-const TARGET = { weapons: 16, passives: 16, chars: 16, maps: 8, arcana: 16 } as const;
+const TARGET = { weapons: 32, passives: 16, chars: 16, maps: 8, arcana: 16 } as const;
 
 export class CodexScene extends UIScene {
   private tab: CodexCat = 'weapons';

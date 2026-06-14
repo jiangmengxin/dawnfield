@@ -1,6 +1,6 @@
 // 3. 棱镜光束 / 虹折射
 import { W_PRISM } from '../../content/weapons';
-import { PAL, RAINBOW } from '../../gfx/palette';
+import { RAINBOW } from '../../gfx/palette';
 import { SFX } from '../../audio/sound';
 import { Weapon, nearestK } from './base';
 
@@ -51,22 +51,26 @@ export class PrismWeapon extends Weapon {
     const y1 = y0 + sa * len;
     const w = this.width();
     const gr = ctx.scene.add.graphics().setDepth(1e6);
-    // 彩虹层
-    RAINBOW.forEach((c, i) => {
-      const off = (i - (RAINBOW.length - 1) / 2) * (w / RAINBOW.length) * 0.9;
-      gr.lineStyle(w / RAINBOW.length + 1.5, c, 0.55);
+    const line = (lx0: number, ly0: number, lx1: number, ly1: number) => {
       gr.beginPath();
-      gr.moveTo(x0 - sa * off, y0 + ca * off);
-      gr.lineTo(x1 - sa * off, y1 + ca * off);
+      gr.moveTo(lx0, ly0);
+      gr.lineTo(lx1, ly1);
       gr.strokePath();
+    };
+    // 柔光底带（纸白晕开，融入画风不刺眼）
+    gr.lineStyle(w * 2.6, 0xfff6e8, 0.1);
+    line(x0, y0, x1, y1);
+    // 彩虹层（更柔、相互叠融的粉彩条带）
+    RAINBOW.forEach((c, i) => {
+      const off = (i - (RAINBOW.length - 1) / 2) * (w / RAINBOW.length);
+      gr.lineStyle(w / RAINBOW.length + 3, c, 0.4);
+      line(x0 - sa * off, y0 + ca * off, x1 - sa * off, y1 + ca * off);
     });
-    gr.lineStyle(3.5, 0xffffff, 0.95);
-    gr.beginPath();
-    gr.moveTo(x0, y0);
-    gr.lineTo(x1, y1);
-    gr.strokePath();
-    ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 260, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
-    ctx.fx.burst(x1, y1, { tex: 'p_star', color: 0xffffff, count: 4, speed: 60, life: 0.35, scale: 0.9 });
+    // 柔和暖芯（暖纸白替代刺眼纯白）
+    gr.lineStyle(2.6, 0xfff6d8, 0.85);
+    line(x0, y0, x1, y1);
+    ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 300, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
+    ctx.fx.burst(x1, y1, { tex: 'p_dot', color: 0xfff0d8, count: 5, speed: 70, life: 0.4, scale: 0.9, alpha: 0.9 });
 
     // 线段命中
     for (const e of ctx.enemies.actives) {
@@ -82,7 +86,7 @@ export class PrismWeapon extends Weapon {
     }
     // 进化：末端折射
     if (refract && this.evolved) {
-      ctx.fx.burst(x1, y1, { tex: 'p_star', color: PAL.mine, count: 6, speed: 90, life: 0.4 });
+      ctx.fx.burst(x1, y1, { tex: 'p_dot', color: 0xf8c8e0, count: 6, speed: 90, life: 0.4, alpha: 0.9 });
       for (const s of [-1, 1]) {
         this.beam(x1, y1, a + s * 0.7, 280, dmg * 0.7, false);
       }

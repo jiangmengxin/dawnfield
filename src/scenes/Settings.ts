@@ -281,9 +281,12 @@ export class SettingsScene extends UIScene {
     const gs = this.liveGame();
     if (!gs) return;
     const gap = THEME.gapXs;
-    // 行高随武器数量与屏高自适应（12 武器后矮屏不再溢出 Modal 钳制高度）
+    // 32 武器分两列（≤16 仍单列保持旧观感）；行高随行数与屏高自适应，矮屏不溢出 Modal 钳制高度
+    const cols = WEAPON_META.length > 16 ? 2 : 1;
+    const rows = Math.ceil(WEAPON_META.length / cols);
+    const modalW = cols === 2 ? 360 : 320;
     const availH = Math.min(this.vp.h - 48, 560) - 64 - THEME.gapMd * 2;
-    const btnH = Math.max(26, Math.min(40, Math.floor(availH / WEAPON_META.length) - gap));
+    const btnH = Math.max(24, Math.min(40, Math.floor(availH / rows) - gap));
     const btns: Array<{ btn: UIButton; id: WeaponId }> = [];
     const refresh = (): void => {
       for (const { btn, id } of btns) {
@@ -303,12 +306,19 @@ export class SettingsScene extends UIScene {
     };
     Modal.open(this, {
       title: t('set_giveWeapon'),
-      w: 320,
-      h: 64 + WEAPON_META.length * (btnH + gap) + THEME.gapMd * 2,
+      w: modalW,
+      h: 64 + rows * (btnH + gap) + THEME.gapMd * 2,
       build: (panel, inner) => {
+        const colW = cols === 1
+          ? Math.min(THEME.btnW, inner.w - 8)
+          : Math.floor((inner.w - gap) / 2) - 2;
         WEAPON_META.forEach((m, i) => {
-          const btn = new UIButton(this, 0, inner.y + THEME.gapSm + btnH / 2 + i * (btnH + gap), {
-            w: Math.min(THEME.btnW, inner.w - 8),
+          const col = i % cols;
+          const row = Math.floor(i / cols);
+          const bx = cols === 1 ? 0 : (col - (cols - 1) / 2) * (colW + gap);
+          const by = inner.y + THEME.gapSm + btnH / 2 + row * (btnH + gap);
+          const btn = new UIButton(this, bx, by, {
+            w: colW,
             h: btnH,
             label: '',
             fontSize: 15,

@@ -1,7 +1,6 @@
 // 1. 光刃 / 晨曦
 import Phaser from 'phaser';
 import { W_BLADE } from '../../content/weapons';
-import { PAL } from '../../gfx/palette';
 import { SFX } from '../../audio/sound';
 import { Weapon, queryOut } from './base';
 
@@ -59,31 +58,34 @@ export class BladeWeapon extends Weapon {
     });
   }
 
+  /** 进化全周斩：数道月牙斩沿四周连扫，以「斩击」覆盖 360°（不再是单一圆环，无扩散冲击环） */
   private spinSlash(): void {
     const ctx = this.ctx;
     const r = this.radius();
-    const img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_arc_full')
-      .setScale(r / 54).setDepth(1e6).setAlpha(0.9);
-    ctx.scene.tweens.add({
-      targets: img, rotation: Math.PI, alpha: 0, scale: (r / 54) * 1.15,
-      duration: 280, ease: 'Cubic.easeOut', onComplete: () => img.destroy(),
-    });
     SFX.swish();
+    const n = 5;
+    const base = Math.random() * Math.PI * 2;
+    for (let i = 0; i < n; i++) {
+      const a = base + (i / n) * Math.PI * 2;
+      ctx.scene.time.delayedCall(i * 34, () => {
+        if (!ctx.run.running) return;
+        const img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_arc')
+          .setRotation(a - 0.5)
+          .setScale(r / 46)
+          .setDepth(1e6)
+          .setAlpha(0.95);
+        ctx.scene.tweens.add({
+          targets: img, rotation: a + 0.5, alpha: 0,
+          duration: 220, ease: 'Cubic.easeOut', onComplete: () => img.destroy(),
+        });
+      });
+    }
+    // 多刀覆盖全向，一次性 360° 判定
     ctx.grid.queryCircle(ctx.player.x, ctx.player.y, r, queryOut);
     const hitNow = [...queryOut];
     for (const e of hitNow) {
       const ea = Math.atan2(e.y - ctx.player.y, e.x - ctx.player.x);
-      ctx.hitEnemy(e, this.dmg(), { kb: 260, kx: Math.cos(ea), ky: Math.sin(ea) });
+      ctx.hitEnemy(e, this.dmg(), { kb: 280, kx: Math.cos(ea), ky: Math.sin(ea) });
     }
-    // 0.16s 后扩散冲击环（二段伤害）
-    ctx.scene.time.delayedCall(160, () => {
-      if (!ctx.run.running) return;
-      ctx.fx.ring(ctx.player.x, ctx.player.y, PAL.bladeDeep, (r * 1.6) / 42, 0.4);
-      ctx.grid.queryCircle(ctx.player.x, ctx.player.y, r * 1.6, queryOut);
-      for (const e of queryOut) {
-        const ea = Math.atan2(e.y - ctx.player.y, e.x - ctx.player.x);
-        ctx.hitEnemy(e, this.dmg() * 0.6, { kb: 320, kx: Math.cos(ea), ky: Math.sin(ea) });
-      }
-    });
   }
 }
