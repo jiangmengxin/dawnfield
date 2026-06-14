@@ -13,19 +13,30 @@ export function setTexScale(v: number): void {
 
 export function makeTex(scene: Phaser.Scene, key: string, w: number, h: number, draw: (ctx: Ctx, w: number, h: number) => void): void {
   const ss = TEX_SCALE;
-  const tex = scene.textures.createCanvas(key, Math.ceil(w * ss), Math.ceil(h * ss));
+  // 统一透明安全边框：大量程序化图形带描边、柔光、旋转叶片/翅膀，容易贴到画布四边。
+  // 这里扩展物理画布并用 trim 把对象逻辑尺寸保持为 w×h，避免逐个纹理手调边距。
+  const pad = 8;
+  const paddedW = w + pad * 2;
+  const paddedH = h + pad * 2;
+  const pixelW = Math.ceil(paddedW * ss);
+  const pixelH = Math.ceil(paddedH * ss);
+  const tex = scene.textures.createCanvas(key, pixelW, pixelH);
   if (!tex) throw new Error('createCanvas failed: ' + key);
   const ctx = tex.context as Ctx;
   ctx.save();
   ctx.scale(ss, ss);
+  ctx.translate(pad, pad);
   draw(ctx, w, h);
   ctx.restore();
   tex.refresh();
   // 高密度像素、逻辑尺寸 w×h：渲染端按 source.resolution 折算（与 Text 同机制），
-  // setTrim 把 realWidth/Height 标回逻辑尺寸，调用方 setScale/setDisplaySize 语义不变
+  // frame cut 必须覆盖物理画布，否则 WebGL UV 只采样左上角，表现为纹理被裁切。
+  // setTrim 把 realWidth/Height 标回逻辑尺寸，调用方 setScale/setDisplaySize 语义不变；
+  // 负偏移让透明边框围绕原始逻辑框，而不是推移可见内容。
   const frame = tex.get();
   frame.source.resolution = ss;
-  frame.setTrim(w, h, 0, 0, w, h);
+  frame.setSize(pixelW, pixelH, 0, 0);
+  frame.setTrim(w, h, -pad, -pad, paddedW, paddedH);
 }
 
 /** 离屏剪影底图：内容画进 4x 离屏画布，并以 source-in 产出同形剪影画布（描边/发光与具体内容解耦） */
