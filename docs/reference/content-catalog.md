@@ -3,7 +3,7 @@
 > 更新日期：2026-06-14  
 > 校验：本文件由 `npm run check:docs` 机械检查 ID 覆盖。表格只记录核心信息，不复制完整数值数组；完整数值以 `src/content/*` 为准。
 
-当前规模：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 31 掉落道具 / 16 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
+当前规模：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 43 掉落道具 / 16 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
 
 ## 角色
 
@@ -50,18 +50,18 @@
 
 | id | 名称 | 时长 | 核心机制 | Boss | 专属掉落 |
 |---|---|---:|---|---|---|
-| `meadow` | 晨光草甸 | 10 | `bloomfield` | `boss` | `bloomburst`, `verdant` |
-| `pond` | 露珠池塘 | 10 | `tide` | `bubbleking` | `ebbaegis`, `ripple` |
-| `hills` | 晚霞山岗 | 10 | `wind` | `galecrow` | `tailwind`, `whirlwind` |
-| `grove` | 萤暮林地 | 20 | `sporechain` | `sporeking` | `sporebloom`, `fireflies` |
-| `lavender` | 紫露花田 | 20 | `pollen` | `flutterqueen` | `pollenfrenzy`, `beeswarm` |
-| `bramble` | 莓果灌丛 | 20 | `thornwall` | `bramblebear` | `thornnova`, `berryfeast` |
-| `nocturne` | 星语夜原 | 30 | `nightfall` | `starelk` | `fullmoon`, `meteor` |
-| `summit` | 破晓之巅 | 30 | `beacon` | `nightowl` | `beaconsurge`, `dawnnova` |
-| `orchard` | 琥珀果园 | 20 | `orchard` | `ciderwyrm` | `goldapple`, `seedwhirl` |
-| `snowbell` | 雪铃庭院 | 20 | `frostseal` | `frosthare` | `snowglobe`, `frostbell` |
-| `mirage` | 彩镜沙洲 | 30 | `prismfield` | `miragewhale` | `prismshard`, `mirrorbloom` |
-| `clockwork` | 晨钟庭 | 30 | `bellring` | `clockrooster` | `clockkey`, `bellnova` |
+| `meadow` | 晨光草甸 | 10 | `bloomfield` | `boss` | `bloomburst`, `verdant`, `blossomsalvo` |
+| `pond` | 露珠池塘 | 10 | `tide` | `bubbleking` | `ebbaegis`, `ripple`, `tidalcrush` |
+| `hills` | 晚霞山岗 | 10 | `wind` | `galecrow` | `tailwind`, `whirlwind`, `galeblades` |
+| `grove` | 萤暮林地 | 20 | `sporechain` | `sporeking` | `sporebloom`, `fireflies`, `sporecascade` |
+| `lavender` | 紫露花田 | 20 | `pollen` | `flutterqueen` | `pollenfrenzy`, `beeswarm`, `honeytempest` |
+| `bramble` | 莓果灌丛 | 20 | `thornwall` | `bramblebear` | `thornnova`, `berryfeast`, `bramblecrown` |
+| `nocturne` | 星语夜原 | 30 | `nightfall` | `starelk` | `fullmoon`, `meteor`, `constellationfall` |
+| `summit` | 破晓之巅 | 30 | `beacon` | `nightowl` | `beaconsurge`, `dawnnova`, `dawnlance` |
+| `orchard` | 琥珀果园 | 20 | `orchard` | `ciderwyrm` | `goldapple`, `seedwhirl`, `harvestcomet` |
+| `snowbell` | 雪铃庭院 | 20 | `frostseal` | `frosthare` | `snowglobe`, `frostbell`, `frostcarillon` |
+| `mirage` | 彩镜沙洲 | 30 | `prismfield` | `miragewhale` | `prismshard`, `mirrorbloom`, `prismstorm` |
+| `clockwork` | 晨钟庭 | 30 | `bellring` | `clockrooster` | `clockkey`, `bellnova`, `grandchime` |
 
 ## 武器与超武
 
@@ -168,7 +168,7 @@ mechanic：`splinter`, `thorncore`, `vow`, `allin`, `slowburn`, `dawnfield`, `st
 
 通用：`magnet`, `nuke`, `timestop`, `heal`, `frenzy`, `aegis`, `xpburst`。
 
-地图专属：`bloomburst`, `verdant`, `ebbaegis`, `ripple`, `tailwind`, `whirlwind`, `sporebloom`, `fireflies`, `pollenfrenzy`, `beeswarm`, `thornnova`, `berryfeast`, `fullmoon`, `meteor`, `beaconsurge`, `dawnnova`, `goldapple`, `seedwhirl`, `snowglobe`, `frostbell`, `prismshard`, `mirrorbloom`, `clockkey`, `bellnova`。
+地图专属：`bloomburst`, `verdant`, `blossomsalvo`, `ebbaegis`, `ripple`, `tidalcrush`, `tailwind`, `whirlwind`, `galeblades`, `sporebloom`, `fireflies`, `sporecascade`, `pollenfrenzy`, `beeswarm`, `honeytempest`, `thornnova`, `berryfeast`, `bramblecrown`, `fullmoon`, `meteor`, `constellationfall`, `beaconsurge`, `dawnnova`, `dawnlance`, `goldapple`, `seedwhirl`, `harvestcomet`, `snowglobe`, `frostbell`, `frostcarillon`, `prismshard`, `mirrorbloom`, `prismstorm`, `clockkey`, `bellnova`, `grandchime`。
 
 ## 商店强化
 

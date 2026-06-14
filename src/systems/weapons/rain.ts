@@ -56,14 +56,19 @@ export class RainWeapon extends Weapon {
     const ctx = this.ctx;
     if (!ctx.run.running) return;
     const img = ctx.scene.add.image(x, y - 180, 'w_drop').setDepth(1e6).setAlpha(0.9).setScale(1.2);
+    const streak = ctx.scene.add.graphics().setDepth(1e6 - 1).setAlpha(0.5);
+    streak.lineStyle(this.evolved ? 4 : 2.5, PAL.rain, this.evolved ? 0.34 : 0.24);
+    streak.lineBetween(x, y - 180, x, y - 18);
     ctx.scene.tweens.add({
       targets: img, y, duration: 360, ease: 'Quad.easeIn',
       onComplete: () => {
         img.destroy();
+        streak.destroy();
         if (!ctx.run.running) return;
         const r = this.area();
         ctx.fx.ring(x, y, PAL.rain, r / 42, 0.3);
-        ctx.fx.burst(x, y, { tex: 'p_dot', color: PAL.rain, count: 7, speed: 110, life: 0.4, scale: 0.7, grav: 160 });
+        ctx.fx.ring(x, y, 0xe8f8ff, (r * 0.58) / 42, 0.22);
+        ctx.fx.burst(x, y, { tex: 'p_dot', color: PAL.rain, count: this.evolved ? 10 : 7, speed: 120, life: 0.42, scale: 0.72, grav: 160 });
         ctx.addZone({ x, y, r: r * 0.95, dur: 2.6, effect: 'slow' });
         ctx.grid.queryCircle(x, y, r, queryOut);
         for (const e of queryOut) {
@@ -71,6 +76,7 @@ export class RainWeapon extends Weapon {
         }
       },
     });
+    ctx.scene.tweens.add({ targets: streak, alpha: 0, duration: 360, ease: 'Quad.easeIn' });
   }
 
   onEvolve(): void {

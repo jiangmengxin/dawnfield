@@ -58,6 +58,7 @@ export class BirdWeapon extends Weapon {
       return;
     }
     SFX.swish();
+    ctx.fx.ring(ctx.player.x, ctx.player.y, BIRD_COLOR, this.evolved ? 2.0 : 1.45, 0.36);
     let staged = 0;
     for (const b of this.birds) {
       if (b.mode !== 'orbit') continue;
@@ -105,7 +106,10 @@ export class BirdWeapon extends Weapon {
         b.img.setFlipX(dx < 0);
         // 俯冲尾羽（进化更猛：更密更亮）
         if (ctx.run.frame % 2 === 0) {
-          ctx.fx.burst(b.img.x, b.img.y, { tex: 'p_dot', color: BIRD_COLOR, count: this.evolved ? 2 : 1, speed: 14, life: 0.32, scale: this.evolved ? 0.95 : 0.6, alpha: 0.7 });
+          ctx.fx.burst(b.img.x, b.img.y, {
+            tex: 'p_petal', color: BIRD_COLOR, count: this.evolved ? 2 : 1,
+            speed: this.evolved ? 34 : 18, life: 0.34, scale: this.evolved ? 0.9 : 0.62, alpha: 0.72, spin: true,
+          });
         }
         this.contact(b, now);
         if (b.diveT <= 0 || d < 16) b.mode = 'return';
@@ -136,7 +140,7 @@ export class BirdWeapon extends Weapon {
       this.hitMap.set(e, now);
       const ea = Math.atan2(e.y - b.img.y, e.x - b.img.x);
       ctx.hitEnemy(e, this.dmg(), { kb: 150, kx: Math.cos(ea), ky: Math.sin(ea), pitch: 1.4 });
-      ctx.fx.burst(e.x, e.y, { tex: 'p_star', color: BIRD_COLOR, count: this.evolved ? 4 : 2, speed: 90, life: 0.3, scale: 0.75, alpha: 0.9 });
+      ctx.fx.burst(e.x, e.y, { tex: 'p_star', color: BIRD_COLOR, count: this.evolved ? 6 : 3, speed: 112, life: 0.32, scale: 0.78, alpha: 0.9, spin: true });
     }
   }
 

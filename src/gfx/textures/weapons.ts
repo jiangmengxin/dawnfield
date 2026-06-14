@@ -300,28 +300,28 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
   });
 
   // 莓果弹（弹弓抛射物：圆莓 + 籽点 + 小叶蒂）
-  makeTex(scene, 'w_berry', 22, 22, (ctx) => {
+  makeTex(scene, 'w_berry', 26, 26, (ctx) => {
     ctx.beginPath();
-    ctx.arc(11, 12, 8, 0, Math.PI * 2);
+    ctx.arc(13, 14, 9.4, 0, Math.PI * 2);
     ctx.fillStyle = cssOf(0xd87888);
     ctx.fill();
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 2.1;
     ctx.strokeStyle = cssOf(0xa85060);
     ctx.stroke();
     // 籽点
     ctx.fillStyle = 'rgba(255,240,224,0.85)';
     for (const [dx, dy] of [[-3.5, -1], [0.5, 2.5], [3.8, -1.5], [-1, -4], [1.5, -0.5]] as const) {
       ctx.beginPath();
-      ctx.ellipse(11 + dx, 12 + dy, 0.9, 1.3, 0.4, 0, Math.PI * 2);
+      ctx.ellipse(13 + dx, 14 + dy, 1.05, 1.45, 0.4, 0, Math.PI * 2);
       ctx.fill();
     }
     // 叶蒂
-    petalShape(ctx, 9, 3.5, 7, 2.6, -1.0, '#A8D088', '#74A858');
-    petalShape(ctx, 13.5, 3.5, 7, 2.6, 1.0, '#A8D088', '#74A858');
+    petalShape(ctx, 10.5, 4, 8, 3, -1.0, '#A8D088', '#74A858');
+    petalShape(ctx, 16, 4, 8, 3, 1.0, '#A8D088', '#74A858');
     // 高光
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.beginPath();
-    ctx.ellipse(8, 9, 2, 1.3, -0.5, 0, Math.PI * 2);
+    ctx.ellipse(9.5, 10.5, 2.4, 1.5, -0.5, 0, Math.PI * 2);
     ctx.fill();
   });
 
@@ -417,56 +417,73 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
   });
 
   // 喇叭花种子弹
-  makeTex(scene, 'w_bugleseed', 14, 18, (ctx) => {
-    softGlow(ctx, 7, 9, 6.5, 'rgba(168,184,236,0.7)');
+  makeTex(scene, 'w_bugleseed', 18, 22, (ctx) => {
+    softGlow(ctx, 9, 11, 8.5, 'rgba(168,184,236,0.78)');
     ctx.beginPath();
-    ctx.ellipse(7, 9, 3.2, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(9, 11, 4.1, 6.2, 0, 0, Math.PI * 2);
     ctx.fillStyle = cssOf(0xa8b8ec);
     ctx.fill();
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.7;
     ctx.strokeStyle = cssOf(0x7088c8);
     ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
     ctx.beginPath();
-    ctx.ellipse(6, 7, 1.1, 1.8, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(7.7, 8.4, 1.4, 2.1, 0.3, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(9, 5);
+    ctx.lineTo(9, 17);
+    ctx.stroke();
   });
 
-  // 蒲公英种子（绒伞朝上 + 细茎 + 小籽）
-  makeTex(scene, 'w_seed', 18, 24, (ctx) => {
-    const cx = 9;
+  // 蒲公英种子（绒伞朝上 + 细茎 + 小籽；带暖色描边，避免纸底上消失）
+  makeTex(scene, 'w_seed', 24, 30, (ctx) => {
+    softGlow(ctx, 12, 12, 13, 'rgba(216,232,188,0.5)');
+    const cx = 12;
     // 放射绒毛
-    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-    ctx.lineWidth = 1.3;
+    ctx.strokeStyle = 'rgba(132,148,96,0.42)';
+    ctx.lineWidth = 2.8;
     ctx.lineCap = 'round';
-    for (let i = 0; i < 7; i++) {
-      const a = -Math.PI / 2 + (i - 3) * 0.34;
+    for (let i = 0; i < 9; i++) {
+      const a = -Math.PI / 2 + (i - 4) * 0.28;
       ctx.beginPath();
-      ctx.moveTo(cx, 9);
-      ctx.lineTo(cx + Math.cos(a) * 7, 9 + Math.sin(a) * 7);
+      ctx.moveTo(cx, 12);
+      ctx.lineTo(cx + Math.cos(a) * 9, 12 + Math.sin(a) * 9);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 9; i++) {
+      const a = -Math.PI / 2 + (i - 4) * 0.28;
+      ctx.beginPath();
+      ctx.moveTo(cx, 12);
+      ctx.lineTo(cx + Math.cos(a) * 9, 12 + Math.sin(a) * 9);
       ctx.stroke();
     }
     // 绒毛尖小点
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    for (let i = 0; i < 7; i++) {
-      const a = -Math.PI / 2 + (i - 3) * 0.34;
+    for (let i = 0; i < 9; i++) {
+      const a = -Math.PI / 2 + (i - 4) * 0.28;
       ctx.beginPath();
-      ctx.arc(cx + Math.cos(a) * 7, 9 + Math.sin(a) * 7, 0.9, 0, Math.PI * 2);
+      ctx.arc(cx + Math.cos(a) * 9, 12 + Math.sin(a) * 9, 1.05, 0, Math.PI * 2);
       ctx.fill();
     }
     // 茎
     ctx.strokeStyle = cssOf(PAL.puffDeep);
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.7;
     ctx.beginPath();
-    ctx.moveTo(cx, 9);
-    ctx.lineTo(cx, 19);
+    ctx.moveTo(cx, 12);
+    ctx.lineTo(cx, 24);
     ctx.stroke();
     // 籽
     ctx.beginPath();
-    ctx.ellipse(cx, 20.5, 1.8, 2.4, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx, 25.5, 2.4, 3.1, 0, 0, Math.PI * 2);
     ctx.fillStyle = '#C8A868';
     ctx.fill();
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.2;
     ctx.strokeStyle = cssOf(PAL.puffDeep);
     ctx.stroke();
   });
@@ -474,33 +491,33 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
   // ===== M22 批次 D/E/F 弹体/特效/地皮 =====
 
   // 柳叶镖弹体（朝右，origin 中心；锋利柳叶 + 叶脉）
-  makeTex(scene, 'w_dagger', 30, 12, (ctx) => {
+  makeTex(scene, 'w_dagger', 34, 14, (ctx) => {
     ctx.beginPath();
-    ctx.moveTo(28, 6);
-    ctx.quadraticCurveTo(14, 1.5, 3, 6);
-    ctx.quadraticCurveTo(14, 10.5, 28, 6);
+    ctx.moveTo(32, 7);
+    ctx.quadraticCurveTo(16, 1.7, 3, 7);
+    ctx.quadraticCurveTo(16, 12.3, 32, 7);
     ctx.closePath();
     ctx.fillStyle = cssOf(0xa8d088);
     ctx.fill();
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.7;
     ctx.lineJoin = 'round';
     ctx.strokeStyle = cssOf(0x74a858);
     ctx.stroke();
     // 主脉
     ctx.strokeStyle = cssOf(0x74a858);
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.moveTo(26, 6);
-    ctx.lineTo(4, 6);
+    ctx.moveTo(30, 7);
+    ctx.lineTo(4, 7);
     ctx.stroke();
     // 侧脉
     ctx.lineWidth = 0.7;
-    for (const x of [10, 16, 21]) {
+    for (const x of [11, 18, 24]) {
       ctx.beginPath();
-      ctx.moveTo(x, 6);
-      ctx.lineTo(x + 3, 3.8);
-      ctx.moveTo(x, 6);
-      ctx.lineTo(x + 3, 8.2);
+      ctx.moveTo(x, 7);
+      ctx.lineTo(x + 3.5, 4.3);
+      ctx.moveTo(x, 7);
+      ctx.lineTo(x + 3.5, 9.7);
       ctx.stroke();
     }
   });
@@ -566,27 +583,31 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
   });
 
   // 朝露瓶弹体（小药瓶）
-  makeTex(scene, 'w_flaskbottle', 16, 22, (ctx) => {
+  makeTex(scene, 'w_flaskbottle', 20, 28, (ctx) => {
     ctx.beginPath();
-    ctx.moveTo(6, 4);
-    ctx.lineTo(6, 8);
-    ctx.quadraticCurveTo(2, 12, 3, 18);
-    ctx.quadraticCurveTo(5, 21, 8, 21);
-    ctx.quadraticCurveTo(11, 21, 13, 18);
-    ctx.quadraticCurveTo(14, 12, 10, 8);
-    ctx.lineTo(10, 4);
+    ctx.moveTo(7.3, 5);
+    ctx.lineTo(7.3, 10);
+    ctx.quadraticCurveTo(2.5, 15, 3.8, 23);
+    ctx.quadraticCurveTo(6.2, 26.2, 10, 26.2);
+    ctx.quadraticCurveTo(13.8, 26.2, 16.2, 23);
+    ctx.quadraticCurveTo(17.5, 15, 12.7, 10);
+    ctx.lineTo(12.7, 5);
     ctx.closePath();
     ctx.fillStyle = 'rgba(200,236,232,0.92)';
     ctx.fill();
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.8;
     ctx.strokeStyle = cssOf(0x5fa8a0);
     ctx.stroke();
     ctx.fillStyle = cssOf(0x88d0c8);
     ctx.beginPath();
-    ctx.ellipse(8, 16, 4.4, 3.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(10, 20, 5.5, 4.4, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#A07048';
-    ctx.fillRect(5, 2, 6, 3);
+    ctx.fillRect(6, 2, 8, 4);
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.beginPath();
+    ctx.ellipse(7.7, 15, 1.4, 3, 0.25, 0, Math.PI * 2);
+    ctx.fill();
   });
 
   // 朝露地汐（burn 地皮：青露椭圆，带涟漪）
@@ -663,28 +684,41 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
   });
 
   // 跳跳豆弹珠（发光玻璃珠）
-  makeTex(scene, 'w_bead', 22, 22, (ctx) => {
-    softGlow(ctx, 11, 11, 10, 'rgba(232,124,192,0.7)');
+  makeTex(scene, 'w_bead', 26, 26, (ctx) => {
+    softGlow(ctx, 13, 13, 12, 'rgba(232,124,192,0.78)');
     ctx.beginPath();
-    ctx.arc(11, 11, 7, 0, Math.PI * 2);
+    ctx.arc(13, 13, 8.4, 0, Math.PI * 2);
     ctx.fillStyle = cssOf(0xf0a0d8);
     ctx.fill();
-    ctx.lineWidth = 1.6;
+    ctx.lineWidth = 1.9;
     ctx.strokeStyle = cssOf(0xc05898);
     ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,0.9)';
     ctx.beginPath();
-    ctx.arc(8.5, 8.5, 2.4, 0, Math.PI * 2);
+    ctx.arc(10, 10, 2.8, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(13, 13, 5.2, 0.2, Math.PI * 1.25);
+    ctx.stroke();
   });
 
-  // 晨星杖星弹（小四芒星 + 柔光）
-  makeTex(scene, 'w_wandbolt', 18, 18, (ctx) => {
-    softGlow(ctx, 9, 9, 8.5, 'rgba(255,224,160,0.8)');
-    star(ctx, 9, 9, 4, 7.5, 2.6, cssOf(0xffe8a8), cssOf(0xd0a040));
+  // 晨星杖星弹（四芒星 + 外晕，和叶镖/种子弹拉开）
+  makeTex(scene, 'w_wandbolt', 24, 24, (ctx) => {
+    softGlow(ctx, 12, 12, 11, 'rgba(255,224,160,0.9)');
+    star(ctx, 12, 12, 4, 10, 3.4, cssOf(0xffe8a8), cssOf(0xd0a040));
+    ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(4, 12);
+    ctx.lineTo(20, 12);
+    ctx.moveTo(12, 4);
+    ctx.lineTo(12, 20);
+    ctx.stroke();
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
     ctx.beginPath();
-    ctx.arc(9, 9, 2, 0, Math.PI * 2);
+    ctx.arc(12, 12, 2.4, 0, Math.PI * 2);
     ctx.fill();
   });
 
@@ -761,61 +795,65 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
     ctx.fill();
   });
 
-  // 光矛长刃（朝右，origin 在柄端 [0.12,0.5]；发光晨光长矛）
-  makeTex(scene, 'w_sword', 70, 18, (ctx) => {
-    softGlow(ctx, 38, 9, 13, 'rgba(248,238,192,0.45)');
+  // 光矛长刃（朝右，origin 在柄端 [0.12,0.5]；加厚发光晨光长矛）
+  makeTex(scene, 'w_sword', 84, 24, (ctx) => {
+    softGlow(ctx, 45, 12, 18, 'rgba(248,238,192,0.55)');
     // 矛身（长三角光刃，向右收尖）
     ctx.beginPath();
-    ctx.moveTo(9, 5);
-    ctx.lineTo(64, 9);
-    ctx.lineTo(9, 13);
+    ctx.moveTo(10, 5);
+    ctx.lineTo(78, 12);
+    ctx.lineTo(10, 19);
     ctx.closePath();
     ctx.fillStyle = cssOf(0xfaf0c8);
     ctx.fill();
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     ctx.strokeStyle = cssOf(0xd8c068);
     ctx.stroke();
     // 中脊亮线
     ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.moveTo(11, 9);
-    ctx.lineTo(60, 9);
+    ctx.moveTo(12, 12);
+    ctx.lineTo(72, 12);
     ctx.stroke();
     // 矛柄光握
     ctx.strokeStyle = cssOf(0xe0c878);
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(3, 9);
-    ctx.lineTo(9, 9);
+    ctx.moveTo(3, 12);
+    ctx.lineTo(10, 12);
     ctx.stroke();
   });
 
   // 群蜂弹体（条纹小蜂 + 翅）
-  makeTex(scene, 'w_bee', 16, 14, (ctx) => {
+  makeTex(scene, 'w_bee', 20, 18, (ctx) => {
     ctx.fillStyle = 'rgba(255,255,255,0.82)';
     for (const dy of [-1, 1]) {
       ctx.beginPath();
-      ctx.ellipse(7, 7 + dy * 3, 3.6, 2.2, dy * 0.5, 0, Math.PI * 2);
+      ctx.ellipse(8.5, 9 + dy * 3.8, 4.4, 2.6, dy * 0.5, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.beginPath();
-    ctx.ellipse(9, 7, 5.5, 4.2, 0, 0, Math.PI * 2);
+    ctx.ellipse(11, 9, 6.5, 5, 0, 0, Math.PI * 2);
     ctx.fillStyle = cssOf(0xf0c850);
     ctx.fill();
-    ctx.lineWidth = 1.3;
+    ctx.lineWidth = 1.6;
     ctx.strokeStyle = cssOf(0xb08828);
     ctx.stroke();
     ctx.strokeStyle = cssOf(0x6a5a48);
-    ctx.lineWidth = 1.4;
-    for (const dx of [-1.5, 1.5]) {
+    ctx.lineWidth = 1.6;
+    for (const dx of [-1.8, 1.8]) {
       ctx.beginPath();
-      ctx.moveTo(9 + dx, 3.6);
-      ctx.lineTo(9 + dx, 10.4);
+      ctx.moveTo(11 + dx, 4.6);
+      ctx.lineTo(11 + dx, 13.4);
       ctx.stroke();
     }
+    ctx.fillStyle = cssOf(0x5a5248);
+    ctx.beginPath();
+    ctx.arc(16.5, 8.2, 0.9, 0, Math.PI * 2);
+    ctx.fill();
   });
 
   // 坠星弹体（发光流星，origin 中心；星芒 + 暖金核）
@@ -832,26 +870,26 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
     ctx.fill();
   });
 
-  // 凛霜冰锥（朝右尖锥，origin 中心）
-  makeTex(scene, 'w_icicle', 26, 16, (ctx) => {
-    softGlow(ctx, 11, 8, 9, 'rgba(168,224,240,0.6)');
+  // 凛霜冰锥（朝右尖锥，origin 中心；外晕和粗描边提高移动端读感）
+  makeTex(scene, 'w_icicle', 32, 20, (ctx) => {
+    softGlow(ctx, 14, 10, 12, 'rgba(168,224,240,0.72)');
     ctx.beginPath();
-    ctx.moveTo(24, 8);
-    ctx.lineTo(5, 3.5);
-    ctx.lineTo(2, 8);
-    ctx.lineTo(5, 12.5);
+    ctx.moveTo(30, 10);
+    ctx.lineTo(7, 4);
+    ctx.lineTo(2, 10);
+    ctx.lineTo(7, 16);
     ctx.closePath();
     ctx.fillStyle = cssOf(0xd2f0fa);
     ctx.fill();
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = 1.8;
     ctx.lineJoin = 'round';
     ctx.strokeStyle = cssOf(0x7ec4dc);
     ctx.stroke();
     ctx.strokeStyle = 'rgba(255,255,255,0.85)';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.moveTo(20, 8);
-    ctx.lineTo(6, 8);
+    ctx.moveTo(25, 10);
+    ctx.lineTo(7, 10);
     ctx.stroke();
   });
 

@@ -10,8 +10,10 @@ const BOMB_COLOR = 0xa8d8ec;
 interface Bomb {
   img: Phaser.GameObjects.Image;
   shadow: Phaser.GameObjects.Image;
+  marker: Phaser.GameObjects.Image;
   phase: 'fly' | 'fuse';
   t: number; // fly: 已飞时长 / fuse: 剩余引信
+  pulseT: number;
   sx: number;
   sy: number;
   tx: number;
@@ -66,8 +68,9 @@ export class BombWeapon extends Weapon {
         ty = ctx.player.y + Math.sin(a) * d;
       }
       const shadow = ctx.scene.add.image(tx, ty, 'shadow').setDepth(6).setAlpha(0.5).setScale(0.9, 0.55);
+      const marker = ctx.scene.add.image(tx, ty, 'p_ring').setDepth(7).setTint(BOMB_COLOR).setAlpha(0.34).setScale(0.34);
       const img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_bomb').setDepth(1e6 + 2);
-      this.bombs.push({ img, shadow, phase: 'fly', t: 0, sx: ctx.player.x, sy: ctx.player.y, tx, ty, flyT: flyT * (0.92 + i * 0.08) });
+      this.bombs.push({ img, shadow, marker, phase: 'fly', t: 0, pulseT: 0, sx: ctx.player.x, sy: ctx.player.y, tx, ty, flyT: flyT * (0.92 + i * 0.08) });
     }
   }
 
@@ -82,10 +85,13 @@ export class BombWeapon extends Weapon {
         b.img.y = b.sy + (b.ty - b.sy) * k - lift;
         b.img.rotation += dt * 5;
         b.img.setScale(1 + Math.sin(k * Math.PI) * 0.4);
+        b.marker.setScale(0.34 + Math.sin(b.t * 12) * 0.04).setAlpha(0.23 + Math.sin(b.t * 12) * 0.08);
         if (k >= 1) {
           b.phase = 'fuse';
           b.t = W_BOMB.fuse;
           b.img.setScale(1).setRotation(0).setPosition(b.tx, b.ty);
+          b.marker.destroy();
+          this.ctx.fx.ring(b.tx, b.ty, BOMB_COLOR, 0.86, 0.22);
         }
       } else {
         b.t -= dt;
@@ -93,6 +99,11 @@ export class BombWeapon extends Weapon {
         const grow = W_BOMB.fuse - b.t;
         b.img.setScale((1 + grow * 0.6) * (1 + Math.sin(grow * 26) * 0.04));
         b.img.setAlpha(0.8 + Math.sin(grow * 22) * 0.18);
+        b.pulseT -= dt;
+        if (b.pulseT <= 0) {
+          b.pulseT = 0.12;
+          this.ctx.fx.ring(b.tx, b.ty, BOMB_COLOR, 0.62 + grow * 0.18, 0.18);
+        }
         if (b.t <= 0) {
           this.explode(b.tx, b.ty, this.dmg(), this.blastR(), true);
           b.img.destroy();
@@ -122,6 +133,7 @@ export class BombWeapon extends Weapon {
     SFX.splash();
     shakeCam(ctx.scene, main ? 130 : 70, main ? 0.0045 : 0.0025);
     ctx.fx.ring(x, y, BOMB_COLOR, r / 42, 0.45);
+    ctx.fx.ring(x, y, 0xffffff, (r * 0.58) / 42, 0.24);
     // 破裂水沫（小泡 + 水珠）
     ctx.fx.burst(x, y, { tex: 'p_dot', color: BOMB_COLOR, count: main ? 14 : 7, speed: main ? 230 : 150, life: 0.5, scale: 0.9, grav: 90 });
     ctx.fx.burst(x, y, { tex: 'p_dot', color: 0xffffff, count: main ? 8 : 4, speed: 150, life: 0.32, scale: 0.6, alpha: 0.9 });
@@ -136,13 +148,14 @@ export class BombWeapon extends Weapon {
         const a = (i / W_BOMB.evoCluster) * Math.PI * 2 + Math.random() * 0.5;
         const d = r * 0.7;
         const spark = ctx.scene.add.image(x, y, 'w_bomb').setDepth(1e6 + 2).setScale(0.6);
+        ctx.fx.burst(x, y, { tex: 'p_dot', color: BOMB_COLOR, count: 1, speed: 70, life: 0.25, scale: 0.48, alpha: 0.76 });
         this.clusters.push({ img: spark, sx: x, sy: y, tx: x + Math.cos(a) * d, ty: y + Math.sin(a) * d, t: 0.24, dmg: dmg * W_BOMB.clusterDmgK, r: r * W_BOMB.clusterBlastK });
       }
     }
   }
 
   destroy(): void {
-    this.bombs.forEach((b) => { b.img.destroy(); b.shadow.destroy(); });
+    this.bombs.forEach((b) => { b.img.destroy(); b.shadow.destroy(); b.marker.destroy(); });
     this.clusters.forEach((c) => c.img.destroy());
   }
 }

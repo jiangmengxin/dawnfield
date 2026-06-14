@@ -10,12 +10,14 @@ const DEW_COLOR = 0x88d0c8;
 class Flask {
   private img: Phaser.GameObjects.Image;
   private shadow: Phaser.GameObjects.Image;
+  private marker: Phaser.GameObjects.Image;
   private t = 0;
   private sx: number;
   private sy: number;
+  private trailT = 0;
 
   constructor(
-    ctx: CombatContext,
+    private ctx: CombatContext,
     private tx: number,
     private ty: number,
     private flyT: number,
@@ -24,7 +26,8 @@ class Flask {
     this.sx = ctx.player.x;
     this.sy = ctx.player.y;
     this.shadow = ctx.scene.add.image(tx, ty, 'shadow').setDepth(6).setAlpha(0.5).setScale(0.8, 0.5);
-    this.img = ctx.scene.add.image(this.sx, this.sy, 'w_flaskbottle').setDepth(1e6 + 2);
+    this.marker = ctx.scene.add.image(tx, ty, 'p_ring').setDepth(7).setTint(DEW_COLOR).setAlpha(0.3).setScale(0.28);
+    this.img = ctx.scene.add.image(this.sx, this.sy, 'w_flaskbottle').setDepth(1e6 + 2).setScale(1.12);
   }
 
   update(dt: number): boolean {
@@ -34,6 +37,12 @@ class Flask {
     this.img.x = this.sx + (this.tx - this.sx) * k;
     this.img.y = this.sy + (this.ty - this.sy) * k - lift;
     this.img.rotation += dt * 6;
+    this.marker.setScale(0.28 + Math.sin(this.t * 11) * 0.035).setAlpha(0.2 + Math.sin(this.t * 11) * 0.08);
+    this.trailT -= dt;
+    if (this.trailT <= 0) {
+      this.trailT = 0.055;
+      this.ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_dot', color: DEW_COLOR, count: 1, speed: 18, life: 0.28, scale: 0.46, alpha: 0.62 });
+    }
     if (k >= 1) {
       this.kill();
       this.onLand(this.tx, this.ty);
@@ -45,6 +54,7 @@ class Flask {
   kill(): void {
     this.img.destroy();
     this.shadow.destroy();
+    this.marker.destroy();
   }
 }
 
@@ -93,7 +103,9 @@ export class FlaskWeapon extends Weapon {
     const dps = this.poolDps();
     SFX.splash();
     ctx.fx.ring(x, y, DEW_COLOR, r / 42, 0.4);
-    ctx.fx.burst(x, y, { tex: 'p_dot', color: DEW_COLOR, count: 8, speed: 150, life: 0.4, scale: 0.8, grav: 120 });
+    ctx.fx.ring(x, y, 0xe8fff6, (r * 0.66) / 42, 0.26);
+    ctx.fx.burst(x, y, { tex: 'p_dot', color: DEW_COLOR, count: 10, speed: 165, life: 0.44, scale: 0.86, grav: 120 });
+    ctx.fx.burst(x, y, { tex: 'p_star', color: 0xe8fff6, count: 5, speed: 94, life: 0.28, scale: 0.58, alpha: 0.8, spin: true });
     // 落地即时轻伤
     ctx.grid.queryCircle(x, y, r, queryOut);
     for (const e of queryOut) ctx.hitEnemy(e, dps * W_FLASK.impactK, { kb: 60, kx: 0, ky: 0, pitch: 1.0 });

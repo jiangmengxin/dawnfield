@@ -1,5 +1,5 @@
-// M19 掉落道具数据 sanity：通用池规模 / 每图专属 ≥2 / scope 归属 / id↔图标↔效果配齐 / 加权抽取有效
-// 这些是「五种以上通用 + 每图至少两种专属」的验收口径，调表后若有意变更需同步本文件
+// M19+ 掉落道具数据 sanity：通用池规模 / 每图专属 ≥3 / 强杀伤标记 / scope 归属 / id↔图标↔效果配齐 / 加权抽取有效
+// 这些是「五种以上通用 + 每图至少三种专属且至少一件强杀伤」的验收口径，调表后若有意变更需同步本文件
 import { describe, expect, it } from 'vitest';
 import { ALL_DROPS, COMMON_DROPS, DROP_ITEMS, rollCommonDrop, weightedDrop } from '../src/content/dropItems';
 import { MAPS } from '../src/content/maps';
@@ -34,11 +34,22 @@ describe('掉落道具数据表', () => {
 });
 
 describe('地图专属道具', () => {
-  it('每张地图 ≥2 种专属道具（需求），且全为 scope=map', () => {
+  it('每张地图 ≥3 种专属道具（需求），且全为 scope=map', () => {
     for (const m of MAPS) {
       expect(m.drops, `map ${m.id} 缺 drops`).toBeDefined();
-      expect(m.drops!.length, `map ${m.id} 专属道具不足 2`).toBeGreaterThanOrEqual(2);
+      expect(m.drops!.length, `map ${m.id} 专属道具不足 3`).toBeGreaterThanOrEqual(3);
       for (const id of m.drops!) expect(DROP_ITEMS[id].scope, `${id} 应为 map 专属`).toBe('map');
+    }
+  });
+
+  it('每张地图至少 1 件专属强杀伤道具（tags includes lethal），且稀有权重低于常规专属', () => {
+    for (const m of MAPS) {
+      const lethal = m.drops!.filter((id) => DROP_ITEMS[id].tags?.includes('lethal'));
+      expect(lethal.length, `map ${m.id} 缺强杀伤专属道具`).toBeGreaterThanOrEqual(1);
+      for (const id of lethal) {
+        expect(DROP_ITEMS[id].scope, `${id} 应为 map 专属`).toBe('map');
+        expect(DROP_ITEMS[id].weight, `${id} 应为稀有高光权重`).toBeLessThan(1);
+      }
     }
   });
 

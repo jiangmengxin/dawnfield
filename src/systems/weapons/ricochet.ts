@@ -13,6 +13,7 @@ class Bead {
   private vx: number;
   private vy: number;
   private life: number;
+  private trailT = 0;
   private hit = new Map<Enemy, number>();
 
   constructor(
@@ -40,6 +41,14 @@ class Bead {
     const sub = dt > 1 / 30 ? 2 : 1;
     for (let s = 0; s < sub; s++) this.step(dt / sub);
     this.img.rotation += dt * 6;
+    this.trailT -= dt;
+    if (this.trailT <= 0) {
+      this.trailT = this.evolved ? 0.035 : 0.055;
+      ctx.fx.burst(this.img.x, this.img.y, {
+        tex: this.evolved ? 'p_star' : 'p_dot', color: BEAD_COLOR,
+        count: 1, speed: 18, life: 0.28, scale: this.evolved ? 0.6 : 0.48, alpha: 0.68, spin: this.evolved,
+      });
+    }
     // 命中（久留可对同敌重复打，带间隔）
     ctx.grid.queryCircle(this.img.x, this.img.y, W_RICOCHET.hitR, queryOut);
     const sp = Math.hypot(this.vx, this.vy) || 1;
@@ -48,6 +57,7 @@ class Bead {
       if (now - last < W_RICOCHET.hitCd) continue;
       this.hit.set(e, now);
       ctx.hitEnemy(e, this.dmg, { kb: 110, kx: this.vx / sp, ky: this.vy / sp, pitch: 1.5 });
+      ctx.fx.burst(e.x, e.y, { tex: 'p_dot', color: BEAD_COLOR, count: this.evolved ? 3 : 2, speed: 82, life: 0.24, scale: 0.54, alpha: 0.82 });
     }
     return true;
   }
@@ -64,6 +74,8 @@ class Bead {
     else if (this.img.y > view.bottom - pad && this.vy > 0) { this.vy = -this.vy; this.img.y = view.bottom - pad; bounced = true; }
     if (bounced) {
       SFX.hit(1.4);
+      this.ctx.fx.ring(this.img.x, this.img.y, BEAD_COLOR, this.evolved ? 0.9 : 0.62, 0.22);
+      this.ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_dot', color: BEAD_COLOR, count: this.evolved ? 5 : 3, speed: 88, life: 0.24, scale: 0.56, alpha: 0.8 });
       if (this.evolved) {
         this.ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_star', color: BEAD_COLOR, count: 4, speed: 120, life: 0.3, scale: 0.7, spin: true });
       }

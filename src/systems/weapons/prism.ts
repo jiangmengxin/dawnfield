@@ -49,7 +49,8 @@ export class PrismWeapon extends Weapon {
     const sa = Math.sin(a);
     const x1 = x0 + ca * len;
     const y1 = y0 + sa * len;
-    const w = this.width();
+    const hitW = this.width();
+    const w = hitW * (this.evolved ? 1.22 : 1);
     const gr = ctx.scene.add.graphics().setDepth(1e6);
     const line = (lx0: number, ly0: number, lx1: number, ly1: number) => {
       gr.beginPath();
@@ -80,12 +81,13 @@ export class PrismWeapon extends Weapon {
       const proj = ex * ca + ey * sa;
       if (proj < -e.radius || proj > len + e.radius) continue;
       const perp = Math.abs(-ex * sa + ey * ca);
-      if (perp < w + e.radius) {
+      if (perp < hitW + e.radius) {
         ctx.hitEnemy(e, dmg, { kb: 60, kx: ca, ky: sa, pitch: 1.6 });
       }
     }
     // 进化：末端折射
     if (refract && this.evolved) {
+      ctx.fx.ring(x1, y1, 0xf8c8e0, 1.25, 0.28);
       ctx.fx.burst(x1, y1, { tex: 'p_dot', color: 0xf8c8e0, count: 6, speed: 90, life: 0.4, alpha: 0.9 });
       for (const s of [-1, 1]) {
         this.beam(x1, y1, a + s * 0.7, 280, dmg * W_PRISM.evoRefractK, false);

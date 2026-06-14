@@ -12,6 +12,7 @@ interface Knife {
   vx: number;
   vy: number;
   life: number;
+  trailT: number;
   hit: Set<Enemy>;
 }
 
@@ -40,8 +41,11 @@ export class DaggerWeapon extends Weapon {
     SFX.swish();
     for (let i = 0; i < n; i++) {
       const a = aim + (i - (n - 1) / 2) * W_DAGGER.spread;
-      const img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_dagger').setDepth(1e6).setRotation(a);
-      this.knives.push({ img, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life, hit: new Set() });
+      const img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_dagger')
+        .setDepth(1e6)
+        .setRotation(a)
+        .setScale(this.evolved ? 1.24 : 1.1);
+      this.knives.push({ img, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life, trailT: 0, hit: new Set() });
     }
   }
 
@@ -66,13 +70,22 @@ export class DaggerWeapon extends Weapon {
     k.img.x += k.vx * dt;
     k.img.y += k.vy * dt;
     const sp = Math.hypot(k.vx, k.vy) || 1;
+    k.trailT -= dt;
+    if (k.trailT <= 0) {
+      k.trailT = this.evolved ? 0.035 : 0.055;
+      ctx.fx.burst(k.img.x - (k.vx / sp) * 10, k.img.y - (k.vy / sp) * 10, {
+        tex: 'p_petal', color: DAGGER_COLOR, count: 1, speed: 18, life: 0.24,
+        scale: this.evolved ? 0.65 : 0.5, alpha: 0.72, spin: true,
+      });
+    }
     ctx.grid.queryCircle(k.img.x, k.img.y, 12, queryOut);
     for (const e of queryOut) {
       if (k.hit.has(e)) continue;
       k.hit.add(e);
       ctx.hitEnemy(e, this.dmg(), { kb: 90, kx: k.vx / sp, ky: k.vy / sp, pitch: 1.6 });
+      ctx.fx.burst(k.img.x, k.img.y, { tex: 'p_petal', color: DAGGER_COLOR, count: 2, speed: 62, life: 0.22, scale: 0.54, alpha: 0.78, spin: true });
       if (k.hit.size >= pierce) {
-        ctx.fx.burst(k.img.x, k.img.y, { tex: 'p_dot', color: DAGGER_COLOR, count: 3, speed: 60, life: 0.2, scale: 0.6, alpha: 0.8 });
+        ctx.fx.burst(k.img.x, k.img.y, { tex: 'p_petal', color: DAGGER_COLOR, count: 5, speed: 82, life: 0.26, scale: 0.68, alpha: 0.86, spin: true });
         return false;
       }
     }

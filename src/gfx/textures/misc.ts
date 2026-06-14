@@ -287,6 +287,84 @@ const DROP_ICONS: Record<DropItemId, (c: Ctx2D) => void> = {
     c.beginPath(); c.moveTo(x - 6, y + 4); c.quadraticCurveTo(x - 5, y - 7, x, y - 10); c.quadraticCurveTo(x + 5, y - 7, x + 6, y + 4); c.lineTo(x + 8, y + 7); c.lineTo(x - 8, y + 7); c.closePath();
     c.fillStyle = rad(c, x, y, 10, '#FFE28A', '#D89838'); c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#A86E2E'; c.stroke();
   },
+
+  // ===== lethal map drops =====
+  blossomsalvo: (c) => {
+    const x = 14, y = 14;
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; c.fillStyle = i % 2 ? '#F9B7D0' : '#FFDDE8'; c.beginPath(); c.ellipse(x + Math.cos(a) * 6, y + Math.sin(a) * 6, 4.5, 2.2, a, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.1; c.strokeStyle = '#D86F9A'; c.stroke(); }
+    star(c, x, y, 5, 5.2, 2.2, '#FFF2B8');
+    hi(c, 11.5, 10.5, 1.7, 1.1, -0.4, 0.65);
+  },
+  tidalcrush: (c) => {
+    const g = rad(c, 14, 14, 13, '#D8FAFF', '#56ADD8');
+    c.fillStyle = g; c.beginPath(); c.ellipse(14, 15, 11, 8, 0, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#378BB8'; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.85)'; c.lineWidth = 2; c.lineCap = 'round';
+    for (const y of [10, 14, 18]) { c.beginPath(); c.moveTo(5, y); c.bezierCurveTo(9, y - 4, 19, y + 4, 23, y); c.stroke(); }
+    hi(c, 10, 9.5, 2.6, 1.4, -0.4, 0.65);
+  },
+  galeblades: (c) => {
+    c.strokeStyle = '#6CA058'; c.lineWidth = 2.4; c.lineCap = 'round';
+    for (const [x1, y1, x2, y2] of [[5, 21, 23, 7], [4, 15, 20, 4], [9, 24, 25, 14]] as const) { c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo((x1 + x2) / 2 + 3, (y1 + y2) / 2, x2, y2); c.stroke(); }
+    c.strokeStyle = '#D9E98E'; c.lineWidth = 1.2;
+    for (const [x1, y1, x2, y2] of [[5, 21, 23, 7], [4, 15, 20, 4], [9, 24, 25, 14]] as const) { c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo((x1 + x2) / 2 + 3, (y1 + y2) / 2, x2, y2); c.stroke(); }
+    star(c, 21, 7, 4, 2.7, 1.1, '#FFF6B8');
+  },
+  sporecascade: (c) => {
+    softGlow(c, 14, 14, 12, 'rgba(143,200,120,0.45)');
+    for (const [x, y, r] of [[10, 9, 4.5], [17, 11, 5], [13, 18, 6], [21, 19, 3.4]] as const) { c.fillStyle = rad(c, x, y, r + 2, '#CBE89A', '#6FAE4E'); c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.2; c.strokeStyle = '#4F8A3A'; c.stroke(); c.fillStyle = 'rgba(255,255,255,0.85)'; c.beginPath(); c.arc(x - r * 0.3, y - r * 0.25, r * 0.22, 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = '#EDE3C8'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(10, 9); c.lineTo(17, 11); c.lineTo(13, 18); c.lineTo(21, 19); c.stroke();
+  },
+  honeytempest: (c) => {
+    softGlow(c, 14, 14, 12, 'rgba(240,200,80,0.45)');
+    for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2; const x = 14 + Math.cos(a) * 7; const y = 14 + Math.sin(a) * 5; c.fillStyle = '#FFE08A'; c.beginPath(); c.ellipse(x, y, 3.3, 2.1, a, 0, Math.PI * 2); c.fill(); c.lineWidth = 1; c.strokeStyle = '#9A6A2A'; c.stroke(); c.strokeStyle = '#5A4632'; c.beginPath(); c.moveTo(x - 1.8, y); c.lineTo(x + 1.8, y); c.stroke(); }
+    star(c, 14, 14, 5, 4.4, 1.8, '#FFF7C8');
+  },
+  bramblecrown: (c) => {
+    const x = 14, y = 14;
+    c.strokeStyle = '#A84860'; c.lineWidth = 2; c.lineJoin = 'round';
+    c.beginPath();
+    for (let i = 0; i < 14; i++) { const a = (i / 14) * Math.PI * 2; const r = i % 2 ? 7 : 11; c[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r); }
+    c.closePath(); c.stroke();
+    c.fillStyle = rad(c, x, y, 8, '#F8A8C0', '#C85878'); c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.4; c.strokeStyle = '#9A3F58'; c.stroke();
+    hi(c, 12, 11, 1.8, 1.2, -0.4, 0.6);
+  },
+  constellationfall: (c) => {
+    c.strokeStyle = '#A8B8F0'; c.lineWidth = 1.5; c.lineCap = 'round';
+    const pts = [[6, 20], [10, 8], [18, 6], [23, 15], [16, 22]] as const;
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]); c.stroke();
+    for (const [x, y] of pts) star(c, x, y, 4, 3.2, 1.3, '#FFFDF0');
+    softGlow(c, 14, 14, 13, 'rgba(168,184,240,0.28)');
+  },
+  dawnlance: (c) => {
+    c.fillStyle = rad(c, 14, 14, 12, '#FFF6C8', '#F4B43E'); c.beginPath(); c.moveTo(14, 3); c.lineTo(20, 14); c.lineTo(15.5, 25); c.lineTo(12.5, 25); c.lineTo(8, 14); c.closePath(); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#D09028'; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(14, 5); c.lineTo(14, 22); c.stroke();
+    star(c, 14, 7, 5, 4, 1.6, '#FFFFFF');
+  },
+  harvestcomet: (c) => {
+    c.fillStyle = 'rgba(240,168,80,0.45)'; c.beginPath(); c.moveTo(4, 22); c.lineTo(15, 12); c.lineTo(18, 16); c.closePath(); c.fill();
+    c.fillStyle = rad(c, 18, 10, 8, '#FFD88A', '#D87440'); c.beginPath(); c.arc(18, 10, 6.5, 0, Math.PI * 2); c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#A85E34'; c.stroke();
+    for (const [x, y] of [[8, 20], [12, 17], [6, 15]] as const) { c.fillStyle = '#B98842'; c.beginPath(); c.ellipse(x, y, 2, 2.8, -0.5, 0, Math.PI * 2); c.fill(); }
+    hi(c, 15.5, 7.5, 1.8, 1, -0.4, 0.65);
+  },
+  frostcarillon: (c) => {
+    c.beginPath(); c.moveTo(6, 19); c.quadraticCurveTo(8, 5, 14, 3); c.quadraticCurveTo(20, 5, 22, 19); c.lineTo(24, 22); c.lineTo(4, 22); c.closePath();
+    c.fillStyle = rad(c, 14, 12, 12, '#FFFFFF', '#88D8E8'); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#4E9CB8'; c.stroke();
+    c.strokeStyle = '#E8FBFF'; c.lineWidth = 1.4; for (const r of [4, 7, 10]) { c.beginPath(); c.arc(14, 13, r, Math.PI * 1.1, Math.PI * 1.9); c.stroke(); }
+    star(c, 14, 13, 6, 4.2, 1.7, '#FFFFFF');
+  },
+  prismstorm: (c) => {
+    const pts = [[14, 3], [24, 11], [21, 23], [7, 23], [4, 11]] as const;
+    c.fillStyle = rad(c, 14, 13, 14, '#FFFFFF', '#B99BE8'); c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) c.lineTo(p[0], p[1]); c.closePath(); c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#8A66C0'; c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.75)'; c.lineWidth = 1.1; for (let i = 0; i < pts.length; i++) { const a = pts[i]; const b = pts[(i + 2) % pts.length]; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke(); }
+    star(c, 14, 14, 5, 3.8, 1.5, '#FFFFFF');
+  },
+  grandchime: (c) => {
+    const x = 14, y = 15;
+    c.strokeStyle = '#E0B850'; c.lineWidth = 1.4; for (const r of [7, 10, 13]) { c.beginPath(); c.arc(x, y, r, Math.PI * 1.08, Math.PI * 1.92); c.stroke(); }
+    c.beginPath(); c.moveTo(x - 7, y + 5); c.quadraticCurveTo(x - 6, y - 8, x, y - 11); c.quadraticCurveTo(x + 6, y - 8, x + 7, y + 5); c.lineTo(x + 9, y + 8); c.lineTo(x - 9, y + 8); c.closePath();
+    c.fillStyle = rad(c, x, y, 11, '#FFE69A', '#D89838'); c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#A86E2E'; c.stroke();
+    star(c, x, y - 1, 4, 3.6, 1.4, '#FFF7D0');
+  },
 };
 
 export function createMiscTextures(scene: Phaser.Scene): void {

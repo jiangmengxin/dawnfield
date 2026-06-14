@@ -8,6 +8,8 @@ export type DropGlyph =
   | 'magnet' | 'burst' | 'clock' | 'heart' | 'wind' | 'shield' | 'star'
   | 'leaf' | 'drop' | 'wave' | 'swirl' | 'bee' | 'moon' | 'flame' | 'beacon';
 
+export type DropItemTag = 'lethal';
+
 export interface DropItemSpec {
   id: DropItemId;
   icon: string; // 贴图 key（= 'drop_' + id）
@@ -15,6 +17,7 @@ export interface DropItemSpec {
   glyph: DropGlyph; // 图标徽记
   scope: 'common' | 'map'; // 通用池 / 地图专属（由 MapSpec.drops 提供）
   weight: number; // 同池内相对掉落权重
+  tags?: DropItemTag[]; // 需求级语义标记：lethal = 地图专属强杀伤拾取物
   kind: 'instant' | 'timed';
   dur?: number; // 持续型时长（秒）
   // 以下为效果调参（按 id 取用；× 玩家属性在 handler 内处理）
@@ -52,50 +55,62 @@ export const DROP_ITEMS: Record<DropItemId, DropItemSpec> = {
   // ---------- meadow 晨光草甸（bloomfield） ----------
   bloomburst: { id: 'bloomburst', icon: 'drop_bloomburst', color: 0xf6b8c8, glyph: 'burst', scope: 'map', weight: 1, kind: 'instant', heal: 30, gemN: 10, gemV: 5, radius: 220 },
   verdant:    { id: 'verdant',    icon: 'drop_verdant',    color: 0x9ad07a, glyph: 'leaf',  scope: 'map', weight: 1, kind: 'timed', dur: 8, heal: 8 },
+  blossomsalvo: { id: 'blossomsalvo', icon: 'drop_blossomsalvo', color: 0xf6a8c8, glyph: 'burst', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'instant', dmg: 210, radius: 760, kb: 160 },
 
   // ---------- pond 露珠池塘（tide） ----------
   ebbaegis: { id: 'ebbaegis', icon: 'drop_ebbaegis', color: 0x78c0d8, glyph: 'drop', scope: 'map', weight: 1, kind: 'timed', dur: 6, radius: 520 },
   ripple:   { id: 'ripple',   icon: 'drop_ripple',   color: 0x88c8e8, glyph: 'wave', scope: 'map', weight: 1, kind: 'instant', dmg: 60, radius: 600, kb: 620 },
+  tidalcrush: { id: 'tidalcrush', icon: 'drop_tidalcrush', color: 0x68b8dc, glyph: 'wave', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'instant', dmg: 240, radius: 700, kb: 420 },
 
   // ---------- hills 晚霞山岗（wind） ----------
   tailwind:  { id: 'tailwind',  icon: 'drop_tailwind',  color: 0xd8e09a, glyph: 'wind',  scope: 'map', weight: 1, kind: 'timed', dur: 8, moveMul: 1.5, cdMul: 0.8 },
   whirlwind: { id: 'whirlwind', icon: 'drop_whirlwind', color: 0xb8d8c0, glyph: 'swirl', scope: 'map', weight: 1, kind: 'instant', dmg: 120, radius: 420, kb: 260 },
+  galeblades: { id: 'galeblades', icon: 'drop_galeblades', color: 0xd8e878, glyph: 'wind', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'instant', dmg: 230, radius: 760, kb: 300 },
 
   // ---------- grove 萤暮林地（sporechain） ----------
   sporebloom: { id: 'sporebloom', icon: 'drop_sporebloom', color: 0x9ac888, glyph: 'burst', scope: 'map', weight: 1, kind: 'instant', dmg: 30, radius: 320 },
   fireflies:  { id: 'fireflies',  icon: 'drop_fireflies',  color: 0xf0e088, glyph: 'star',  scope: 'map', weight: 1, kind: 'timed', dur: 8 },
+  sporecascade: { id: 'sporecascade', icon: 'drop_sporecascade', color: 0x8fc878, glyph: 'burst', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'instant', dmg: 180, radius: 720, kb: 150 },
 
   // ---------- lavender 紫露花田（pollen） ----------
   pollenfrenzy: { id: 'pollenfrenzy', icon: 'drop_pollenfrenzy', color: 0xc8a8e0, glyph: 'flame', scope: 'map', weight: 1, kind: 'timed', dur: 8, dmgMul: 1.6, areaMul: 1.25 },
   beeswarm:     { id: 'beeswarm',     icon: 'drop_beeswarm',     color: 0xf0c860, glyph: 'bee',   scope: 'map', weight: 1, kind: 'timed', dur: 8, dmg: 22, radius: 240 },
+  honeytempest: { id: 'honeytempest', icon: 'drop_honeytempest', color: 0xf0c850, glyph: 'bee', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'timed', dur: 6, dmg: 48, radius: 620 },
 
   // ---------- bramble 莓果灌丛（thornwall） ----------
   thornnova:  { id: 'thornnova',  icon: 'drop_thornnova',  color: 0xc86880, glyph: 'burst', scope: 'map', weight: 1, kind: 'instant', dmg: 150, radius: 360, kb: 420 },
   berryfeast: { id: 'berryfeast', icon: 'drop_berryfeast', color: 0xd86890, glyph: 'heart', scope: 'map', weight: 1, kind: 'instant', heal: 70 },
+  bramblecrown: { id: 'bramblecrown', icon: 'drop_bramblecrown', color: 0xc85878, glyph: 'burst', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'instant', dmg: 250, radius: 620, kb: 360 },
 
   // ---------- nocturne 星语夜原（nightfall） ----------
   fullmoon: { id: 'fullmoon', icon: 'drop_fullmoon', color: 0xe8e8f0, glyph: 'moon',  scope: 'map', weight: 1, kind: 'timed', dur: 8, moveMul: 1.15 },
   meteor:   { id: 'meteor',   icon: 'drop_meteor',   color: 0xa8b4e8, glyph: 'star',  scope: 'map', weight: 1, kind: 'instant', dmg: 90, radius: 480 },
+  constellationfall: { id: 'constellationfall', icon: 'drop_constellationfall', color: 0xa8b8f0, glyph: 'star', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'instant', dmg: 260, radius: 780, kb: 120 },
 
   // ---------- summit 破晓之巅（beacon） ----------
   beaconsurge: { id: 'beaconsurge', icon: 'drop_beaconsurge', color: 0xf0d878, glyph: 'beacon', scope: 'map', weight: 1, kind: 'instant', dmg: 80, radius: 600 },
   dawnnova:    { id: 'dawnnova',    icon: 'drop_dawnnova',    color: 0xfff2c0, glyph: 'flame',  scope: 'map', weight: 1, kind: 'instant', dmg: 200, radius: 640 },
+  dawnlance:   { id: 'dawnlance',   icon: 'drop_dawnlance',   color: 0xffe080, glyph: 'beacon', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'instant', dmg: 340, radius: 650, kb: 180 },
 
   // ---------- orchard 琥珀果园（orchard） ----------
   goldapple: { id: 'goldapple', icon: 'drop_goldapple', color: 0xf0b860, glyph: 'heart', scope: 'map', weight: 1, kind: 'instant', heal: 50, gemN: 6, gemV: 5 },
   seedwhirl: { id: 'seedwhirl', icon: 'drop_seedwhirl', color: 0xc8b86a, glyph: 'swirl', scope: 'map', weight: 1, kind: 'timed', dur: 8, dmg: 28, radius: 260, cdMul: 0.85 },
+  harvestcomet: { id: 'harvestcomet', icon: 'drop_harvestcomet', color: 0xf0a850, glyph: 'swirl', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'timed', dur: 5, dmg: 92, radius: 520 },
 
   // ---------- snowbell 雪铃庭院（frostseal） ----------
   snowglobe: { id: 'snowglobe', icon: 'drop_snowglobe', color: 0xb8d8f0, glyph: 'shield', scope: 'map', weight: 1, kind: 'timed', dur: 4 },
   frostbell: { id: 'frostbell', icon: 'drop_frostbell', color: 0xc8e8f0, glyph: 'wave', scope: 'map', weight: 1, kind: 'instant', dmg: 120, radius: 460, kb: 260 },
+  frostcarillon: { id: 'frostcarillon', icon: 'drop_frostcarillon', color: 0xb8e8f0, glyph: 'wave', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'timed', dur: 3.6, dmg: 160, radius: 620, kb: 260 },
 
   // ---------- mirage 彩镜沙洲（prismfield） ----------
   prismshard:  { id: 'prismshard',  icon: 'drop_prismshard',  color: 0xd8c8f0, glyph: 'star',  scope: 'map', weight: 1, kind: 'instant', dmg: 70, radius: 520, gemN: 4, gemV: 6 },
   mirrorbloom: { id: 'mirrorbloom', icon: 'drop_mirrorbloom', color: 0xf0d8f8, glyph: 'burst', scope: 'map', weight: 1, kind: 'timed', dur: 8, dmgMul: 1.35, areaMul: 1.18 },
+  prismstorm:  { id: 'prismstorm',  icon: 'drop_prismstorm',  color: 0xd0b8f0, glyph: 'star',  scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'instant', dmg: 190, radius: 760, kb: 100 },
 
   // ---------- clockwork 晨钟庭（bellring） ----------
   clockkey: { id: 'clockkey', icon: 'drop_clockkey', color: 0xe0c070, glyph: 'clock',  scope: 'map', weight: 1, kind: 'timed', dur: 8, cdMul: 0.65, moveMul: 1.15 },
   bellnova: { id: 'bellnova', icon: 'drop_bellnova', color: 0xf0cc78, glyph: 'beacon', scope: 'map', weight: 1, kind: 'instant', dmg: 170, radius: 560, kb: 340 },
+  grandchime: { id: 'grandchime', icon: 'drop_grandchime', color: 0xf0c060, glyph: 'beacon', scope: 'map', weight: 0.5, tags: ['lethal'], kind: 'timed', dur: 3.2, dmg: 170, radius: 620, kb: 300 },
 };
 
 /** 通用道具池（击杀/场景物/精英来源按 weight 加权抽取） */

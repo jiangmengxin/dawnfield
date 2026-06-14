@@ -50,6 +50,18 @@ export class VineWeapon extends Weapon {
     img.setDisplaySize(len * 1.06, 40);
     ctx.scene.tweens.add({ targets: img, rotation: a + 0.18, duration: 110, ease: 'Quad.easeOut' });
     ctx.scene.tweens.add({ targets: img, alpha: 0, duration: 200, delay: 90, onComplete: () => img.destroy() });
+    const gr = ctx.scene.add.graphics().setDepth(1e6 + 1);
+    gr.lineStyle(wid * 1.15, VINE_COLOR, 0.16);
+    gr.lineBetween(ctx.player.x, ctx.player.y, ctx.player.x + Math.cos(a) * len, ctx.player.y + Math.sin(a) * len);
+    gr.lineStyle(3, 0xd8f0c8, 0.62);
+    gr.lineBetween(ctx.player.x, ctx.player.y, ctx.player.x + Math.cos(a) * len, ctx.player.y + Math.sin(a) * len);
+    ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 180, delay: 80, onComplete: () => gr.destroy() });
+    for (const k of [0.32, 0.6, 0.86]) {
+      ctx.fx.burst(ctx.player.x + Math.cos(a) * len * k, ctx.player.y + Math.sin(a) * len * k, {
+        tex: 'p_petal', color: this.evolved ? 0xd8a8e8 : VINE_COLOR,
+        count: 2, speed: 64, life: 0.32, scale: this.evolved ? 0.85 : 0.65, alpha: 0.78, spin: true,
+      });
+    }
 
     // 判定：玩家前方 len×2wid 长条（投影到鞭轴）
     const cosA = Math.cos(a);
@@ -68,7 +80,7 @@ export class VineWeapon extends Weapon {
       const aside = Math.abs(-dx * sinA + dy * cosA);
       if (aside > wid + e.radius) continue;
       ctx.hitEnemy(e, dmg, { kb: W_VINE.kb, kx: cosA, ky: sinA, pitch: 1.2 });
-      ctx.fx.burst(e.x, e.y, { tex: 'p_dot', color: VINE_COLOR, count: 3, speed: 80, life: 0.3, scale: 0.6 });
+      ctx.fx.burst(e.x, e.y, { tex: 'p_petal', color: this.evolved ? 0xd8a8e8 : VINE_COLOR, count: 4, speed: 100, life: 0.34, scale: 0.75, spin: true });
     }
   }
 }

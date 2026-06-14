@@ -11,6 +11,7 @@ export class StarWeapon extends Weapon {
   private activeT = 0;
   private angle = 0;
   private hitMap = new Map<Enemy, number>();
+  private orbitPulseT = 0;
 
   protected cooldown(): number {
     // 进化后常驻：fire 不再有意义，给个长冷却
@@ -65,16 +66,28 @@ export class StarWeapon extends Weapon {
     // 轨道呼吸（吐纳起伏，区别于花瓣环的贴身定轨）
     const r = this.radius() * (1 + Math.sin(this.angle * 1.7) * W_STAR.breathe);
     const now = ctx.run.elapsed;
+    this.orbitPulseT -= dt;
+    if (this.orbitPulseT <= 0) {
+      this.orbitPulseT = this.evolved ? 0.42 : 0.62;
+      ctx.fx.ring(ctx.player.x, ctx.player.y, this.evolved ? 0xc8d4ff : 0xfff2c0, r / 42, 0.42);
+    }
     for (let i = 0; i < n; i++) {
       const s = this.stars[i];
       if (!s || !s.visible) continue; // 升级瞬间星数可能先于 ensure 增加
       const a = this.angle + (i / n) * Math.PI * 2;
       s.setPosition(ctx.player.x + Math.cos(a) * r, ctx.player.y + Math.sin(a) * r * 0.92);
       s.setRotation(a + Math.PI / 2);
+      s.setAlpha(expired ? s.alpha : 0.82 + Math.sin(now * 8 + i) * 0.18);
       if (expired) {
         const img = s;
         ctx.scene.tweens.add({ targets: img, alpha: 0, duration: 200, onComplete: () => img.setVisible(false) });
         continue;
+      }
+      if (ctx.run.frame % (this.evolved ? 4 : 7) === i % (this.evolved ? 4 : 7)) {
+        ctx.fx.burst(s.x, s.y, {
+          tex: 'p_star', color: this.evolved ? 0xc8d4ff : 0xfff2c0,
+          count: 1, speed: 24, life: 0.34, scale: this.evolved ? 0.72 : 0.55, alpha: 0.72, spin: true,
+        });
       }
       ctx.grid.queryCircle(s.x, s.y, W_STAR.hitR, queryOut);
       for (const e of queryOut) {

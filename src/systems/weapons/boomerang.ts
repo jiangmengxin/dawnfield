@@ -19,7 +19,7 @@ class BoomShot {
   private trailT = 0;
 
   constructor(private ctx: CombatContext, a: number, speed: number, dist: number, private dmg: number, private magnet: boolean) {
-    this.img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_boom').setDepth(1e6).setScale(1.25);
+    this.img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_boom').setDepth(1e6).setScale(magnet ? 1.46 : 1.25);
     this.dirX = Math.cos(a);
     this.dirY = Math.sin(a);
     this.vx = this.dirX * speed;
@@ -46,6 +46,8 @@ class BoomShot {
       if (this.vx * this.dirX + this.vy * this.dirY <= 0) {
         this.state = 'back';
         this.hit.clear();
+        ctx.fx.ring(this.img.x, this.img.y, PAL.boom, this.magnet ? 1.35 : 0.95, 0.28);
+        ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_petal', color: PAL.boom, count: this.magnet ? 7 : 4, speed: 92, life: 0.32, scale: 0.72, alpha: 0.84, spin: true });
       }
     } else {
       const dx = ctx.player.x - this.img.x;
@@ -64,14 +66,19 @@ class BoomShot {
     this.img.y += this.vy * dt;
     this.trailT -= dt;
     if (this.trailT <= 0) {
-      this.trailT = 0.05;
-      ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_dot', color: PAL.boom, count: 1, speed: 12, life: 0.25, scale: 0.55, alpha: 0.6 });
+      this.trailT = this.magnet ? 0.035 : 0.05;
+      ctx.fx.burst(this.img.x, this.img.y, {
+        tex: this.state === 'back' ? 'p_petal' : 'p_dot', color: PAL.boom,
+        count: 1, speed: this.state === 'back' ? 28 : 12, life: 0.3,
+        scale: this.magnet ? 0.72 : 0.55, alpha: 0.66, spin: this.state === 'back',
+      });
     }
     ctx.grid.queryCircle(this.img.x, this.img.y, 18, queryOut);
     for (const e of queryOut) {
       if (this.hit.has(e)) continue;
       this.hit.add(e);
       ctx.hitEnemy(e, this.dmg, { kb: 130, kx: this.vx / 400, ky: this.vy / 400, pitch: 1.1 });
+      ctx.fx.burst(e.x, e.y, { tex: 'p_dot', color: PAL.boom, count: this.magnet ? 3 : 2, speed: 70, life: 0.24, scale: 0.52, alpha: 0.78 });
     }
     return true;
   }

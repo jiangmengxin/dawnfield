@@ -11,6 +11,7 @@ interface Frag {
   vx: number;
   vy: number;
   life: number;
+  trailT: number;
   hit: Set<Enemy>;
 }
 
@@ -21,6 +22,7 @@ class Icicle {
   private vx: number;
   private vy: number;
   private life: number;
+  private trailT = 0;
 
   constructor(private ctx: CombatContext, a: number, speed: number, life: number, private onHit: (x: number, y: number) => void) {
     this.vx = Math.cos(a) * speed;
@@ -40,6 +42,11 @@ class Icicle {
       }
       this.img.x += this.vx * (dt / sub);
       this.img.y += this.vy * (dt / sub);
+      this.trailT -= dt / sub;
+      if (this.trailT <= 0) {
+        this.trailT = 0.045;
+        ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_dot', color: FROST_COLOR, count: 1, speed: 18, life: 0.28, scale: 0.46, alpha: 0.66 });
+      }
       ctx.grid.queryCircle(this.img.x, this.img.y, W_FROST.hitR, queryOut);
       if (queryOut.length > 0) {
         this.onHit(this.img.x, this.img.y);
@@ -88,7 +95,8 @@ export class FrostWeapon extends Weapon {
     const r = W_FROST.shatterR * ctx.stats.area * (this.evolved ? W_FROST.evoShatterMul : 1);
     SFX.hit(1.5);
     ctx.fx.ring(x, y, FROST_COLOR, r / 42, 0.35);
-    ctx.fx.burst(x, y, { tex: 'p_star', color: FROST_COLOR, count: 7, speed: 160, life: 0.4, scale: 0.9, spin: true });
+    ctx.fx.ring(x, y, 0xffffff, (r * 0.62) / 42, 0.24);
+    ctx.fx.burst(x, y, { tex: 'p_star', color: FROST_COLOR, count: this.evolved ? 11 : 7, speed: this.evolved ? 190 : 160, life: 0.42, scale: 0.92, spin: true });
     const dmg = this.dmg();
     ctx.grid.queryCircle(x, y, r, queryOut);
     const maxHits = this.evolved ? W_FROST.evoMaxShatterHits : W_FROST.maxShatterHits;
@@ -112,7 +120,7 @@ export class FrostWeapon extends Weapon {
       for (let i = 0; i < fn; i++) {
         const a = a0 + (i / fn) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
         const img = ctx.scene.add.image(x, y, 'w_icicle').setDepth(1e6).setRotation(a).setScale(0.9);
-        this.frags.push({ img, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.5, hit: new Set() });
+        this.frags.push({ img, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.5, trailT: 0, hit: new Set() });
       }
     } else {
       // 未进化：留减速霜地
@@ -137,6 +145,11 @@ export class FrostWeapon extends Weapon {
       }
       f.img.x += f.vx * dt;
       f.img.y += f.vy * dt;
+      f.trailT -= dt;
+      if (f.trailT <= 0) {
+        f.trailT = 0.04;
+        ctx.fx.burst(f.img.x, f.img.y, { tex: 'p_dot', color: FROST_COLOR, count: 1, speed: 14, life: 0.24, scale: 0.42, alpha: 0.62 });
+      }
       ctx.grid.queryCircle(f.img.x, f.img.y, 12, queryOut);
       let dead = false;
       const sp = Math.hypot(f.vx, f.vy) || 1;

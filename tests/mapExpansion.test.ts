@@ -15,10 +15,10 @@ const NEW_MAPS: Array<{
   drops: DropItemId[];
   unlockAch: string;
 }> = [
-  { id: 'orchard', mechanic: 'orchard', boss: 'ciderwyrm', elite: 'harvestorb', drops: ['goldapple', 'seedwhirl'], unlockAch: 'summitClear' },
-  { id: 'snowbell', mechanic: 'frostseal', boss: 'frosthare', elite: 'snowwarden', drops: ['snowglobe', 'frostbell'], unlockAch: 'orchardClear' },
-  { id: 'mirage', mechanic: 'prismfield', boss: 'miragewhale', elite: 'prismguard', drops: ['prismshard', 'mirrorbloom'], unlockAch: 'snowbellClear' },
-  { id: 'clockwork', mechanic: 'bellring', boss: 'clockrooster', elite: 'gearwarden', drops: ['clockkey', 'bellnova'], unlockAch: 'mirageClear' },
+  { id: 'orchard', mechanic: 'orchard', boss: 'ciderwyrm', elite: 'harvestorb', drops: ['goldapple', 'seedwhirl', 'harvestcomet'], unlockAch: 'summitClear' },
+  { id: 'snowbell', mechanic: 'frostseal', boss: 'frosthare', elite: 'snowwarden', drops: ['snowglobe', 'frostbell', 'frostcarillon'], unlockAch: 'orchardClear' },
+  { id: 'mirage', mechanic: 'prismfield', boss: 'miragewhale', elite: 'prismguard', drops: ['prismshard', 'mirrorbloom', 'prismstorm'], unlockAch: 'snowbellClear' },
+  { id: 'clockwork', mechanic: 'bellring', boss: 'clockrooster', elite: 'gearwarden', drops: ['clockkey', 'bellnova', 'grandchime'], unlockAch: 'mirageClear' },
 ];
 
 describe('12 图扩展内容完整性', () => {

@@ -53,10 +53,10 @@ export class SparkWeapon extends Weapon {
       cur = next;
       i++;
     }
-    this.drawBolt(points);
+    this.drawBolt(points, this.evolved);
   }
 
-  private drawBolt(points: Array<[number, number]>): void {
+  private drawBolt(points: Array<[number, number]>, storm: boolean): void {
     const ctx = this.ctx;
     const gr = ctx.scene.add.graphics().setDepth(1e6 + 2);
     const drawPath = (width: number, color: number, alpha: number, jitter: number) => {
@@ -74,9 +74,18 @@ export class SparkWeapon extends Weapon {
       }
       gr.strokePath();
     };
-    drawPath(16, PAL.spark, 0.18, 28); // 柔光外晕，增可见性
-    drawPath(9, PAL.sparkDeep, 0.5, 26);
-    drawPath(3.5, 0xffffff, 0.98, 26);
-    ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 260, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
+    drawPath(storm ? 24 : 16, PAL.spark, storm ? 0.24 : 0.18, storm ? 34 : 28);
+    drawPath(storm ? 12 : 9, PAL.sparkDeep, storm ? 0.62 : 0.5, storm ? 32 : 26);
+    drawPath(storm ? 5 : 3.5, 0xffffff, 0.98, storm ? 30 : 26);
+    if (storm) {
+      for (let i = 1; i < points.length; i++) {
+        const [x, y] = points[i];
+        gr.fillStyle(PAL.spark, 0.16);
+        gr.fillCircle(x, y, 24);
+        gr.lineStyle(2, 0xfff6c8, 0.52);
+        gr.strokeCircle(x, y, 16);
+      }
+    }
+    ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: storm ? 360 : 260, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
   }
 }

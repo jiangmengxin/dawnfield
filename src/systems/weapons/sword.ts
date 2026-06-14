@@ -36,6 +36,12 @@ export class SwordWeapon extends Weapon {
     const cos = Math.cos(a);
     const sin = Math.sin(a);
     SFX.swish();
+    const pre = ctx.scene.add.graphics().setDepth(1e6 + 1);
+    pre.lineStyle(this.evolved ? 24 : 16, SWORD_COLOR, this.evolved ? 0.36 : 0.28);
+    pre.lineBetween(px - cos * 10, py - sin * 10, px + cos * len * 0.8, py + sin * len * 0.8);
+    pre.lineStyle(this.evolved ? 6 : 4, 0xfffbe0, 0.9);
+    pre.lineBetween(px - cos * 10, py - sin * 10, px + cos * len * 0.82, py + sin * len * 0.82);
+    ctx.scene.tweens.add({ targets: pre, alpha: 0, duration: this.evolved ? 460 : 320, ease: 'Cubic.easeOut', onComplete: () => pre.destroy() });
 
     // 剑体：从身侧探出 → 猛刺 → 收回
     const img = ctx.scene.add.image(px, py, 'w_sword')
@@ -43,13 +49,13 @@ export class SwordWeapon extends Weapon {
       .setOrigin(0.12, 0.5)
       .setRotation(a)
       .setAlpha(0.96);
-    img.setDisplaySize(len * 1.05, 22);
+    img.setDisplaySize(len * 1.1, this.evolved ? 42 : 30);
     img.setPosition(px - cos * len * 0.22, py - sin * len * 0.22);
     ctx.scene.tweens.add({
       targets: img, x: px + cos * len * 0.12, y: py + sin * len * 0.12,
       duration: W_SWORD.thrustT * 1000, ease: 'Quad.easeOut',
       onComplete: () => {
-        ctx.scene.tweens.add({ targets: img, alpha: 0, duration: 130, onComplete: () => img.destroy() });
+        ctx.scene.tweens.add({ targets: img, alpha: 0, duration: 260, onComplete: () => img.destroy() });
       },
     });
 
@@ -57,15 +63,19 @@ export class SwordWeapon extends Weapon {
     ctx.scene.time.delayedCall(W_SWORD.thrustT * 1000, () => {
       if (!ctx.run.running) return;
       this.lineHit(px, py, cos, sin, len, W_SWORD.wid * ctx.stats.area, this.dmg());
+      ctx.fx.burst(px + cos * len, py + sin * len, { tex: 'p_star', color: SWORD_COLOR, count: 6, speed: 90, life: 0.28, scale: 0.8, alpha: 0.9, spin: true });
       // 贯日：延伸光刃
       if (this.evolved) {
         const beamLen = len + W_SWORD.evoBeamLen * ctx.stats.area;
         const gr = ctx.scene.add.graphics().setDepth(1e6 + 1);
-        gr.lineStyle(10, SWORD_COLOR, 0.5);
+        gr.lineStyle(34, SWORD_COLOR, 0.34);
+        gr.lineBetween(px + cos * len * 0.25, py + sin * len * 0.25, px + cos * beamLen, py + sin * beamLen);
+        gr.lineStyle(18, SWORD_COLOR, 0.68);
         gr.lineBetween(px + cos * len * 0.6, py + sin * len * 0.6, px + cos * beamLen, py + sin * beamLen);
-        gr.lineStyle(3, 0xfffbe0, 0.95);
+        gr.lineStyle(6, 0xfffbe0, 0.98);
         gr.lineBetween(px + cos * len * 0.6, py + sin * len * 0.6, px + cos * beamLen, py + sin * beamLen);
-        ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 220, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
+        ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 820, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
+        ctx.fx.ring(px + cos * beamLen, py + sin * beamLen, SWORD_COLOR, 1.35, 0.48);
         this.lineHit(px, py, cos, sin, beamLen, W_SWORD.wid * 0.7 * ctx.stats.area, this.dmg() * W_SWORD.evoBeamDmgK);
       }
     });

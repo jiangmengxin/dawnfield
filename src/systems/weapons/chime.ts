@@ -10,6 +10,7 @@ class ChimeWave {
   private img: Phaser.GameObjects.Image;
   private r = 8;
   private hit = new Set<Enemy>();
+  private glintT = 0.04;
 
   constructor(
     private ctx: CombatContext,
@@ -30,6 +31,16 @@ class ChimeWave {
     const r = Math.min(this.r, this.maxR);
     this.img.setDisplaySize(r * 2, r * 2);
     this.img.setAlpha(0.95 * (1 - r / this.maxR) + 0.05);
+    this.glintT -= dt;
+    if (this.glintT <= 0) {
+      this.glintT = 0.08;
+      for (const off of [-0.45, 0.45]) {
+        const a = ctx.run.elapsed * 3.2 + off + r * 0.012;
+        ctx.fx.burst(this.cx + Math.cos(a) * r, this.cy + Math.sin(a) * r, {
+          tex: 'p_star', color: 0x90ccc0, count: 1, speed: 22, life: 0.28, scale: 0.58, alpha: 0.82, spin: true,
+        });
+      }
+    }
     // 波前扫过判定：圆内未命中过的敌人各吃一击（波速快，无需环带细分）
     ctx.grid.queryCircle(this.cx, this.cy, r, queryOut);
     for (const e of queryOut) {
@@ -78,6 +89,10 @@ export class ChimeWeapon extends Weapon {
 
   private ring(): void {
     const ctx = this.ctx;
+    ctx.fx.burst(ctx.player.x, ctx.player.y, {
+      tex: 'p_star', color: this.evolved ? 0xfff2c0 : 0x90ccc0,
+      count: this.evolved ? 8 : 5, speed: 92, life: 0.36, scale: 0.78, alpha: 0.9, spin: true,
+    });
     this.waves.push(new ChimeWave(
       ctx, ctx.player.x, ctx.player.y, this.maxR(), this.dmg(),
       this.evolved ? W_CHIME.evoKb : W_CHIME.kb,

@@ -36,11 +36,29 @@ export class WandWeapon extends Weapon {
     }
     SFX.hit(1.9);
     const speed = W_WAND.speed * ctx.stats.projSpeed;
-    ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_star', color: WAND_COLOR, count: 3, speed: 70, life: 0.2, scale: 0.7, alpha: 0.9 });
+    ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_star', color: WAND_COLOR, count: this.evolved ? 8 : 4, speed: this.evolved ? 110 : 70, life: 0.28, scale: this.evolved ? 0.95 : 0.7, alpha: 0.9, spin: true });
+    const sigil = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'p_ring')
+      .setDepth(1e6 - 1)
+      .setTint(WAND_COLOR)
+      .setScale(this.evolved ? 1.15 : 0.78)
+      .setAlpha(this.evolved ? 0.72 : 0.48);
+    ctx.scene.tweens.add({
+      targets: sigil,
+      scale: this.evolved ? 1.55 : 1.05,
+      rotation: this.evolved ? Math.PI * 0.35 : Math.PI * 0.18,
+      alpha: 0,
+      duration: this.evolved ? 320 : 220,
+      ease: 'Cubic.easeOut',
+      onComplete: () => sigil.destroy(),
+    });
     for (let i = 0; i < n; i++) {
       const tgt = targets[i % targets.length];
       const a = Math.atan2(tgt.y - ctx.player.y, tgt.x - ctx.player.x) + (i >= targets.length ? (Math.random() - 0.5) * 0.3 : 0);
       const img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_wandbolt').setDepth(1e6).setRotation(a).setScale(1.35);
+      const lock = ctx.scene.add.graphics().setDepth(1e6 - 2);
+      lock.lineStyle(this.evolved ? 3 : 2, WAND_COLOR, this.evolved ? 0.32 : 0.2);
+      lock.lineBetween(ctx.player.x, ctx.player.y, tgt.x, tgt.y);
+      ctx.scene.tweens.add({ targets: lock, alpha: 0, duration: 160, onComplete: () => lock.destroy() });
       this.bolts.push({ img, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life: W_WAND.life * ctx.stats.area, hit: new Set() });
     }
   }
@@ -67,7 +85,7 @@ export class WandWeapon extends Weapon {
     b.img.y += b.vy * dt;
     b.img.rotation += dt * 10;
     if (ctx.run.frame % 2 === 0) {
-      ctx.fx.burst(b.img.x, b.img.y, { tex: 'p_dot', color: WAND_COLOR, count: 1, speed: 6, life: 0.22, scale: 0.55, alpha: 0.6 });
+      ctx.fx.burst(b.img.x, b.img.y, { tex: 'p_star', color: WAND_COLOR, count: 1, speed: 10, life: 0.26, scale: 0.62, alpha: 0.72, spin: true });
     }
     const sp = Math.hypot(b.vx, b.vy) || 1;
     ctx.grid.queryCircle(b.img.x, b.img.y, W_WAND.hitR, queryOut);
@@ -76,7 +94,8 @@ export class WandWeapon extends Weapon {
       b.hit.add(e);
       ctx.hitEnemy(e, this.dmg(), { kb: 100, kx: b.vx / sp, ky: b.vy / sp, pitch: 1.7 });
       if (b.hit.size >= pierce) {
-        ctx.fx.burst(b.img.x, b.img.y, { tex: 'p_star', color: WAND_COLOR, count: 3, speed: 70, life: 0.25, scale: 0.7, alpha: 0.9 });
+        ctx.fx.ring(b.img.x, b.img.y, WAND_COLOR, 0.8, 0.22);
+        ctx.fx.burst(b.img.x, b.img.y, { tex: 'p_star', color: WAND_COLOR, count: 5, speed: 90, life: 0.28, scale: 0.75, alpha: 0.9, spin: true });
         return false;
       }
     }

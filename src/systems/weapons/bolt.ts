@@ -45,6 +45,7 @@ export class BoltWeapon extends Weapon {
       // 雷点轻微偏移到目标附近（带一点散布）
       const tx = target.x + (Math.random() - 0.5) * 24;
       const ty = target.y + (Math.random() - 0.5) * 24;
+      ctx.fx.ring(tx, ty, BOLT_COLOR, this.evolved ? 1.15 : 0.85, 0.24);
       ctx.scene.time.delayedCall(i * 55, () => {
         if (!ctx.run.running) return;
         this.strike(tx, ty);
@@ -68,13 +69,16 @@ export class BoltWeapon extends Weapon {
       gr.closePath();
       gr.fillPath();
     };
-    beam(5, 17, BOLT_COLOR, 0.35);
-    beam(1.5, 5, 0xfffbe0, 0.92);
+    beam(this.evolved ? 8 : 5, this.evolved ? 24 : 17, BOLT_COLOR, this.evolved ? 0.42 : 0.35);
+    beam(3, this.evolved ? 8 : 5, 0xfffbe0, 0.92);
+    gr.lineStyle(this.evolved ? 3.5 : 2.2, 0xffffff, 0.72);
+    gr.lineBetween(x, topY - 22, x, y + 12);
     ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 230, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
 
     const r = this.blastR();
     ctx.fx.ring(x, y, BOLT_COLOR, r / 42, 0.35);
-    ctx.fx.burst(x, y, { tex: 'p_star', color: 0xfff0c0, count: 6, speed: 150, life: 0.35, scale: 0.9, spin: true });
+    if (this.evolved) ctx.fx.ring(x, y, 0xfffbe0, (r * 1.28) / 42, 0.42);
+    ctx.fx.burst(x, y, { tex: 'p_star', color: 0xfff0c0, count: this.evolved ? 10 : 6, speed: this.evolved ? 190 : 150, life: 0.38, scale: this.evolved ? 1.0 : 0.9, spin: true });
     shakeCam(ctx.scene, 50, 0.0018);
     ctx.grid.queryCircle(x, y, r, queryOut);
     const dmg = this.dmg();

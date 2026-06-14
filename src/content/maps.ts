@@ -281,7 +281,7 @@ export const MAPS: MapSpec[] = [
   // ---------- 1. 晨光草甸：基准节奏，10 分钟（M12 短档；波次自 M2 表等比压缩） ----------
   {
     id: 'meadow',
-    drops: ['bloomburst', 'verdant'],
+    drops: ['bloomburst', 'verdant', 'blossomsalvo'],
     minutes: 10,
     timeK: 12 / 10,
     xpK: 1.2,
@@ -327,7 +327,7 @@ export const MAPS: MapSpec[] = [
   // 敌人少而硬（蜗蜗 95 血坦克、水枪鱼炮台、水母绕轨），考验集火与水皮间走位
   {
     id: 'pond',
-    drops: ['ebbaegis', 'ripple'],
+    drops: ['ebbaegis', 'ripple', 'tidalcrush'],
     minutes: 10,
     timeK: 12 / 10,
     xpK: 1.5,
@@ -379,7 +379,7 @@ export const MAPS: MapSpec[] = [
   // 敌人多而脆（谷粒海、乌鸫俯冲、蓟球冲刺、风灵闪现），大风周期打乱站位
   {
     id: 'hills',
-    drops: ['tailwind', 'whirlwind'],
+    drops: ['tailwind', 'whirlwind', 'galeblades'],
     minutes: 10,
     timeK: 12 / 10,
     xpK: 1.8,
@@ -437,7 +437,7 @@ export const MAPS: MapSpec[] = [
   // 敌人有黏性（害羞菇潜伏惊醒、孢孢菇炮台、滚滚甲冲滚），治愈泉逼迫主动走位换血
   {
     id: 'grove',
-    drops: ['sporebloom', 'fireflies'],
+    drops: ['sporebloom', 'fireflies', 'sporecascade'],
     minutes: 20,
     timeK: 12 / 20,
     xpK: 1.05,
@@ -497,7 +497,7 @@ export const MAPS: MapSpec[] = [
   // 敌人轻而缠人（紫蝶螺旋盘入、嗡嗡蜂俯冲、绒球弹跳），顺风带敌我同加速
   {
     id: 'lavender',
-    drops: ['pollenfrenzy', 'beeswarm'],
+    drops: ['pollenfrenzy', 'beeswarm', 'honeytempest'],
     minutes: 20,
     timeK: 12 / 20,
     xpK: 1.2,
@@ -562,7 +562,7 @@ export const MAPS: MapSpec[] = [
   // 敌人结实缠斗（钻钻鼠地下突进、莓爪崽扑袭、浆果炮手压制），刺丛挤压走位空间
   {
     id: 'bramble',
-    drops: ['thornnova', 'berryfeast'],
+    drops: ['thornnova', 'berryfeast', 'bramblecrown'],
     minutes: 20,
     timeK: 12 / 20,
     xpK: 1.3,
@@ -625,7 +625,7 @@ export const MAPS: MapSpec[] = [
   // 敌人忽明忽暗（星闪闪闪现、月相灵变速、小枭枭绕飞），流星敌我同伤可借力清群
   {
     id: 'nocturne',
-    drops: ['fullmoon', 'meteor'],
+    drops: ['fullmoon', 'meteor', 'constellationfall'],
     minutes: 30,
     timeK: 12 / 30,
     xpK: 0.95,
@@ -692,7 +692,7 @@ export const MAPS: MapSpec[] = [
   // 影群海量缠斗（影伏伏伏击、蚀月轮滚撞、夜昙昙压制），晨光柱是黎明前的安全岛
   {
     id: 'summit',
-    drops: ['beaconsurge', 'dawnnova'],
+    drops: ['beaconsurge', 'dawnnova', 'dawnlance'],
     minutes: 30,
     timeK: 12 / 30,
     xpK: 0.9,
@@ -757,7 +757,7 @@ export const MAPS: MapSpec[] = [
   // 果实落点可借力清群，但炮台与护盾怪会逼迫玩家主动引怪换位
   {
     id: 'orchard',
-    drops: ['goldapple', 'seedwhirl'],
+    drops: ['goldapple', 'seedwhirl', 'harvestcomet'],
     minutes: 20,
     timeK: 12 / 20,
     xpK: 1.08,
@@ -812,7 +812,7 @@ export const MAPS: MapSpec[] = [
   // 敌人机动性高，玩家需要把追兵带进寒印后踩碎控场
   {
     id: 'snowbell',
-    drops: ['snowglobe', 'frostbell'],
+    drops: ['snowglobe', 'frostbell', 'frostcarillon'],
     minutes: 20,
     timeK: 12 / 20,
     xpK: 1.02,
@@ -867,7 +867,7 @@ export const MAPS: MapSpec[] = [
   // 镜场奖励高，但玻璃敌人擅长闪现、绕飞、远程压制
   {
     id: 'mirage',
-    drops: ['prismshard', 'mirrorbloom'],
+    drops: ['prismshard', 'mirrorbloom', 'prismstorm'],
     minutes: 30,
     timeK: 12 / 30,
     xpK: 0.92,
@@ -925,7 +925,7 @@ export const MAPS: MapSpec[] = [
   // 读拍踩钟印会释放大钟波；错过节拍会吃小伤，召唤/护盾怪放大压力
   {
     id: 'clockwork',
-    drops: ['clockkey', 'bellnova'],
+    drops: ['clockkey', 'bellnova', 'grandchime'],
     minutes: 30,
     timeK: 12 / 30,
     xpK: 0.9,

@@ -24,8 +24,9 @@ class Mote {
     private dmg: number,
     private turn: number,
     private pierce: number,
+    private evolved: boolean,
   ) {
-    this.img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_wisp').setDepth(1e6).setScale(1.6);
+    this.img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_wisp').setDepth(1e6).setScale(evolved ? 1.9 : 1.6);
     this.vx = Math.cos(a) * speed;
     this.vy = Math.sin(a) * speed;
     this.life = life;
@@ -67,8 +68,12 @@ class Mote {
     // 萤光尾迹
     this.trailT -= dt;
     if (this.trailT <= 0) {
-      this.trailT = 0.05;
-      ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_dot', color: WISP_COLOR, count: 1, speed: 8, life: 0.35, scale: 0.85, alpha: 0.7 });
+      this.trailT = this.evolved ? 0.035 : 0.05;
+      ctx.fx.burst(this.img.x, this.img.y, {
+        tex: this.evolved ? 'p_star' : 'p_dot', color: WISP_COLOR,
+        count: 1, speed: this.evolved ? 22 : 8, life: this.evolved ? 0.45 : 0.35,
+        scale: this.evolved ? 0.75 : 0.85, alpha: 0.72, spin: this.evolved,
+      });
     }
 
     ctx.grid.queryCircle(this.img.x, this.img.y, 16, queryOut);
@@ -76,6 +81,10 @@ class Mote {
       if (this.hit.has(e)) continue;
       this.hit.add(e);
       ctx.hitEnemy(e, this.dmg, { kb: 70, kx: this.vx / sp, ky: this.vy / sp, pitch: 1.5 });
+      ctx.fx.burst(this.img.x, this.img.y, {
+        tex: 'p_star', color: WISP_COLOR, count: this.evolved ? 3 : 2,
+        speed: 58, life: 0.26, scale: 0.58, alpha: 0.82, spin: true,
+      });
       if (this.hit.size >= this.pierce) {
         ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_star', color: WISP_COLOR, count: 4, speed: 70, life: 0.3, scale: 0.7, alpha: 0.9 });
         this.kill();
@@ -106,6 +115,7 @@ export class WispWeapon extends Weapon {
     const turn = this.evolved ? W_WISP.evoTurn : W_WISP.turn;
     const pierce = this.evolved ? W_WISP.evoPierce : 1;
     SFX.throwSfx();
+    if (this.evolved) ctx.fx.ring(ctx.player.x, ctx.player.y, WISP_COLOR, 2.2, 0.4);
     const targets = nearestK(ctx, ctx.player.x, ctx.player.y, n, W_WISP.seek);
     const a0 = ctx.rng() * Math.PI * 2;
     for (let i = 0; i < n; i++) {
@@ -113,7 +123,7 @@ export class WispWeapon extends Weapon {
       const a = tgt
         ? Math.atan2(tgt.y - ctx.player.y, tgt.x - ctx.player.x) + (ctx.rng() - 0.5) * 0.36
         : a0 + (i / n) * Math.PI * 2 + (ctx.rng() - 0.5) * 0.4;
-      this.motes.push(new Mote(ctx, a, speed * (0.9 + ctx.rng() * 0.2), life, dmg, turn, pierce));
+      this.motes.push(new Mote(ctx, a, speed * (0.9 + ctx.rng() * 0.2), life, dmg, turn, pierce, this.evolved));
     }
   }
 

@@ -11,12 +11,14 @@ const BERRY_COLOR = 0xd87888;
 class Berry {
   private img: Phaser.GameObjects.Image;
   private shadow: Phaser.GameObjects.Image;
+  private marker: Phaser.GameObjects.Image;
   private t = 0;
   private sx: number;
   private sy: number;
+  private trailT = 0;
 
   constructor(
-    ctx: CombatContext,
+    private ctx: CombatContext,
     private tx: number,
     private ty: number,
     private flyT: number,
@@ -26,7 +28,8 @@ class Berry {
     this.sy = ctx.player.y;
     // 落点预告小影
     this.shadow = ctx.scene.add.image(tx, ty, 'shadow').setDepth(6).setAlpha(0.5).setScale(0.9, 0.55);
-    this.img = ctx.scene.add.image(this.sx, this.sy, 'w_berry').setDepth(1e6 + 2).setScale(1);
+    this.marker = ctx.scene.add.image(tx, ty, 'p_ring').setDepth(7).setTint(BERRY_COLOR).setAlpha(0.34).setScale(0.34);
+    this.img = ctx.scene.add.image(this.sx, this.sy, 'w_berry').setDepth(1e6 + 2).setScale(1.08);
   }
 
   /** 抛物线：位置线性插值 + 正弦抬升 + 近大远小 */
@@ -38,6 +41,18 @@ class Berry {
     this.img.y = this.sy + (this.ty - this.sy) * k - lift;
     this.img.setScale(1 + Math.sin(k * Math.PI) * 0.55);
     this.img.rotation += dt * 7;
+    this.marker.setScale(0.34 + Math.sin(this.t * 12) * 0.04).setAlpha(0.22 + Math.sin(this.t * 12) * 0.08);
+    this.trailT -= dt;
+    if (this.trailT <= 0) {
+      this.trailT = 0.055;
+      const mote = this.ctx.scene.add.image(this.img.x, this.img.y, 'p_dot')
+        .setDepth(1e6 - 1)
+        .setTint(BERRY_COLOR)
+        .setAlpha(0.34)
+        .setScale(0.55)
+        .setRotation(Math.random() * Math.PI * 2);
+      this.ctx.scene.tweens.add({ targets: mote, alpha: 0, scaleX: 0.15, scaleY: 0.15, duration: 180, onComplete: () => mote.destroy() });
+    }
     if (k >= 1) {
       this.kill();
       this.onLand(this.tx, this.ty);
@@ -49,6 +64,7 @@ class Berry {
   kill(): void {
     this.img.destroy();
     this.shadow.destroy();
+    this.marker.destroy();
   }
 }
 
@@ -99,7 +115,9 @@ export class SlingWeapon extends Weapon {
     SFX.boom();
     shakeCam(ctx.scene, 90, 0.003);
     ctx.fx.ring(x, y, BERRY_COLOR, r / 42, 0.45);
+    ctx.fx.ring(x, y, 0xffe0e8, (r * 0.62) / 42, 0.28);
     ctx.fx.burst(x, y, { tex: 'p_dot', color: BERRY_COLOR, count: 10, speed: 170, life: 0.45, scale: 0.9, grav: 160 });
+    ctx.fx.burst(x, y, { tex: 'p_petal', color: 0xffe0e8, count: 6, speed: 120, life: 0.34, scale: 0.7, grav: 120, spin: true });
     const dmg = this.dmg();
     ctx.grid.queryCircle(x, y, r, queryOut);
     for (const e of queryOut) {
@@ -108,6 +126,7 @@ export class SlingWeapon extends Weapon {
     }
     if (this.evolved) {
       ctx.addZone({ x, y, r: W_SLING.jamR * ctx.stats.area, dur: W_SLING.jamDur, effect: 'slow', tex: 'w_jam' });
+      ctx.fx.ring(x, y, 0xa85060, (W_SLING.jamR * ctx.stats.area) / 42, 0.55);
     }
   }
 

@@ -12,6 +12,7 @@ class Bee {
   private vy: number;
   private life: number;
   private wanderT = 0;
+  private trailT = 0;
   private hit = new Map<Enemy, number>();
   private hits = 0;
 
@@ -23,6 +24,7 @@ class Bee {
     private dmg: number,
     private hitLimit: number,
     private targetHit: Map<Enemy, number>,
+    private evolved: boolean,
   ) {
     this.vx = Math.cos(a) * speed;
     this.vy = Math.sin(a) * speed;
@@ -57,6 +59,15 @@ class Bee {
     // 嗡鸣抖动
     this.img.setScale(0.92 + Math.sin(now * 40 + this.life * 13) * 0.12);
     this.img.setAlpha(Math.min(1, this.life * 3));
+    this.trailT -= dt;
+    if (this.trailT <= 0) {
+      this.trailT = this.evolved ? 0.07 : 0.11;
+      ctx.fx.burst(this.img.x, this.img.y, {
+        tex: this.evolved ? 'p_star' : 'p_dot', color: 0xf0c850,
+        count: 1, speed: this.evolved ? 28 : 14, life: 0.28,
+        scale: this.evolved ? 0.5 : 0.4, alpha: 0.68, spin: this.evolved,
+      });
+    }
     // 反复叮咬
     ctx.grid.queryCircle(this.img.x, this.img.y, W_SWARM.hitR, queryOut);
     for (const e of queryOut) {
@@ -68,6 +79,7 @@ class Bee {
       this.targetHit.set(e, now);
       this.hits++;
       ctx.hitEnemy(e, this.dmg, { kb: 36, kx: this.vx / speed, ky: this.vy / speed, pitch: 1.8 });
+      ctx.fx.burst(e.x, e.y, { tex: 'p_star', color: 0xf0c850, count: this.evolved ? 3 : 2, speed: 74, life: 0.24, scale: 0.52, alpha: 0.82, spin: true });
       if (this.hits >= this.hitLimit) {
         this.img.destroy();
         return false;
@@ -97,8 +109,9 @@ export class SwarmWeapon extends Weapon {
     const speed = W_SWARM.speed * ctx.stats.projSpeed;
     const hitLimit = this.evolved ? W_SWARM.evoHitLimit : W_SWARM.hitLimit;
     SFX.throwSfx();
+    ctx.fx.ring(ctx.player.x, ctx.player.y, 0xf0c850, this.evolved ? 1.9 : 1.35, 0.34);
     for (let i = 0; i < n; i++) {
-      this.bees.push(new Bee(ctx, Math.random() * Math.PI * 2, speed * (0.85 + Math.random() * 0.3), life, dmg, hitLimit, this.targetHit));
+      this.bees.push(new Bee(ctx, Math.random() * Math.PI * 2, speed * (0.85 + Math.random() * 0.3), life, dmg, hitLimit, this.targetHit, this.evolved));
     }
   }
 

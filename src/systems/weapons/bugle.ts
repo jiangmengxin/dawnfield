@@ -13,6 +13,7 @@ interface SeedShot {
   vx: number;
   vy: number;
   life: number;
+  trailT: number;
   hit: Set<Enemy>;
 }
 
@@ -33,6 +34,7 @@ class Sentry {
     this.img = ctx.scene.add.image(x, y, 'w_bugle').setDepth(900 + y * 0.01).setAlpha(0).setScale(0.5);
     ctx.scene.tweens.add({ targets: this.img, alpha: 1, scaleX: 1, scaleY: 1, duration: 220, ease: 'Back.easeOut' });
     ctx.fx.ring(x, y, BUGLE_COLOR, 1.6, 0.4);
+    ctx.fx.burst(x, y - 16, { tex: 'p_star', color: BUGLE_COLOR, count: 5, speed: 72, life: 0.34, scale: 0.7, alpha: 0.88, spin: true });
   }
 
   update(dt: number): boolean {
@@ -104,8 +106,13 @@ export class BugleWeapon extends Weapon {
   private shoot(x: number, y: number, a: number): void {
     const ctx = this.ctx;
     const speed = W_BUGLE.bulletSpeed * ctx.stats.projSpeed;
-    const img = ctx.scene.add.image(x, y, 'w_bugleseed').setDepth(1e6).setRotation(a + Math.PI / 2);
-    this.shots.push({ img, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life: 1.1, hit: new Set() });
+    ctx.fx.ring(x, y, BUGLE_COLOR, this.evolved ? 0.9 : 0.65, 0.22);
+    ctx.fx.burst(x, y, { tex: 'p_star', color: 0xf7dd8a, count: this.evolved ? 5 : 3, speed: 76, life: 0.26, scale: 0.6, alpha: 0.86, spin: true });
+    const img = ctx.scene.add.image(x, y, 'w_bugleseed')
+      .setDepth(1e6)
+      .setRotation(a + Math.PI / 2)
+      .setScale(this.evolved ? 1.26 : 1.08);
+    this.shots.push({ img, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, life: 1.1, trailT: 0, hit: new Set() });
   }
 
   protected tick(dt: number): void {
@@ -132,6 +139,11 @@ export class BugleWeapon extends Weapon {
     if (b.life <= 0) return false;
     b.img.x += b.vx * dt;
     b.img.y += b.vy * dt;
+    b.trailT -= dt;
+    if (b.trailT <= 0) {
+      b.trailT = this.evolved ? 0.045 : 0.07;
+      ctx.fx.burst(b.img.x, b.img.y, { tex: 'p_dot', color: BUGLE_COLOR, count: 1, speed: 14, life: 0.28, scale: this.evolved ? 0.58 : 0.42, alpha: 0.65 });
+    }
     ctx.grid.queryCircle(b.img.x, b.img.y, 11, queryOut);
     const sp = Math.hypot(b.vx, b.vy) || 1;
     const liveHits = queryOut.filter((e) => !b.hit.has(e));
@@ -139,6 +151,7 @@ export class BugleWeapon extends Weapon {
     for (const e of liveHits) {
       b.hit.add(e);
       ctx.hitEnemy(e, this.dmg(), { kb: W_BUGLE.kb, kx: b.vx / sp, ky: b.vy / sp, pitch: 1.3 });
+      ctx.fx.burst(b.img.x, b.img.y, { tex: 'p_star', color: BUGLE_COLOR, count: 2, speed: 46, life: 0.22, scale: 0.5, alpha: 0.82, spin: true });
       if (b.hit.size >= pierce) {
         ctx.fx.burst(b.img.x, b.img.y, { tex: 'p_dot', color: BUGLE_COLOR, count: 3, speed: 60, life: 0.25, scale: 0.6, alpha: 0.8 });
         return false;

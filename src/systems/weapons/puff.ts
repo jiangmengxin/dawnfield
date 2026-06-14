@@ -14,6 +14,7 @@ class Seed {
   private vy: number;
   private life: number;
   private wave: number; // 飘忽相位
+  private trailT = 0;
   private hit = new Set<Enemy>();
 
   constructor(
@@ -23,9 +24,10 @@ class Seed {
     life: number,
     private dmg: number,
     private homing: number,
+    private evolved: boolean,
   ) {
     this.img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_seed')
-      .setDepth(1e6).setRotation(a + Math.PI / 2).setScale(1.1);
+      .setDepth(1e6).setRotation(a + Math.PI / 2).setScale(evolved ? 1.45 : 1.25);
     this.vx = Math.cos(a) * speed;
     this.vy = Math.sin(a) * speed;
     this.life = life;
@@ -73,6 +75,20 @@ class Seed {
     this.img.y += this.vy * dt;
     this.img.rotation = Math.atan2(this.vy, this.vx) + Math.PI / 2;
     this.img.setAlpha(Math.min(1, this.life * 4));
+    this.trailT -= dt;
+    if (this.trailT <= 0) {
+      this.trailT = this.evolved ? 0.045 : 0.07;
+      ctx.fx.burst(this.img.x, this.img.y, {
+        tex: this.evolved ? 'p_petal' : 'p_dot',
+        color: PAL.puff,
+        count: this.evolved ? 2 : 1,
+        speed: this.evolved ? 34 : 18,
+        life: this.evolved ? 0.38 : 0.28,
+        scale: this.evolved ? 0.75 : 0.55,
+        alpha: 0.82,
+        spin: this.evolved,
+      });
+    }
 
     ctx.grid.queryCircle(this.img.x, this.img.y, 13, queryOut);
     for (const e of queryOut) {
@@ -115,8 +131,9 @@ export class PuffWeapon extends Weapon {
         const a = i < focusN
           ? baseA + (focusN === 1 ? 0 : (i / (focusN - 1) - 0.5) * 0.9) + (ctx.rng() - 0.5) * 0.08
           : a0 + ((i - focusN) / Math.max(1, n - focusN)) * Math.PI * 2;
-        this.seeds.push(new Seed(ctx, a, speed, life, dmg, W_PUFF.evoHoming));
+        this.seeds.push(new Seed(ctx, a, speed, life, dmg, W_PUFF.evoHoming, true));
       }
+      ctx.fx.ring(ctx.player.x, ctx.player.y, PAL.puff, 2.3, 0.48);
       return;
     }
     const near = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 460);
@@ -126,7 +143,7 @@ export class PuffWeapon extends Weapon {
     const n = W_PUFF.n[this.level - 1];
     for (let i = 0; i < n; i++) {
       const off = n === 1 ? 0 : (i / (n - 1) - 0.5) * W_PUFF.spread;
-      this.seeds.push(new Seed(ctx, baseA + off + (Math.random() - 0.5) * 0.08, speed * (0.92 + Math.random() * 0.16), life, dmg, W_PUFF.homing));
+      this.seeds.push(new Seed(ctx, baseA + off + (Math.random() - 0.5) * 0.08, speed * (0.92 + Math.random() * 0.16), life, dmg, W_PUFF.homing, false));
     }
   }
 

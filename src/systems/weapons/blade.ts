@@ -43,7 +43,8 @@ export class BladeWeapon extends Weapon {
         .setAlpha(0.95);
       ctx.scene.tweens.add({
         targets: img, rotation: angle + 0.45, alpha: 0,
-        duration: 200, ease: 'Cubic.easeOut', onComplete: () => img.destroy(),
+        scale: (r / 46) * 1.04,
+        duration: 320, ease: 'Cubic.easeOut', onComplete: () => img.destroy(),
       });
       SFX.swish();
       // 扇形判定
@@ -63,6 +64,33 @@ export class BladeWeapon extends Weapon {
     const ctx = this.ctx;
     const r = this.radius();
     SFX.swish();
+    const full = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_arc_full')
+      .setDepth(1e6 - 1)
+      .setScale(r / 54)
+      .setAlpha(0.72);
+    ctx.scene.tweens.add({
+      targets: full,
+      scale: (r / 54) * 1.22,
+      rotation: Math.PI * 0.18,
+      alpha: 0,
+      duration: 820,
+      ease: 'Cubic.easeOut',
+      onComplete: () => full.destroy(),
+    });
+    const halo = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'p_ring')
+      .setDepth(1e6 - 2)
+      .setTint(0xfff0c0)
+      .setScale((r / 42) * 0.92)
+      .setAlpha(0.36);
+    ctx.scene.tweens.add({
+      targets: halo,
+      scale: (r / 42) * 1.32,
+      alpha: 0,
+      duration: 880,
+      ease: 'Cubic.easeOut',
+      onComplete: () => halo.destroy(),
+    });
+    ctx.fx.ring(ctx.player.x, ctx.player.y, 0xf0c860, r / 42, 0.72);
     const n = 5;
     const base = Math.random() * Math.PI * 2;
     for (let i = 0; i < n; i++) {
@@ -75,8 +103,9 @@ export class BladeWeapon extends Weapon {
           .setDepth(1e6)
           .setAlpha(0.95);
         ctx.scene.tweens.add({
-          targets: img, rotation: a + 0.5, alpha: 0,
-          duration: 220, ease: 'Cubic.easeOut', onComplete: () => img.destroy(),
+          targets: img, rotation: a + 0.65, alpha: 0,
+          scale: (r / 46) * 1.08,
+          duration: 430, ease: 'Cubic.easeOut', onComplete: () => img.destroy(),
         });
       });
     }

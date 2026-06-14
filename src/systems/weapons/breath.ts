@@ -80,10 +80,26 @@ export class BreathWeapon extends Weapon {
   private spawnFlames(dt: number): void {
     this.visT -= dt;
     if (this.visT > 0) return;
-    this.visT = 0.035;
+    this.visT = 0.028;
     const ctx = this.ctx;
     const range = this.range();
     const half = this.halfAngle();
+    const cone = ctx.scene.add.graphics().setDepth(1e6);
+    const px = ctx.player.x;
+    const py = ctx.player.y;
+    cone.fillStyle(this.evolved ? 0xf8d878 : FLAME_COLOR, this.evolved ? 0.16 : 0.11);
+    cone.beginPath();
+    cone.moveTo(px + Math.cos(this.aim) * 10, py + Math.sin(this.aim) * 10);
+    cone.lineTo(px + Math.cos(this.aim - half) * range, py + Math.sin(this.aim - half) * range);
+    cone.arc(px, py, range, this.aim - half, this.aim + half);
+    cone.lineTo(px + Math.cos(this.aim) * 10, py + Math.sin(this.aim) * 10);
+    cone.closePath();
+    cone.fillPath();
+    cone.lineStyle(this.evolved ? 3 : 2, 0xfff0b8, this.evolved ? 0.42 : 0.28);
+    cone.beginPath();
+    cone.arc(px, py, range, this.aim - half, this.aim + half);
+    cone.strokePath();
+    ctx.scene.tweens.add({ targets: cone, alpha: 0, duration: 160, onComplete: () => cone.destroy() });
     const a = this.aim + (Math.random() - 0.5) * half * 1.6;
     const sx = ctx.player.x + Math.cos(this.aim) * 14;
     const sy = ctx.player.y + Math.sin(this.aim) * 14;
@@ -91,16 +107,16 @@ export class BreathWeapon extends Weapon {
     const img = ctx.scene.add.image(sx, sy, 'w_flame')
       .setDepth(1e6 + 1)
       .setRotation(a)
-      .setScale(0.5)
+      .setScale(this.evolved ? 0.78 : 0.62)
       .setAlpha(0.95)
       .setTint(Math.random() < 0.4 ? 0xffd060 : FLAME_COLOR);
     ctx.scene.tweens.add({
       targets: img,
       x: sx + Math.cos(a) * reach,
       y: sy + Math.sin(a) * reach,
-      scale: 1.3,
+      scale: this.evolved ? 1.75 : 1.45,
       alpha: 0,
-      duration: 280,
+      duration: this.evolved ? 330 : 280,
       ease: 'Cubic.easeOut',
       onComplete: () => img.destroy(),
     });

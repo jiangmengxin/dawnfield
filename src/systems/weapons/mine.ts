@@ -9,6 +9,7 @@ import { Weapon, queryOut } from './base';
 interface Mine {
   img: Phaser.GameObjects.Image;
   glow: Phaser.GameObjects.Image;
+  aura?: Phaser.GameObjects.Image;
   arm: number;
   life: number;
 }
@@ -32,9 +33,12 @@ export class MineWeapon extends Weapon {
     const x = ctx.player.x + (Math.random() - 0.5) * 72;
     const y = ctx.player.y + (Math.random() - 0.5) * 72;
     const img = ctx.scene.add.image(x, y, 'w_mine').setDepth(900).setScale(0);
-    const glow = ctx.scene.add.image(x, y, 'p_dot').setDepth(899).setTint(PAL.mine).setScale(2).setAlpha(0.25);
-    ctx.scene.tweens.add({ targets: img, scale: 1, duration: 250, ease: 'Back.easeOut' });
-    this.mines.push({ img, glow, arm: 0.4, life: 9 });
+    const glow = ctx.scene.add.image(x, y, 'p_dot').setDepth(899).setTint(PAL.mine).setScale(this.evolved ? 3.2 : 2).setAlpha(this.evolved ? 0.34 : 0.25);
+    const aura = this.evolved
+      ? ctx.scene.add.image(x, y, 'p_ring').setDepth(898).setTint(PAL.mine).setScale(0.95).setAlpha(0.55)
+      : undefined;
+    ctx.scene.tweens.add({ targets: img, scale: this.evolved ? 1.28 : 1, duration: 250, ease: 'Back.easeOut' });
+    this.mines.push({ img, glow, aura, arm: 0.4, life: 9 });
   }
 
   protected tick(dt: number): void {
@@ -44,10 +48,16 @@ export class MineWeapon extends Weapon {
       m.arm -= dt;
       m.life -= dt;
       m.img.rotation += dt * 1.5;
-      m.glow.setAlpha(0.18 + Math.sin(ctx.run.elapsed * 6) * 0.1);
+      m.glow.setAlpha((this.evolved ? 0.26 : 0.18) + Math.sin(ctx.run.elapsed * 6) * (this.evolved ? 0.14 : 0.1));
+      if (m.aura) {
+        m.aura.rotation -= dt * 1.4;
+        m.aura.setScale(0.85 + Math.sin(ctx.run.elapsed * 5.2) * 0.08);
+        m.aura.setAlpha(0.34 + Math.sin(ctx.run.elapsed * 4.5) * 0.16);
+      }
       if (m.life <= 0) {
         // 过期：安静消失
-        ctx.scene.tweens.add({ targets: [m.img, m.glow], alpha: 0, scale: 0, duration: 300, onComplete: () => { m.img.destroy(); m.glow.destroy(); } });
+        const targets = m.aura ? [m.img, m.glow, m.aura] : [m.img, m.glow];
+        ctx.scene.tweens.add({ targets, alpha: 0, scale: 0, duration: 300, onComplete: () => { m.img.destroy(); m.glow.destroy(); m.aura?.destroy(); } });
         this.mines.splice(i, 1);
         continue;
       }
@@ -68,8 +78,10 @@ export class MineWeapon extends Weapon {
     const y = m.img.y;
     m.img.destroy();
     m.glow.destroy();
+    m.aura?.destroy();
     SFX.boom(this.evolved);
     ctx.fx.ring(x, y, PAL.mine, r / 42, 0.4);
+    if (this.evolved) ctx.fx.ring(x, y, 0xfff0d8, (r * 1.14) / 42, 0.55);
     ctx.fx.burst(x, y, { tex: 'p_star', color: PAL.mine, count: this.evolved ? 16 : 10, speed: 200, life: 0.55, scale: 1.1, spin: true });
     ctx.fx.burst(x, y, { tex: 'p_dot', color: 0xffffff, count: 6, speed: 120, life: 0.3 });
     shakeCam(ctx.scene, 120, 0.0035);
@@ -84,6 +96,6 @@ export class MineWeapon extends Weapon {
   }
 
   destroy(): void {
-    this.mines.forEach((m) => { m.img.destroy(); m.glow.destroy(); });
+    this.mines.forEach((m) => { m.img.destroy(); m.glow.destroy(); m.aura?.destroy(); });
   }
 }

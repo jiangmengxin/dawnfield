@@ -13,6 +13,7 @@ interface Axe {
   vy: number;
   spin: number;
   life: number;
+  trailT: number;
   hit: Set<Enemy>;
 }
 
@@ -41,8 +42,8 @@ export class AxeWeapon extends Weapon {
         : near
           ? Phaser.Math.Clamp((near.x - ctx.player.x) / W_AXE.life, -W_AXE.spreadVx, W_AXE.spreadVx)
           : sideBias * (70 + Math.random() * W_AXE.spreadVx * 0.5);
-      const img = ctx.scene.add.image(ctx.player.x, ctx.player.y - 6, 'w_axe').setDepth(1e6 + 2).setScale(this.evolved ? 1.2 : 1);
-      this.axes.push({ img, vx, vy: -W_AXE.vy0, spin: (vx >= 0 ? 1 : -1) * 16, life: W_AXE.life, hit: new Set() });
+      const img = ctx.scene.add.image(ctx.player.x, ctx.player.y - 6, 'w_axe').setDepth(1e6 + 2).setScale(this.evolved ? 1.36 : 1.12);
+      this.axes.push({ img, vx, vy: -W_AXE.vy0, spin: (vx >= 0 ? 1 : -1) * 16, life: W_AXE.life, trailT: 0, hit: new Set() });
     }
   }
 
@@ -56,6 +57,14 @@ export class AxeWeapon extends Weapon {
       a.img.x += a.vx * dt;
       a.img.y += a.vy * dt;
       a.img.rotation += a.spin * dt;
+      a.trailT -= dt;
+      if (a.trailT <= 0) {
+        a.trailT = this.evolved ? 0.045 : 0.065;
+        this.ctx.fx.burst(a.img.x, a.img.y, {
+          tex: 'p_petal', color: AXE_COLOR, count: 1, speed: 26, life: 0.32,
+          scale: this.evolved ? 0.72 : 0.56, alpha: 0.7, spin: true,
+        });
+      }
       if (a.life <= 0) {
         a.img.destroy();
         this.axes.splice(i, 1);
@@ -68,7 +77,7 @@ export class AxeWeapon extends Weapon {
         if (a.hit.has(e)) continue;
         a.hit.add(e);
         ctx.hitEnemy(e, this.dmg(), { kb: 180, kx: Math.sign(a.vx) || 0, ky: 0.4, pitch: 0.8 });
-        ctx.fx.burst(e.x, e.y, { tex: 'p_dot', color: AXE_COLOR, count: 3, speed: 90, life: 0.3, scale: 0.7 });
+        ctx.fx.burst(e.x, e.y, { tex: 'p_star', color: AXE_COLOR, count: 5, speed: 118, life: 0.34, scale: 0.78, spin: true });
         if (a.hit.size >= pierce) {
           dead = true;
           break;
