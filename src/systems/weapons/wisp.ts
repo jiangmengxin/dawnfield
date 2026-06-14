@@ -25,7 +25,7 @@ class Mote {
     private turn: number,
     private pierce: number,
   ) {
-    this.img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_wisp').setDepth(1e6).setScale(1);
+    this.img = ctx.scene.add.image(ctx.player.x, ctx.player.y, 'w_wisp').setDepth(1e6).setScale(1.6);
     this.vx = Math.cos(a) * speed;
     this.vy = Math.sin(a) * speed;
     this.life = life;
@@ -68,10 +68,10 @@ class Mote {
     this.trailT -= dt;
     if (this.trailT <= 0) {
       this.trailT = 0.05;
-      ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_dot', color: WISP_COLOR, count: 1, speed: 8, life: 0.3, scale: 0.5, alpha: 0.6 });
+      ctx.fx.burst(this.img.x, this.img.y, { tex: 'p_dot', color: WISP_COLOR, count: 1, speed: 8, life: 0.35, scale: 0.85, alpha: 0.7 });
     }
 
-    ctx.grid.queryCircle(this.img.x, this.img.y, 12, queryOut);
+    ctx.grid.queryCircle(this.img.x, this.img.y, 16, queryOut);
     for (const e of queryOut) {
       if (this.hit.has(e)) continue;
       this.hit.add(e);

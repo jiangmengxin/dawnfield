@@ -49,9 +49,11 @@ export class MalletWeapon extends Weapon {
     const r = W_MALLET.radius * ctx.stats.area;
     SFX.boom(this.evolved);
     ctx.hitStop(0.03);
-    shakeCam(ctx.scene, 110, 0.004);
-    ctx.fx.ring(x, y, MALLET_COLOR, r / 42, 0.4);
-    ctx.fx.burst(x, y, { tex: 'p_dot', color: 0xe8d0a8, count: 8, speed: 150, life: 0.4, scale: 0.8, grav: 200 });
+    shakeCam(ctx.scene, 140, 0.0055);
+    ctx.fx.ring(x, y, MALLET_COLOR, r / 42, 0.45);
+    ctx.fx.ring(x, y, 0xfff0d0, (r * 0.7) / 42, 0.3);
+    ctx.fx.burst(x, y, { tex: 'p_dot', color: 0xe8d0a8, count: 12, speed: 180, life: 0.45, scale: 0.95, grav: 220 });
+    ctx.fx.burst(x, y, { tex: 'p_star', color: MALLET_COLOR, count: 6, speed: 130, life: 0.4, scale: 0.9, spin: true });
     ctx.grid.queryCircle(x, y, r, queryOut);
     for (const e of queryOut) {
       const ea = Math.atan2(e.y - y, e.x - x);

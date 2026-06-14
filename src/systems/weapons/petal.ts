@@ -28,12 +28,12 @@ export class PetalWeapon extends Weapon {
   private ensure(): void {
     const want = W_PETAL.count[this.level - 1];
     while (this.petals.length < want) {
-      this.petals.push(this.ctx.scene.add.image(0, 0, 'w_petal').setDepth(1e6));
+      this.petals.push(this.ctx.scene.add.image(0, 0, 'w_petal').setDepth(1e6).setScale(1.55));
     }
     if (this.evolved) {
       const wantO = want + W_PETAL.evoExtraPetals;
       while (this.outer.length < wantO) {
-        this.outer.push(this.ctx.scene.add.image(0, 0, 'w_petal').setDepth(1e6).setScale(1.15));
+        this.outer.push(this.ctx.scene.add.image(0, 0, 'w_petal').setDepth(1e6).setScale(1.8));
       }
     }
   }
@@ -55,7 +55,7 @@ export class PetalWeapon extends Weapon {
         const a = phase + dir * this.angle + (i / imgs.length) * Math.PI * 2;
         p.setPosition(ctx.player.x + Math.cos(a) * rad, ctx.player.y + Math.sin(a) * rad);
         p.setRotation(a + Math.PI / 2);
-        ctx.grid.queryCircle(p.x, p.y, 13, queryOut);
+        ctx.grid.queryCircle(p.x, p.y, 19, queryOut);
         for (const e of queryOut) {
           const last = this.hitMap.get(e) ?? -9;
           if (now - last > 0.5) {
@@ -105,7 +105,7 @@ class PetalShot {
   private hit = new Set<Enemy>();
 
   constructor(private ctx: CombatContext, x: number, y: number, a: number, private dmg: number) {
-    this.img = ctx.scene.add.image(x, y, 'w_petal').setDepth(1e6).setRotation(a + Math.PI / 2).setScale(1.2);
+    this.img = ctx.scene.add.image(x, y, 'w_petal').setDepth(1e6).setRotation(a + Math.PI / 2).setScale(1.6);
     this.vx = Math.cos(a) * 270 * ctx.stats.projSpeed;
     this.vy = Math.sin(a) * 270 * ctx.stats.projSpeed;
   }
@@ -119,7 +119,7 @@ class PetalShot {
     this.img.x += this.vx * dt;
     this.img.y += this.vy * dt;
     this.img.setAlpha(Math.min(1, this.life * 3));
-    this.ctx.grid.queryCircle(this.img.x, this.img.y, 12, queryOut);
+    this.ctx.grid.queryCircle(this.img.x, this.img.y, 16, queryOut);
     for (const e of queryOut) {
       if (this.hit.has(e)) continue;
       this.hit.add(e);

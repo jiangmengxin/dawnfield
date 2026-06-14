@@ -251,35 +251,51 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
     ctx.stroke();
   });
 
-  // 卷卷藤鞭体（横向长鞭：渐细藤条 + 对生小叶 + 末端卷须；origin 设在左端）
-  makeTex(scene, 'w_vine', 150, 40, (ctx) => {
+  // 卷卷藤鞭体（横向长鞭：S 形波浪 + 由粗到细渐收 + 对生小叶 + 末端卷须；origin 设在左端）
+  makeTex(scene, 'w_vine', 160, 44, (ctx) => {
     ctx.lineCap = 'round';
-    // 主藤（带轻微波浪，向右渐细）
-    ctx.strokeStyle = '#74A858';
-    ctx.lineWidth = 5;
-    ctx.beginPath();
-    ctx.moveTo(3, 20);
-    ctx.quadraticCurveTo(40, 14, 78, 20);
-    ctx.quadraticCurveTo(108, 25, 128, 19);
-    ctx.stroke();
-    ctx.strokeStyle = '#8CC070';
-    ctx.lineWidth = 2.4;
-    ctx.beginPath();
-    ctx.moveTo(3, 19);
-    ctx.quadraticCurveTo(40, 13, 78, 19);
-    ctx.quadraticCurveTo(108, 24, 128, 18);
-    ctx.stroke();
-    // 对生小叶
-    for (const [x, y, rot] of [[28, 14, -1.1], [52, 22, 1.2], [80, 15, -1.0], [104, 25, 1.15]] as const) {
-      petalShape(ctx, x, y, 14, 4.5, rot, '#A8D088', '#74A858');
+    ctx.lineJoin = 'round';
+    // 采样 S 形波浪路径，向右逐渐收平
+    const pts: Array<[number, number]> = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24;
+      const x = 4 + t * 150;
+      const y = 22 + Math.sin(t * Math.PI * 1.7) * 9 * (1 - t * 0.35);
+      pts.push([x, y]);
+    }
+    // 藤身：逐段画，线宽从粗(7)渐收到细(1)，形成鞭子的锥度
+    for (let i = 1; i < pts.length; i++) {
+      const t = i / pts.length;
+      ctx.strokeStyle = '#74A858';
+      ctx.lineWidth = 7 * (1 - t) + 1;
+      ctx.beginPath();
+      ctx.moveTo(pts[i - 1][0], pts[i - 1][1]);
+      ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.stroke();
+    }
+    // 亮面高光（细一档、上移 1px）
+    for (let i = 1; i < pts.length; i++) {
+      const t = i / pts.length;
+      ctx.strokeStyle = '#A8D888';
+      ctx.lineWidth = 3.4 * (1 - t) + 0.6;
+      ctx.beginPath();
+      ctx.moveTo(pts[i - 1][0], pts[i - 1][1] - 1.2);
+      ctx.lineTo(pts[i][0], pts[i][1] - 1.2);
+      ctx.stroke();
+    }
+    // 对生小叶（沿曲线取点，左右交替，向尖端渐小）
+    for (const [idx, side] of [[5, -1], [11, 1], [16, -1], [20, 1]] as const) {
+      const [lx, ly] = pts[idx];
+      const sz = 14 * (1 - idx / 30);
+      petalShape(ctx, lx, ly + side * 3, sz, sz * 0.32, side * 1.1, '#A8D088', '#74A858');
     }
     // 末端卷须
+    const tip = pts[pts.length - 1];
     ctx.strokeStyle = '#74A858';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.6;
     ctx.beginPath();
-    ctx.moveTo(128, 19);
-    ctx.quadraticCurveTo(142, 14, 144, 21);
-    ctx.arc(141, 21, 3.2, 0, Math.PI * 1.5);
+    ctx.moveTo(tip[0], tip[1]);
+    ctx.arc(tip[0] + 1, tip[1] + 2, 3, Math.PI * 1.2, Math.PI * 3.1);
     ctx.stroke();
   });
 
@@ -453,5 +469,440 @@ export function createWeaponTextures(scene: Phaser.Scene): void {
     ctx.lineWidth = 1;
     ctx.strokeStyle = cssOf(PAL.puffDeep);
     ctx.stroke();
+  });
+
+  // ===== M22 批次 D/E/F 弹体/特效/地皮 =====
+
+  // 柳叶镖弹体（朝右，origin 中心；锋利柳叶 + 叶脉）
+  makeTex(scene, 'w_dagger', 30, 12, (ctx) => {
+    ctx.beginPath();
+    ctx.moveTo(28, 6);
+    ctx.quadraticCurveTo(14, 1.5, 3, 6);
+    ctx.quadraticCurveTo(14, 10.5, 28, 6);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0xa8d088);
+    ctx.fill();
+    ctx.lineWidth = 1.4;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(0x74a858);
+    ctx.stroke();
+    // 主脉
+    ctx.strokeStyle = cssOf(0x74a858);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(26, 6);
+    ctx.lineTo(4, 6);
+    ctx.stroke();
+    // 侧脉
+    ctx.lineWidth = 0.7;
+    for (const x of [10, 16, 21]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 6);
+      ctx.lineTo(x + 3, 3.8);
+      ctx.moveTo(x, 6);
+      ctx.lineTo(x + 3, 8.2);
+      ctx.stroke();
+    }
+  });
+
+  // 旋翅果弹体（旋转用，origin 中心；鼓鼓种子 + 透翅 + 翅脉）
+  makeTex(scene, 'w_axe', 34, 34, (ctx) => {
+    ctx.save();
+    ctx.translate(17, 17);
+    // 翅
+    ctx.beginPath();
+    ctx.moveTo(-2, 2);
+    ctx.quadraticCurveTo(10, -9, 16, -4);
+    ctx.quadraticCurveTo(9, 3, -2, 2);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0xe8d8a8);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(0xb89858);
+    ctx.stroke();
+    // 翅脉
+    ctx.strokeStyle = 'rgba(184,152,88,0.8)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(0, 1.5);
+      ctx.lineTo(4 + i * 4, -4 + i * 1.5);
+      ctx.stroke();
+    }
+    // 种子
+    ctx.beginPath();
+    ctx.arc(-4, 3, 6, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xb88a58);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = cssOf(0x86603c);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath();
+    ctx.ellipse(-6.5, 0.5, 2, 1.2, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // 流光球（柔光 + 暖金核 + 高光）
+  makeTex(scene, 'w_fireball', 36, 36, (ctx) => {
+    softGlow(ctx, 18, 18, 17, 'rgba(248,206,120,0.6)');
+    ctx.beginPath();
+    ctx.arc(18, 18, 11, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xf8c860);
+    ctx.fill();
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = cssOf(0xd89838);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(18, 18, 6, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xfff0c0);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(15, 15, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 朝露瓶弹体（小药瓶）
+  makeTex(scene, 'w_flaskbottle', 16, 22, (ctx) => {
+    ctx.beginPath();
+    ctx.moveTo(6, 4);
+    ctx.lineTo(6, 8);
+    ctx.quadraticCurveTo(2, 12, 3, 18);
+    ctx.quadraticCurveTo(5, 21, 8, 21);
+    ctx.quadraticCurveTo(11, 21, 13, 18);
+    ctx.quadraticCurveTo(14, 12, 10, 8);
+    ctx.lineTo(10, 4);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(200,236,232,0.92)';
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = cssOf(0x5fa8a0);
+    ctx.stroke();
+    ctx.fillStyle = cssOf(0x88d0c8);
+    ctx.beginPath();
+    ctx.ellipse(8, 16, 4.4, 3.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#A07048';
+    ctx.fillRect(5, 2, 6, 3);
+  });
+
+  // 朝露地汐（burn 地皮：青露椭圆，带涟漪）
+  makeTex(scene, 'w_dewpool', 96, 52, (ctx, w, h) => {
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 6, 0, 0, w / 2 - 2);
+    g.addColorStop(0, 'rgba(150,224,212,0.5)');
+    g.addColorStop(0.85, 'rgba(120,208,200,0.34)');
+    g.addColorStop(1, 'rgba(80,168,160,0.5)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, w / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.4;
+    for (const [rx, ry] of [[20, 7], [11, 4]] as const) {
+      ctx.beginPath();
+      ctx.ellipse(w / 2, h / 2, rx, ry, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
+
+  // 灼光地皮（burn 地皮：晨光暖斑，流光球火痕 / 坠星星坑共用）
+  makeTex(scene, 'w_emberpool', 80, 44, (ctx, w, h) => {
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 5, 0, 0, w / 2 - 2);
+    g.addColorStop(0, 'rgba(255,232,160,0.55)');
+    g.addColorStop(0.8, 'rgba(248,200,110,0.32)');
+    g.addColorStop(1, 'rgba(224,160,72,0.46)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, w / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
+
+  // 候鸟弹体（俯冲小鸟，origin 中心，朝右；按速度旋转）
+  makeTex(scene, 'w_bird', 30, 22, (ctx) => {
+    // 身体
+    ctx.beginPath();
+    ctx.ellipse(13, 13, 8, 5.5, -0.2, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xc4d2ee);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(0x7e8eb8);
+    ctx.stroke();
+    // 翼
+    ctx.fillStyle = cssOf(0x9aa8d4);
+    ctx.beginPath();
+    ctx.moveTo(12, 10);
+    ctx.quadraticCurveTo(4, 2, 2, 9);
+    ctx.quadraticCurveTo(8, 10, 12, 12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.lineWidth = 1.3;
+    ctx.stroke();
+    // 喙 + 眼
+    ctx.fillStyle = cssOf(0xf0c060);
+    ctx.beginPath();
+    ctx.moveTo(20, 12);
+    ctx.lineTo(27, 11);
+    ctx.lineTo(20, 15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = cssOf(PAL.ink);
+    ctx.beginPath();
+    ctx.arc(18, 11, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 跳跳豆弹珠（发光玻璃珠）
+  makeTex(scene, 'w_bead', 22, 22, (ctx) => {
+    softGlow(ctx, 11, 11, 10, 'rgba(232,124,192,0.7)');
+    ctx.beginPath();
+    ctx.arc(11, 11, 7, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xf0a0d8);
+    ctx.fill();
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = cssOf(0xc05898);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(8.5, 8.5, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 晨星杖星弹（小四芒星 + 柔光）
+  makeTex(scene, 'w_wandbolt', 18, 18, (ctx) => {
+    softGlow(ctx, 9, 9, 8.5, 'rgba(255,224,160,0.8)');
+    star(ctx, 9, 9, 4, 7.5, 2.6, cssOf(0xffe8a8), cssOf(0xd0a040));
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(9, 9, 2, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 花粉粒子（柔和发光花粉绒，origin 中心；龙息→花粉拂 复用此键）
+  makeTex(scene, 'w_flame', 20, 16, (ctx) => {
+    softGlow(ctx, 10, 8, 9, 'rgba(248,224,140,0.7)');
+    ctx.beginPath();
+    ctx.arc(10, 8, 4, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xf8e0a0);
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(208,168,80,0.6)';
+    ctx.stroke();
+    // 绒刺小点
+    ctx.fillStyle = 'rgba(255,248,210,0.9)';
+    for (const [dx, dy] of [[-3, -2], [3, -1], [1, 3], [-2, 2]] as const) {
+      ctx.beginPath();
+      ctx.arc(10 + dx, 8 + dy, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(8.5, 6.5, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 泡泡弹本体（晶莹大泡 + 薄膜 + 高光，无引信）
+  makeTex(scene, 'w_bomb', 28, 28, (ctx) => {
+    ctx.beginPath();
+    ctx.arc(14, 14, 11, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(168,216,236,0.4)';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = cssOf(0x6aa8c8);
+    ctx.stroke();
+    // 薄膜内圈
+    ctx.beginPath();
+    ctx.arc(14, 14, 8, 0, Math.PI * 2);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.stroke();
+    // 高光
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.beginPath();
+    ctx.ellipse(9.5, 9.5, 3, 2, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.arc(19, 18, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 月华引漩涡（向心螺旋臂，逐帧旋转）
+  makeTex(scene, 'w_void', 96, 96, (ctx) => {
+    softGlow(ctx, 48, 48, 46, 'rgba(120,88,176,0.4)');
+    ctx.strokeStyle = 'rgba(170,140,220,0.85)';
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const a0 = (i / 4) * Math.PI * 2;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      for (let t = 0; t <= 1.001; t += 0.05) {
+        const a = a0 + t * Math.PI * 1.8;
+        const r = 42 * (1 - t * 0.92);
+        const x = 48 + Math.cos(a) * r;
+        const y = 48 + Math.sin(a) * r;
+        if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(48, 48, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(60,44,96,0.9)';
+    ctx.fill();
+  });
+
+  // 光矛长刃（朝右，origin 在柄端 [0.12,0.5]；发光晨光长矛）
+  makeTex(scene, 'w_sword', 70, 18, (ctx) => {
+    softGlow(ctx, 38, 9, 13, 'rgba(248,238,192,0.45)');
+    // 矛身（长三角光刃，向右收尖）
+    ctx.beginPath();
+    ctx.moveTo(9, 5);
+    ctx.lineTo(64, 9);
+    ctx.lineTo(9, 13);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0xfaf0c8);
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(0xd8c068);
+    ctx.stroke();
+    // 中脊亮线
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(11, 9);
+    ctx.lineTo(60, 9);
+    ctx.stroke();
+    // 矛柄光握
+    ctx.strokeStyle = cssOf(0xe0c878);
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(3, 9);
+    ctx.lineTo(9, 9);
+    ctx.stroke();
+  });
+
+  // 群蜂弹体（条纹小蜂 + 翅）
+  makeTex(scene, 'w_bee', 16, 14, (ctx) => {
+    ctx.fillStyle = 'rgba(255,255,255,0.82)';
+    for (const dy of [-1, 1]) {
+      ctx.beginPath();
+      ctx.ellipse(7, 7 + dy * 3, 3.6, 2.2, dy * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.ellipse(9, 7, 5.5, 4.2, 0, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xf0c850);
+    ctx.fill();
+    ctx.lineWidth = 1.3;
+    ctx.strokeStyle = cssOf(0xb08828);
+    ctx.stroke();
+    ctx.strokeStyle = cssOf(0x6a5a48);
+    ctx.lineWidth = 1.4;
+    for (const dx of [-1.5, 1.5]) {
+      ctx.beginPath();
+      ctx.moveTo(9 + dx, 3.6);
+      ctx.lineTo(9 + dx, 10.4);
+      ctx.stroke();
+    }
+  });
+
+  // 坠星弹体（发光流星，origin 中心；星芒 + 暖金核）
+  makeTex(scene, 'w_meteor', 30, 30, (ctx) => {
+    softGlow(ctx, 15, 15, 14, 'rgba(248,232,170,0.6)');
+    star(ctx, 15, 15, 5, 11, 4.6, cssOf(0xfaf0c0), cssOf(0xd0b860));
+    ctx.beginPath();
+    ctx.arc(15, 15, 4, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(0xfff6e0);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(13.5, 13.5, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // 凛霜冰锥（朝右尖锥，origin 中心）
+  makeTex(scene, 'w_icicle', 26, 16, (ctx) => {
+    softGlow(ctx, 11, 8, 9, 'rgba(168,224,240,0.6)');
+    ctx.beginPath();
+    ctx.moveTo(24, 8);
+    ctx.lineTo(5, 3.5);
+    ctx.lineTo(2, 8);
+    ctx.lineTo(5, 12.5);
+    ctx.closePath();
+    ctx.fillStyle = cssOf(0xd2f0fa);
+    ctx.fill();
+    ctx.lineWidth = 1.4;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = cssOf(0x7ec4dc);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(20, 8);
+    ctx.lineTo(6, 8);
+    ctx.stroke();
+  });
+
+  // 霜地（slow 地皮：冰晶椭圆）
+  makeTex(scene, 'w_frost', 96, 52, (ctx, w, h) => {
+    ctx.save();
+    ctx.translate(w / 2, h / 2);
+    ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 6, 0, 0, w / 2 - 2);
+    g.addColorStop(0, 'rgba(204,240,250,0.55)');
+    g.addColorStop(0.85, 'rgba(168,224,240,0.36)');
+    g.addColorStop(1, 'rgba(126,196,220,0.5)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, w / 2 - 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // 冰晶纹
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 1.3;
+    ctx.lineCap = 'round';
+    for (const [cx, cy] of [[w / 2 - 16, h / 2 - 4], [w / 2 + 14, h / 2 + 5]] as const) {
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(cx - Math.cos(a) * 6, cy - Math.sin(a) * 4);
+        ctx.lineTo(cx + Math.cos(a) * 6, cy + Math.sin(a) * 4);
+        ctx.stroke();
+      }
+    }
+  });
+
+  // 卷叶风旋涡（俯视螺旋臂 + 卷叶，逐帧旋转）
+  makeTex(scene, 'w_tornado', 80, 80, (ctx) => {
+    softGlow(ctx, 40, 40, 38, 'rgba(168,196,160,0.35)');
+    ctx.strokeStyle = 'rgba(136,168,120,0.9)';
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) {
+      const a0 = (i / 3) * Math.PI * 2;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      for (let t = 0; t <= 1.001; t += 0.05) {
+        const a = a0 + t * Math.PI * 2.2;
+        const r = 34 * (1 - t * 0.85);
+        const x = 40 + Math.cos(a) * r;
+        const y = 40 + Math.sin(a) * r;
+        if (t === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    petalShape(ctx, 62, 26, 12, 4, 0.6, 'rgba(168,208,136,0.95)', '#74A858');
+    petalShape(ctx, 20, 56, 11, 3.6, -0.7, 'rgba(168,208,136,0.95)', '#74A858');
   });
 }

@@ -4,7 +4,10 @@ export type WeaponId =
   // M6 批次 B（补 zone/orbit/melee/burst 机制空缺）
   | 'lantern' | 'star' | 'mallet' | 'chime'
   // M7 批次 C（补 whip/炮射/追踪/哨塔 机制空缺）
-  | 'vine' | 'sling' | 'wisp' | 'bugle';
+  | 'vine' | 'sling' | 'wisp' | 'bugle'
+  // M22 批次 D/E/F：参考吸血鬼幸存者补 16 武器至 32，每把机制/特效互不重叠
+  | 'dagger' | 'axe' | 'fireball' | 'flask' | 'bolt' | 'bird' | 'ricochet' | 'wand'
+  | 'breath' | 'bomb' | 'gravity' | 'sword' | 'swarm' | 'meteor' | 'frost' | 'tornado';
 export type PassiveId =
   | 'power' | 'bloom' | 'lens' | 'cloud' | 'battery' | 'wind' | 'ladybug' | 'honey'
   // M6

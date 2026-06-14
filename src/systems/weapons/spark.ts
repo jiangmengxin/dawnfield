@@ -30,7 +30,8 @@ export class SparkWeapon extends Weapon {
       points.push([cur.x, cur.y]);
       const dmg = baseDmg * Math.pow(decay, i);
       ctx.hitEnemy(cur, dmg, { kb: 30, kx: 0, ky: 0, pitch: 1.8 });
-      ctx.fx.burst(cur.x, cur.y, { tex: 'p_star', color: PAL.spark, count: 3, speed: 70, life: 0.3, scale: 0.8 });
+      ctx.fx.burst(cur.x, cur.y, { tex: 'p_star', color: PAL.spark, count: 5, speed: 95, life: 0.32, scale: 1.05, spin: true });
+      ctx.fx.burst(cur.x, cur.y, { tex: 'p_dot', color: 0xffffff, count: 2, speed: 50, life: 0.2, scale: 0.7 });
       if (this.evolved) {
         // 链端小爆炸
         ctx.grid.queryCircle(cur.x, cur.y, 44, queryOut);
@@ -75,8 +76,9 @@ export class SparkWeapon extends Weapon {
       }
       gr.strokePath();
     };
-    drawPath(7, PAL.spark, 0.4, 26);
-    drawPath(2.5, 0xffffff, 0.95, 26);
-    ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 200, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
+    drawPath(16, PAL.spark, 0.18, 28); // 柔光外晕，增可见性
+    drawPath(9, PAL.sparkDeep, 0.5, 26);
+    drawPath(3.5, 0xffffff, 0.98, 26);
+    ctx.scene.tweens.add({ targets: gr, alpha: 0, duration: 260, ease: 'Cubic.easeIn', onComplete: () => gr.destroy() });
   }
 }
