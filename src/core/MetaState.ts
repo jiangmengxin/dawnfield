@@ -3,7 +3,16 @@
 import type { ArcanaId, MapId, PowerUpId } from '../content/ids';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { ARCANA_META } from '../content/arcana';
-import { POWERUPS, PowerUpSpec, powerUpPrice } from '../content/shop';
+import {
+  getAffordableBulkBuy,
+  getShopSpent,
+  getShopUpgrade,
+  getUnlockedLevelCap,
+  PowerUpSpec,
+  powerUpPrice,
+  ShopBuyMode,
+  ShopUpgradeSpec,
+} from '../content/shop';
 import { CodexCat, flushSave, getSave, persistSave, SaveV2 } from './save';
 
 class MetaStateImpl {
@@ -43,6 +52,8 @@ class MetaStateImpl {
   }
 
   buyPowerUp(spec: PowerUpSpec): boolean {
+    const upgrade = getShopUpgrade(spec.id);
+    if (upgrade) return this.buyShopUpgrade(upgrade, 'one') > 0;
     const lv = this.powerUpLevel(spec.id);
     if (lv >= spec.max) return false;
     if (!this.trySpend(powerUpPrice(spec, lv))) return false;
@@ -52,14 +63,23 @@ class MetaStateImpl {
     return true;
   }
 
+  /** 购买任意商店强化；返回实际买到的等级数（会受余额、满级、解锁上限限制） */
+  buyShopUpgrade(spec: ShopUpgradeSpec, mode: ShopBuyMode = 'one'): number {
+    const lv = this.powerUpLevel(spec.id);
+    const cap = getUnlockedLevelCap(spec, this.save);
+    const plan = getAffordableBulkBuy(spec, lv, this.coins, cap, mode);
+    if (plan.levels <= 0 || plan.cost <= 0) return 0;
+    const s = this.save;
+    s.coins -= plan.cost;
+    s.powerUps[spec.id] = lv + plan.levels;
+    s.stats.purchases += plan.levels;
+    persistSave();
+    return plan.levels;
+  }
+
   /** 已花费总额（重置返还数额 = 此值，按价格公式确定性重算） */
   powerUpSpent(): number {
-    let sum = 0;
-    for (const spec of POWERUPS) {
-      const lv = this.powerUpLevel(spec.id);
-      for (let i = 0; i < lv; i++) sum += powerUpPrice(spec, i);
-    }
-    return sum;
+    return getShopSpent(this.save.powerUps);
   }
 
   /** 重置全部强化并全额返还；返回返还数额 */

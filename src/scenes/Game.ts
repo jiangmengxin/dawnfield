@@ -121,7 +121,7 @@ export class GameScene extends Phaser.Scene {
     this.enemyCapMul = this.isMobile ? 0.75 : 1;
 
     // 重置局内状态（场景可重开）；角色差异（HP/移速/体积/偏移）经 RunState.char 生效
-    this.run = new RunState(this.charId, this.mode, this.diff, this.flags);
+    this.run = new RunState(this.charId, this.mode, this.diff, this.flags, this.map.id);
     this.run.mapXpK = this.map.xpK; // 升级节奏随时长档（M12：短图加快）
     this.modifiers.length = 0; // 规则卡逐局重置（LevelUpSystem 持同一数组引用，不可换新）
     this.run.pendingArcana = this.run.arcanaMode && !this.benchMode; // 开局三选一（M20 规则模式开关；关闭即与 M8 等价）
@@ -183,7 +183,7 @@ export class GameScene extends Phaser.Scene {
           this.playerSys,
           { update: () => this.grid.rebuild(this.enemies.actives) },
           this.waveDir,
-          ...((this.mechSys = this.map.mechanics.length ? new MapMechanicSystem(this.ctx, this.map.mechanics) : null) ? [this.mechSys!] : []),
+          ...((this.mechSys = this.map.mechanics.length ? new MapMechanicSystem(this.ctx, this.map.mechanics, this.run.mechanicEase) : null) ? [this.mechSys!] : []),
           this.enemies,
           this.weapons,
           pickups,

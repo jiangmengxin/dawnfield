@@ -1,14 +1,14 @@
 // 局内运行时状态（与局外 MetaState 配对）
 // 纯状态 + 属性重算，无 Phaser 依赖；商店永久强化在 computeStats 汇入基础值
 // M4 起角色差异化：基础 HP/移速/体积来自 CharacterSpec，属性偏移在重算时叠乘
-import type { ArcanaId, PassiveId } from '../content/ids';
+import type { ArcanaId, MapId, PassiveId } from '../content/ids';
 import type { RunMode } from '../systems/context';
 import { CharacterSpec, getCharacter } from '../content/characters';
 import { DIFFICULTY } from '../content/difficulty';
 import { endlessCoinMul } from '../content/endless';
 import { PASSIVE_FX } from '../content/passives';
 import { ESSENCE, MAX_WEAPONS, PLAYER, xpForLevel } from '../content/player';
-import { powerUpBonus, PowerUpBonus } from '../content/shop';
+import { getMapMasteryBonus, MapMasteryBonus, powerUpBonus, PowerUpBonus } from '../content/shop';
 import { getSave } from './save';
 
 /** 选图页模式开关（M20）：均缺省 false，由选图页按勾选传入 */
@@ -104,13 +104,19 @@ export class RunState {
 
   /** 商店永久强化加成（开局快照，局中不变） */
   private readonly pu: PowerUpBonus = powerUpBonus(getSave().powerUps);
+  /** 地图精研加成（开局快照，局中不变） */
+  private mapMastery: MapMasteryBonus = getMapMasteryBonus(getSave().powerUps);
 
   /** M19 掉落道具掉率乘子（商店 fortune 永久强化；随机掉落来源乘此） */
   get dropRateMul(): number {
-    return 1 + this.pu.dropRate;
+    return 1 + this.pu.dropRate + this.mapMastery.dropRate;
   }
 
-  constructor(charId = 'spark', mode: RunMode = 'normal', diff: 0 | 1 | 2 = 0, flags: RunFlags = {}) {
+  get mechanicEase(): number {
+    return this.mapMastery.mechanicEase;
+  }
+
+  constructor(charId = 'spark', mode: RunMode = 'normal', diff: 0 | 1 | 2 = 0, flags: RunFlags = {}, mapId?: MapId) {
     this.char = getCharacter(charId);
     this.mode = mode;
     this.diff = diff;
@@ -119,10 +125,11 @@ export class RunState {
     this.speed2x = flags.speed2x ?? false;
     this.breakthrough = flags.breakthrough ?? false;
     const puLv = getSave().powerUps;
-    this.rerolls = 1 + (puLv.reroll ?? 0);
-    this.banishes = 1 + (puLv.banish ?? 0);
-    this.skips = 1 + (puLv.skip ?? 0);
-    this.revivesLeft = puLv.revive ?? 0;
+    this.mapMastery = getMapMasteryBonus(puLv, mapId);
+    this.rerolls = 1 + (puLv.reroll ?? 0) + this.pu.rerolls;
+    this.banishes = 1 + (puLv.banish ?? 0) + this.pu.banishes;
+    this.skips = 1 + (puLv.skip ?? 0) + this.pu.skips;
+    this.revivesLeft = (puLv.revive ?? 0) + this.pu.revives;
     this.stats = this.computeStats();
     this.hp = this.stats.maxHp;
   }
@@ -150,7 +157,8 @@ export class RunState {
       projSpeed: (1 + PASSIVE_FX.windProj * p('wind') + PASSIVE_FX.stardustProj * p('stardust') + PASSIVE_FX.whistleProj * p('whistle')) * (m.projSpeed ?? 1),
       maxHp: c.hp + PASSIVE_FX.bloomHp * p('bloom') + PASSIVE_FX.snackHp * p('snack') + pu.hp,
       xpGain: (1 + pu.xpGain + PASSIVE_FX.sproutXp * p('sprout') + PASSIVE_FX.trellisXp * p('trellis')) * (m.xpGain ?? 1),
-      coinGain: (1 + pu.coinGain + PASSIVE_FX.pouchCoin * p('pouch')) * (m.coinGain ?? 1),
+      coinGain: (1 + pu.coinGain + this.mapMastery.coinGain + this.mapMastery.globalCoinGain
+        + PASSIVE_FX.pouchCoin * p('pouch')) * (m.coinGain ?? 1),
       armor: pu.armor + (m.armor ?? 0) + PASSIVE_FX.acornArmor * p('acorn'),
       regen: pu.regen + (m.regen ?? 0) + PASSIVE_FX.honeyRegen * p('honey') + PASSIVE_FX.snackRegen * p('snack'),
       crit: pu.crit + (m.crit ?? 0) + PASSIVE_FX.ladybugCrit * p('ladybug'),

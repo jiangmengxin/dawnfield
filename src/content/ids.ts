@@ -93,7 +93,25 @@ export type PowerUpId =
   // M10 构筑操控与复活（次数类：等级 → 每局次数，不走 powerUpBonus 乘区）
   | 'revive' | 'reroll' | 'banish' | 'skip'
   // M19 掉落道具掉率（提升随机掉落来源出现概率：击杀/场景物/地图机制）
-  | 'fortune';
+  | 'fortune'
+  // M23 长期商店：全局进阶工坊（金币单货币、旧档保留）
+  | 'adv_power' | 'adv_vitality' | 'adv_haste' | 'adv_area'
+  | 'adv_speed' | 'adv_magnet' | 'adv_growth' | 'adv_greed'
+  | 'adv_armor' | 'adv_regen' | 'adv_luck' | 'adv_fortune'
+  | 'adv_reroll' | 'adv_banish' | 'adv_skip' | 'adv_revive'
+  // M23 地图精研：每图 勘察 / 调律 / 纪念物
+  | 'map_meadow_survey' | 'map_meadow_tune' | 'map_meadow_keepsake'
+  | 'map_pond_survey' | 'map_pond_tune' | 'map_pond_keepsake'
+  | 'map_hills_survey' | 'map_hills_tune' | 'map_hills_keepsake'
+  | 'map_grove_survey' | 'map_grove_tune' | 'map_grove_keepsake'
+  | 'map_lavender_survey' | 'map_lavender_tune' | 'map_lavender_keepsake'
+  | 'map_bramble_survey' | 'map_bramble_tune' | 'map_bramble_keepsake'
+  | 'map_nocturne_survey' | 'map_nocturne_tune' | 'map_nocturne_keepsake'
+  | 'map_summit_survey' | 'map_summit_tune' | 'map_summit_keepsake'
+  | 'map_orchard_survey' | 'map_orchard_tune' | 'map_orchard_keepsake'
+  | 'map_snowbell_survey' | 'map_snowbell_tune' | 'map_snowbell_keepsake'
+  | 'map_mirage_survey' | 'map_mirage_tune' | 'map_mirage_keepsake'
+  | 'map_clockwork_survey' | 'map_clockwork_tune' | 'map_clockwork_keepsake';
 
 /** 一次性掉落道具（M19；VS 式踩到即触发）：7 通用 + 12 图×3 专属。
  *  i18n 键公约 drop_<id>(_d)；图鉴并入「物品」页（与被动同 codex.passives）。

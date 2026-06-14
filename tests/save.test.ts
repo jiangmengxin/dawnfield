@@ -5,10 +5,13 @@ import { defaultSave, sanitize, SAVE_VERSION } from '../src/core/save/schema';
 import { MIGRATIONS } from '../src/core/save/migrations';
 
 describe('sanitize 对 powerUps 的宽容保留（M10 零迁移的前提）', () => {
-  it('M10 新条目键在 v1 档中原样保留', () => {
-    const s = sanitize({ ...defaultSave(), powerUps: { power: 3, revive: 1, reroll: 2, banish: 3, skip: 1 } });
+  it('M10/M23 新条目键在 v1 档中原样保留', () => {
+    const s = sanitize({
+      ...defaultSave(),
+      powerUps: { power: 3, revive: 1, reroll: 2, banish: 3, skip: 1, adv_power: 2, map_meadow_survey: 3 },
+    });
     expect(s).not.toBeNull();
-    expect(s!.powerUps).toEqual({ power: 3, revive: 1, reroll: 2, banish: 3, skip: 1 });
+    expect(s!.powerUps).toEqual({ power: 3, revive: 1, reroll: 2, banish: 3, skip: 1, adv_power: 2, map_meadow_survey: 3 });
   });
 
   it('未来里程碑的未知键同样保留（无 id 白名单）', () => {

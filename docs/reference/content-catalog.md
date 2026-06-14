@@ -3,7 +3,7 @@
 > 更新日期：2026-06-14  
 > 校验：本文件由 `npm run check:docs` 机械检查 ID 覆盖。表格只记录核心信息，不复制完整数值数组；完整数值以 `src/content/*` 为准。
 
-当前规模：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 43 掉落道具 / 16 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
+当前规模：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 43 掉落道具 / 68 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
 
 ## 角色
 
@@ -174,7 +174,13 @@ mechanic：`splinter`, `thorncore`, `vow`, `allin`, `slowburn`, `dawnfield`, `st
 
 源文件：`src/content/shop.ts`、`tests/shop.test.ts`。
 
-`power`, `vitality`, `haste`, `area`, `speed`, `magnet`, `growth`, `greed`, `armor`, `regen`, `luck`, `revive`, `reroll`, `banish`, `skip`, `fortune`。
+基础花圃：`power`, `vitality`, `haste`, `area`, `speed`, `magnet`, `growth`, `greed`, `armor`, `regen`, `luck`, `revive`, `reroll`, `banish`, `skip`, `fortune`。
+
+进阶工坊：`adv_power`, `adv_vitality`, `adv_haste`, `adv_area`, `adv_speed`, `adv_magnet`, `adv_growth`, `adv_greed`, `adv_armor`, `adv_regen`, `adv_luck`, `adv_fortune`, `adv_reroll`, `adv_banish`, `adv_skip`, `adv_revive`。
+
+地图精研：`map_meadow_survey`, `map_meadow_tune`, `map_meadow_keepsake`, `map_pond_survey`, `map_pond_tune`, `map_pond_keepsake`, `map_hills_survey`, `map_hills_tune`, `map_hills_keepsake`, `map_grove_survey`, `map_grove_tune`, `map_grove_keepsake`, `map_lavender_survey`, `map_lavender_tune`, `map_lavender_keepsake`, `map_bramble_survey`, `map_bramble_tune`, `map_bramble_keepsake`, `map_nocturne_survey`, `map_nocturne_tune`, `map_nocturne_keepsake`, `map_summit_survey`, `map_summit_tune`, `map_summit_keepsake`, `map_orchard_survey`, `map_orchard_tune`, `map_orchard_keepsake`, `map_snowbell_survey`, `map_snowbell_tune`, `map_snowbell_keepsake`, `map_mirage_survey`, `map_mirage_tune`, `map_mirage_keepsake`, `map_clockwork_survey`, `map_clockwork_tune`, `map_clockwork_keepsake`。
+
+经济口径：基础花圃 9,195 金币，进阶工坊 31,200 金币，地图精研 29,760 金币；总池 70,155 金币。
 
 ## 成就
 

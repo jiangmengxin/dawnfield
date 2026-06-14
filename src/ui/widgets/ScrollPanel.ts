@@ -4,6 +4,20 @@ import { PAL } from '../../gfx/palette';
 import { Rect } from '../layout';
 
 const DRAG_THRESHOLD = 8;
+const CLIP_WRAPPED = Symbol('scrollPanelInputClip');
+
+type ClipWrappedInput = Phaser.Types.Input.InteractiveObject & {
+  [CLIP_WRAPPED]?: boolean;
+};
+
+type TransformableGameObject = Phaser.GameObjects.GameObject & {
+  displayOriginX: number;
+  displayOriginY: number;
+  getWorldTransformMatrix: (
+    tempMatrix?: Phaser.GameObjects.Components.TransformMatrix,
+    parentMatrix?: Phaser.GameObjects.Components.TransformMatrix,
+  ) => Phaser.GameObjects.Components.TransformMatrix;
+};
 
 export class ScrollPanel extends Phaser.GameObjects.Container {
   readonly view: Rect;
@@ -18,6 +32,9 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
   private lastY = 0;
   private downY = 0;
   private tmpVec = new Phaser.Math.Vector2();
+  private tmpHitVec = new Phaser.Math.Vector2();
+  private tmpMatrix = new Phaser.GameObjects.Components.TransformMatrix();
+  private tmpParentMatrix = new Phaser.GameObjects.Components.TransformMatrix();
 
   /** 指针(物理像素) → 场景世界坐标（消化相机 DPR 缩放） */
   private toWorld(p: Phaser.Input.Pointer): Phaser.Math.Vector2 {
@@ -61,6 +78,8 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
       scene.input.off('wheel', this.onWheel, this);
       scene.events.off('update', this.onUpdate, this);
       this.maskGfx.destroy();
+      this.tmpMatrix.destroy();
+      this.tmpParentMatrix.destroy();
     });
     scene.add.existing(this);
   }
@@ -75,6 +94,7 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
     this.content.removeAll(true);
     this.contentH = build((go) => {
       this.content.add(go);
+      this.clipInteractiveInput(go);
     });
     this.clampScroll();
     this.applyScroll();
@@ -133,6 +153,35 @@ export class ScrollPanel extends Phaser.GameObjects.Container {
     this.scroll += dy * 0.6;
     this.vel = 0;
     this.applyScroll(true);
+  }
+
+  private inView(x: number, y: number): boolean {
+    const { view } = this;
+    return x >= view.x && x <= view.x + view.w && y >= view.y && y <= view.y + view.h;
+  }
+
+  private clipInteractiveInput(go: Phaser.GameObjects.GameObject): void {
+    this.wrapInteractive(go);
+    if (go instanceof Phaser.GameObjects.Container) {
+      go.each((child: Phaser.GameObjects.GameObject) => this.clipInteractiveInput(child));
+    }
+  }
+
+  private wrapInteractive(go: Phaser.GameObjects.GameObject): void {
+    const input = go.input as ClipWrappedInput | null;
+    if (!input || input[CLIP_WRAPPED]) return;
+    const original = input.hitAreaCallback;
+    input.hitAreaCallback = (hitArea, x, y, gameObject) => {
+      const target = gameObject as TransformableGameObject;
+      const m = target.getWorldTransformMatrix(this.tmpMatrix, this.tmpParentMatrix);
+      const world = m.transformPoint(
+        x - target.displayOriginX,
+        y - target.displayOriginY,
+        this.tmpHitVec,
+      );
+      return this.inView(world.x, world.y) && original(hitArea, x, y, gameObject);
+    };
+    input[CLIP_WRAPPED] = true;
   }
 
   private onUpdate(_t: number, dtMs: number): void {

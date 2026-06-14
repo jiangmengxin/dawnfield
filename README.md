@@ -2,7 +2,7 @@
 
 晨露之野 Dawnfield 是一款 Phaser 4.1 + Vite 7 + TypeScript 5.8 的吸血鬼幸存者类网页游戏。项目坚持零外部图片、音频与字体资源：美术由 Canvas 程序化生成，音频由 WebAudio 合成，玩家文案通过 `src/i18n.ts` 保持中文/英文同步。
 
-当前代码事实：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 43 掉落道具 / 16 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
+当前代码事实：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 43 掉落道具 / 68 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
 
 ## 快速开始
 
@@ -25,6 +25,7 @@ npm run build
 
 - `docs/README.md`：文档总索引与阅读顺序。
 - `docs/handbook/game-design.md`：核心玩法、构筑、模式与局内/局外循环。
+- `docs/handbook/onboarding-progression.md`：首小时引导、解锁章节、模式露出与验收规格。
 - `docs/handbook/content-design.md`：角色、地图、武器、敌人、Boss、Arcana、掉落、商店与成就的设计口径。
 - `docs/handbook/art-direction.md`：程序化美术、色彩、角色/敌人区分、地图视觉与 UI 图标规范。
 - `docs/handbook/audio-direction.md`：WebAudio SFX 与生成式 BGM 规范。

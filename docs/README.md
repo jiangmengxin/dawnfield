@@ -3,7 +3,7 @@
 > 更新日期：2026-06-14  
 > 事实源：当前代码、`src/content/*`、`src/core/*`、`src/systems/*`、`src/gfx/*`、`src/audio/*` 与测试脚本。旧规划只保留历史语境，不作为当前待办。
 
-当前项目规模：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 43 掉落道具 / 16 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
+当前项目规模：32 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 43 掉落道具 / 68 商店强化 / 73 成就 ID（66 当前成就 + 7 legacy）。
 
 ## 推荐阅读顺序
 
@@ -11,14 +11,16 @@
 2. `AGENTS.md`：AI Agent 与工程协作必须遵守的硬规则。
 3. `docs/当前项目状态.md`：当前代码事实快照、稳定契约与已知债。
 4. `docs/handbook/game-design.md`：游戏设计总纲。
-5. `docs/handbook/technical-architecture.md`：技术架构与扩展边界。
-6. `docs/reference/content-catalog.md`：内容 ID 与代码源索引。
+5. `docs/handbook/onboarding-progression.md`：首小时引导与 8-12 小时解锁流程规格。
+6. `docs/handbook/technical-architecture.md`：技术架构与扩展边界。
+7. `docs/reference/content-catalog.md`：内容 ID 与代码源索引。
 
 ## 手册分册
 
 | 文档 | 用途 |
 |---|---|
 | `docs/handbook/game-design.md` | 核心幻想、玩家动词、单局循环、构筑、模式、局外进度、胜败与奖励 |
+| `docs/handbook/onboarding-progression.md` | 首小时引导、解锁章节、模式露出、商店推荐、验收与兼容策略 |
 | `docs/handbook/content-design.md` | 内容体系的设计口径与扩展规则 |
 | `docs/handbook/art-direction.md` | 明亮童话画风、程序化纹理、色板与美术边界 |
 | `docs/handbook/audio-direction.md` | WebAudio 合成、SFX 分类、BGM `BgmSpec` 与分轨音量 |
