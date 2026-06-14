@@ -1,0 +1,116 @@
+# 掉落道具系统（一次性道具）设计与实现说明 · M19
+
+## 1. 背景与目标
+
+此前《晨露之野》只有 4 种地面拾取物：经验光珠、金币、红心、宝箱（见 `src/systems/PickupSystem.ts`）。
+本期引入类似《吸血鬼幸存者》的**一次性主动道具**——踩到即触发的强力效果（全屏吸附、时间停止、范围清场等），
+并与 M18 地图机制联动，让每张图拥有专属道具，强化各图差异化策略轴。
+
+**验收口径**（见 `tests/dropItems.test.ts`）：
+- 通用道具 ≥5 种（实做 **7** 种），全图通用。
+- 每张地图 ≥2 种专属道具（8 图 × 2 = **16** 种），由该图机制产物掉落。
+- 即拾即用：瞬发型立即结算，持续型立刻开始计时（HUD 倒计时）。
+- 元进度：道具进**图鉴**（与被动合并为「物品」页），商店新增**掉率强化**。
+
+**需求确认结论**（与产品对齐）：
+- 触发方式 = 即拾即用（无道具栏 UI）。
+- 掉落来源 = 击杀 / 精英·Boss / 地图机制产物（原「可破坏场景容器」来源因外观被误认占位已移除，掉落物直接落地）。
+- 地图专属道具 = 由该图机制产物掉落（机制对象在奖励时刻滚动本图专属池）。
+- 元进度 = 图鉴 +商店掉率项；图鉴「被动」页改名为「物品」页，被动与掉落物同处一页。
+
+**存档影响：无需提升版本号。** 图鉴复用现有 `codex.passives` 字符串列表（掉落物 id 与被动 id 不冲突，同存一类），
+商店掉率项复用 `save.powerUps`（宽容 `Partial<Record<PowerUpId, number>>`，sanitize 自动兼容）。
+
+## 2. 道具清单
+
+### 通用道具（`COMMON_DROPS`，7 种）
+
+| id | 名称 | 类型 | 效果 |
+|----|------|------|------|
+| `magnet` | 露珠磁石 | 瞬发 | 全屏吸附经验+金币 |
+| `nuke` | 晨光震爆 | 瞬发 | 全屏范围伤害+击退 |
+| `timestop` | 凝时沙漏 | 持续 4s | 冻结全部敌人与敌弹，玩家/武器照常 |
+| `heal` | 晨露之滴 | 瞬发 | 大量回血（60） |
+| `frenzy` | 疾风号角 | 持续 8s | 攻速 ×1/0.55、移速 ×1.3 |
+| `aegis` | 晨曦护盾 | 持续 5s | 无敌 |
+| `xpburst` | 露华涌泉 | 瞬发 | 立即经验 + 散落光珠 |
+
+### 地图专属道具（每图 2 种，`MapSpec.drops`）
+
+| 地图 | 机制 | 专属道具 |
+|------|------|----------|
+| meadow | bloomfield | `bloomburst` 花潮、`verdant` 春信 |
+| pond | tide | `ebbaegis` 退潮庇护、`ripple` 涟漪 |
+| hills | wind | `tailwind` 顺风疾行、`whirlwind` 旋风 |
+| grove | sporechain | `sporebloom` 孢子爆发、`fireflies` 萤火向导 |
+| lavender | pollen | `pollenfrenzy` 花粉狂热、`beeswarm` 蜂群 |
+| bramble | thornwall | `thornnova` 荆棘新星、`berryfeast` 莓果盛宴 |
+| nocturne | nightfall | `fullmoon` 满月、`meteor` 流星召唤 |
+| summit | beacon | `beaconsurge` 烽火齐燃、`dawnnova` 破晓强光 |
+
+数据表见 `src/content/dropItems.ts`（含 icon/color/glyph/scope/weight/kind/dur 与各效果调参）。
+
+## 3. 架构
+
+仿照武器/机制两套数据驱动体系，分四层：
+
+1. **数据层**（纯数据，禁依赖 Phaser）
+   - `src/content/ids.ts`：`DropItemId` 联合（23 个）+ `PowerUpId='fortune'`。
+   - `src/content/dropItems.ts`：`DROP_ITEMS` 表、`COMMON_DROPS`/`ALL_DROPS`、`DROP_RATES`、
+     `rollCommonDrop`/`weightedDrop`。
+   - `src/content/maps.ts`：`MapSpec.drops?: DropItemId[]`，8 图各填两项。
+
+2. **效果与生命周期层** `src/systems/dropItems.ts`（`DropItemSystem`）
+   - `DROP_EFFECTS: Record<DropItemId, DropEffect>`：瞬发 `apply` / 持续 `tick`+`end` + 静态 `invuln`/`freeze` 标记，
+     buff 乘子（cd/move/dmg/area）从 spec 读取。
+   - `collect(id)`：图鉴点亮 + 拾取横幅事件 + `apply`；持续型入 `active` 列计时（同 id 刷新时长）。
+   - 持续效果聚合：在场效果相乘/或合 → `ctx.setDropState(DropState)`（触发属性重算），到期复位。
+   - 注：曾设计「可破坏场景容器（VS 火盆式灯笼）」来源，因统一容器外观被误认为占位图标，已移除——掉落物一律直接以各自专属图标落地。
+
+3. **拾取层** `src/systems/PickupSystem.ts`
+   - `Pickup.kind` 增 `'drop'`（带 `dropId`）；`spawnDropPickup(id,x,y)` 渲染 `drop_<id>` 图标；
+     命中玩家 → `onDropCollect(id)`（GameScene 注入 = `dropSys.collect`）。
+   - `magnetizeAll()`：全场光珠+金币立即磁吸（露珠磁石/萤火向导）。
+
+4. **上下文/编排层** `src/systems/context.ts` + `src/scenes/Game.ts`
+   - `CombatContext` 新增：`spawnDropItem`/`spawnMapDrop`/`magnetizeAll`/`enemyFrozen`(getter)/`setDropState`。
+   - GameScene 持 `dropStateVal: DropState`；`recomputeStats` 在规则卡之后乘入掉落 buff；
+     `damagePlayer` 读 `invuln`；`enemyFrozen` getter 供 `EnemySystem`/`ProjectileSystem` 冻结。
+
+### 时停与 buff 接入
+- `EnemySystem.update` / `ProjectileSystem.update`：`if (ctx.enemyFrozen) return;`（敌人与敌弹冻结，玩家/武器照常）。
+- 攻速/移速/伤害/范围 buff：`DropState` 四乘子在 `GameScene.recomputeStats` 末尾乘入（M18 `mechDmgMul` 同款通道）。
+
+## 4. 掉落来源（三类；掉落物直接落地，无中间容器）
+
+| 来源 | 接入点 | 概率 |
+|------|--------|------|
+| 普通击杀 | `Game.onEnemyKilled` | `DROP_RATES.kill` × `run.dropRateMul` |
+| 精英 | `Game.onEnemyKilled` 精英分支 | `DROP_RATES.eliteCommon` × 掉率 |
+| 无尽 Boss | `Game.endlessBossDown` | 必掉一件通用 |
+| 地图机制产物 | 8 个 mechanic 模块奖励时刻调 `ctx.spawnMapDrop` | `DROP_RATES.mapDrop` × 掉率，从本图专属池加权 |
+
+机制奖励时刻：bloomfield 绽放 / tide 退潮 / wind 转向 / sporechain 连锁(≥3) / pollen 满层 / thornwall 生长 /
+nightfall 拾星 / beacon 点燃。
+
+## 5. 元进度
+
+- **图鉴**（`src/scenes/Codex.ts`）：`codex_passives` 文案改「物品/Items」；「物品」页同时渲染被动护符 + 全部掉落道具，
+  各卡带分组角标（`codex_passiveGroup`/`codex_dropGroup`）；首遇点亮复用 `Meta.codexLight('passives', id)`。
+- **商店**：新增 `PowerUpId='fortune'`（丰饶号角，资源组），每级掉率 +20%（`POWERUP_FX.fortune`），
+  汇入 `PowerUpBonus.dropRate`，`RunState.dropRateMul = 1 + dropRate`。
+- **i18n**：`drop_<id>` + `drop_<id>_d`（23×2）、`pu_fortune`(+_d)、`codex_*Group`；
+  `scripts/check-i18n.mjs` 新增 `DropItemId → drop_<id>(_d)` 规则。
+
+## 6. 关键文件
+
+新增：`src/content/dropItems.ts`、`src/systems/dropItems.ts`、`tests/dropItems.test.ts`、本文件。
+修改：`ids.ts`、`maps.ts`、`shop.ts`、`context.ts`、`RunState.ts`、`PickupSystem.ts`、`EnemySystem.ts`、
+`ProjectileSystem.ts`、`Game.ts`、`gfx/textures/misc.ts`（图标/提灯）、`i18n.ts`、`check-i18n.mjs`、
+`Codex.ts`、`Shop.ts`、`HUD.ts`（拾取横幅 + 倒计时芯片）、`core/events.ts`（`hud:drop`）、`tests/shop.test.ts`（fortune 总池）。
+
+## 7. 验证
+
+- `npm run check:i18n` / `npx tsc --noEmit` / `npx vitest run`（35 passed）全绿。
+- 运行时冒烟（preview）：道具图标与提灯纹理生成成功；`collect` 瞬发（heal 10→70）与持续（frenzy 攻速/移速、
+  timestop 冻结、aegis 无敌）聚合写入 `DropState` 正确；图鉴「物品」页正常显示被动 + 掉落物（首遇「新!」角标、glyph 图标）。

@@ -1,8 +1,8 @@
-// DPS 基准（M12，仅 DEV；生产构建经动态 import 摇树移除）
+// DPS 基准（DEV-only；生产构建经动态 import 摇树移除）
 // 方案：真实 GameScene 挂 bench 模式（无波次/机制/成就），三环 24 标靶
 // （r56×8 近战环 / r110×8 中环 / r260×8 远程环——比原方案 r120/r260 多一近战环，
 //  否则 petal/lantern/blade/mine 等贴身武器测不到目标），
-// 16 武器 ×{Lv5, 进化}=32 项 ×3 轮取均值，每项固定步长加速模拟 60s。
+// 遍历 WEAPON_META 当前全部武器 ×{Lv5, 进化} ×3 轮取均值，每项固定步长加速模拟 60s。
 // 注意：blade/mallet/prism/boomerang 等以 scene.time.delayedCall / tween 落伤害（真实时钟），
 // 步进时同步手动泵 scene.time 与 tweens（模拟时间驱动），否则后台标签页计时器被节流会把
 // 延迟伤害无限挂起（投射物清理也停摆，单轮可拖到分钟级）；轮间仍留短暂排空窗。
@@ -35,6 +35,12 @@ function totalFor(gs: GameScene, id: WeaponId): number {
 }
 
 export async function runBench(gs: GameScene): Promise<void> {
+  const cfg = (window as unknown as { __benchConfig?: { ids?: WeaponId[]; rounds?: number; simSeconds?: number } }).__benchConfig ?? {};
+  const metas = cfg.ids?.length
+    ? WEAPON_META.filter((m) => cfg.ids?.includes(m.id))
+    : WEAPON_META;
+  const rounds = cfg.rounds ?? ROUNDS;
+  const simSeconds = cfg.simSeconds ?? SIM_SECONDS;
   const wasMuted = SFX.muted;
   SFX.setMuted(true); // 加速模拟期高频命中音会刷爆音频图
 
@@ -42,6 +48,13 @@ export async function runBench(gs: GameScene): Promise<void> {
     fontFamily: FONT, fontSize: '16px', fontStyle: 'bold', color: '#5A5248',
     stroke: '#FFFFFF', strokeThickness: 4,
   }).setScrollFactor(0).setDepth(1e9);
+
+  // Bench measures damage only. Visual feedback creates thousands of particles/tweens
+  // in accelerated headless runs and can dominate runtime without changing DPS.
+  const quietFx = gs.fx as unknown as Record<string, (...args: unknown[]) => void>;
+  for (const k of ['burst', 'spray', 'teleLine', 'teleCircle', 'ring', 'flash', 'number']) quietFx[k] = () => {};
+  (gs as unknown as { castFx: () => void; requestHitStop: () => void }).castFx = () => {};
+  (gs as unknown as { requestHitStop: () => void }).requestHitStop = () => {};
 
   gs.player.setPosition(0, 0);
 
@@ -73,15 +86,19 @@ export async function runBench(gs: GameScene): Promise<void> {
   };
 
   const results: Array<{ id: WeaponId; lv5: number; evo: number }> = [];
-  const totalSteps = WEAPON_META.length * 2 * ROUNDS;
+  const totalSteps = metas.length * 2 * rounds;
   let step = 0;
-  const frames = Math.round(SIM_SECONDS / DT);
+  const frames = Math.round(simSeconds / DT);
+  const setProgress = (id = '', mode = ''): void => {
+    (window as unknown as { __benchProgress?: unknown }).__benchProgress = { step, totalSteps, id, mode };
+  };
+  setProgress();
 
-  for (const meta of WEAPON_META) {
+  for (const meta of metas) {
     const row = { id: meta.id, lv5: 0, evo: 0 };
     for (const mode of ['lv5', 'evo'] as const) {
       let acc = 0;
-      for (let round = 0; round < ROUNDS; round++) {
+      for (let round = 0; round < rounds; round++) {
         gs.weapons.removeAll();
         gs.benchReset();
         resetTargets();
@@ -112,11 +129,12 @@ export async function runBench(gs: GameScene): Promise<void> {
           gs.tweens.update();
           await yieldTask();
         }
-        acc += (totalFor(gs, meta.id) - before) / SIM_SECONDS;
+        acc += (totalFor(gs, meta.id) - before) / simSeconds;
         step++;
+        setProgress(meta.id, mode);
         label.setText(`DPS bench ${step}/${totalSteps} · ${t('w_' + meta.id)} ${mode}`);
       }
-      row[mode] = acc / ROUNDS;
+      row[mode] = acc / rounds;
     }
     results.push(row);
   }
@@ -124,7 +142,8 @@ export async function runBench(gs: GameScene): Promise<void> {
   // 输出：console.table + 可直接落档 docs/balance/ 的 Markdown（window.__benchResult）
   const sorted = [...results].sort((a, b) => b.lv5 - a.lv5);
   const lv5s = results.map((r) => r.lv5).sort((a, b) => a - b);
-  const median = (lv5s[7] + lv5s[8]) / 2;
+  const mid = Math.floor(lv5s.length / 2);
+  const median = lv5s.length % 2 === 0 ? (lv5s[mid - 1] + lv5s[mid]) / 2 : lv5s[mid];
   const fmt = (v: number): string => v.toFixed(1);
   const md = [
     '| 武器 | Lv5 DPS | /中位 | 进化 DPS | 进化/Lv5 |',
@@ -136,7 +155,8 @@ export async function runBench(gs: GameScene): Promise<void> {
   console.table(results.map((r) => ({
     weapon: r.id, lv5: Math.round(r.lv5), ratio: (r.lv5 / median).toFixed(2), evo: Math.round(r.evo),
   })));
-  (window as unknown as { __benchResult: string }).__benchResult = md;
+  (window as unknown as { __benchResult: string; __benchRows?: unknown }).__benchResult = md;
+  (window as unknown as { __benchRows: Array<{ id: WeaponId; lv5: number; evo: number }> }).__benchRows = results;
   SFX.setMuted(wasMuted);
   label.setText('DPS bench 完成：console.table / window.__benchResult\n点击任意处返回主菜单');
   gs.input.once('pointerup', () => gs.scene.start('title'));
