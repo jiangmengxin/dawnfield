@@ -85,9 +85,12 @@ export class BugleWeapon extends Weapon {
     const dur = this.evolved ? W_BUGLE.evoDur : W_BUGLE.dur;
     const fireCd = this.evolved ? W_BUGLE.evoFireCd : W_BUGLE.fireCd;
     const baseA = Math.random() * Math.PI * 2;
+    const near = ctx.enemies.nearest(ctx.player.x, ctx.player.y, W_BUGLE.range * ctx.stats.area + 180);
+    const nearA = near ? Math.atan2(near.y - ctx.player.y, near.x - ctx.player.x) : baseA;
+    const nearD = near ? Math.hypot(near.x - ctx.player.x, near.y - ctx.player.y) : 0;
     for (let i = 0; i < n; i++) {
-      const off = n === 1 ? 0 : W_BUGLE.plantGap / 2;
-      const a = baseA + (i / n) * Math.PI * 2;
+      const off = n === 1 ? Math.min(nearD * 0.35, 132) : W_BUGLE.plantGap / 2;
+      const a = n === 1 ? nearA : baseA + (i / n) * Math.PI * 2;
       this.sentries.push(new Sentry(
         ctx,
         ctx.player.x + Math.cos(a) * off,
@@ -131,9 +134,9 @@ export class BugleWeapon extends Weapon {
     b.img.y += b.vy * dt;
     ctx.grid.queryCircle(b.img.x, b.img.y, 11, queryOut);
     const sp = Math.hypot(b.vx, b.vy) || 1;
-    const pierce = this.evolved ? 2 : 1;
-    for (const e of queryOut) {
-      if (b.hit.has(e)) continue;
+    const liveHits = queryOut.filter((e) => !b.hit.has(e));
+    const pierce = this.evolved ? W_BUGLE.evoPierce : liveHits.length > 1 ? W_BUGLE.pierceCrowd : W_BUGLE.pierce;
+    for (const e of liveHits) {
       b.hit.add(e);
       ctx.hitEnemy(e, this.dmg(), { kb: W_BUGLE.kb, kx: b.vx / sp, ky: b.vy / sp, pitch: 1.3 });
       if (b.hit.size >= pierce) {

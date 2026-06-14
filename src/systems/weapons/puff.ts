@@ -58,7 +58,7 @@ class Seed {
     let ay = (this.vx / sp) * drift;
     // 进化：缓追最近敌人
     if (this.homing > 0) {
-      const near = ctx.enemies.nearest(this.img.x, this.img.y, 240);
+      const near = ctx.enemies.nearest(this.img.x, this.img.y, W_PUFF.homingRange);
       if (near) {
         const dx = near.x - this.img.x;
         const dy = near.y - this.img.y;
@@ -105,11 +105,17 @@ export class PuffWeapon extends Weapon {
     const life = W_PUFF.life * ctx.stats.area;
     SFX.throwSfx();
     if (this.evolved) {
-      // 全周环射 + 缓追
+      // 全周环射仍保留，但半数种子先压向近目标，避免单体进化后反而散火。
       const n = W_PUFF.evoN;
-      const a0 = Math.random() * Math.PI * 2;
+      const near = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 520);
+      const baseA = near ? Math.atan2(near.y - ctx.player.y, near.x - ctx.player.x) : ctx.rng() * Math.PI * 2;
+      const focusN = near ? Math.ceil(n * 0.55) : 0;
+      const a0 = ctx.rng() * Math.PI * 2;
       for (let i = 0; i < n; i++) {
-        this.seeds.push(new Seed(ctx, a0 + (i / n) * Math.PI * 2, speed, life, dmg, W_PUFF.evoHoming));
+        const a = i < focusN
+          ? baseA + (focusN === 1 ? 0 : (i / (focusN - 1) - 0.5) * 0.9) + (ctx.rng() - 0.5) * 0.08
+          : a0 + ((i - focusN) / Math.max(1, n - focusN)) * Math.PI * 2;
+        this.seeds.push(new Seed(ctx, a, speed, life, dmg, W_PUFF.evoHoming));
       }
       return;
     }
@@ -120,7 +126,7 @@ export class PuffWeapon extends Weapon {
     const n = W_PUFF.n[this.level - 1];
     for (let i = 0; i < n; i++) {
       const off = n === 1 ? 0 : (i / (n - 1) - 0.5) * W_PUFF.spread;
-      this.seeds.push(new Seed(ctx, baseA + off + (Math.random() - 0.5) * 0.08, speed * (0.92 + Math.random() * 0.16), life, dmg, 0));
+      this.seeds.push(new Seed(ctx, baseA + off + (Math.random() - 0.5) * 0.08, speed * (0.92 + Math.random() * 0.16), life, dmg, W_PUFF.homing));
     }
   }
 

@@ -13,8 +13,17 @@ class Bee {
   private life: number;
   private wanderT = 0;
   private hit = new Map<Enemy, number>();
+  private hits = 0;
 
-  constructor(private ctx: CombatContext, a: number, speed: number, life: number, private dmg: number) {
+  constructor(
+    private ctx: CombatContext,
+    a: number,
+    speed: number,
+    life: number,
+    private dmg: number,
+    private hitLimit: number,
+    private targetHit: Map<Enemy, number>,
+  ) {
     this.vx = Math.cos(a) * speed;
     this.vy = Math.sin(a) * speed;
     this.life = life;
@@ -53,8 +62,16 @@ class Bee {
     for (const e of queryOut) {
       const last = this.hit.get(e) ?? -9;
       if (now - last < W_SWARM.hitCd) continue;
+      const globalLast = this.targetHit.get(e) ?? -9;
+      if (now - globalLast < W_SWARM.targetHitCd) continue;
       this.hit.set(e, now);
+      this.targetHit.set(e, now);
+      this.hits++;
       ctx.hitEnemy(e, this.dmg, { kb: 36, kx: this.vx / speed, ky: this.vy / speed, pitch: 1.8 });
+      if (this.hits >= this.hitLimit) {
+        this.img.destroy();
+        return false;
+      }
     }
     return true;
   }
@@ -66,6 +83,7 @@ class Bee {
 
 export class SwarmWeapon extends Weapon {
   private bees: Bee[] = [];
+  private targetHit = new Map<Enemy, number>();
 
   protected cooldown(): number {
     return this.evolved ? W_SWARM.evoCd : W_SWARM.cd[this.level - 1];
@@ -77,9 +95,10 @@ export class SwarmWeapon extends Weapon {
     const dmg = W_SWARM.dmg[this.level - 1] * ctx.stats.dmg * (this.evolved ? W_SWARM.evoDmgMul : 1);
     const life = (this.evolved ? W_SWARM.evoLife : W_SWARM.life) * ctx.stats.area;
     const speed = W_SWARM.speed * ctx.stats.projSpeed;
+    const hitLimit = this.evolved ? W_SWARM.evoHitLimit : W_SWARM.hitLimit;
     SFX.throwSfx();
     for (let i = 0; i < n; i++) {
-      this.bees.push(new Bee(ctx, Math.random() * Math.PI * 2, speed * (0.85 + Math.random() * 0.3), life, dmg));
+      this.bees.push(new Bee(ctx, Math.random() * Math.PI * 2, speed * (0.85 + Math.random() * 0.3), life, dmg, hitLimit, this.targetHit));
     }
   }
 
@@ -88,9 +107,13 @@ export class SwarmWeapon extends Weapon {
     for (let i = this.bees.length - 1; i >= 0; i--) {
       if (!this.bees[i].update(dt, now)) this.bees.splice(i, 1);
     }
+    if (this.ctx.run.frame % 300 === 0) {
+      for (const [e, t0] of this.targetHit) if (!e.active || e.dying || now - t0 > 3) this.targetHit.delete(e);
+    }
   }
 
   destroy(): void {
     this.bees.forEach((b) => b.kill());
+    this.targetHit.clear();
   }
 }

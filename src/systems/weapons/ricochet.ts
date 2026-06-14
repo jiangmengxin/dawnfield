@@ -89,7 +89,8 @@ export class RicochetWeapon extends Weapon {
     const life = (this.evolved ? W_RICOCHET.evoLife : W_RICOCHET.life) * ctx.stats.area;
     const speed = W_RICOCHET.speed * ctx.stats.projSpeed;
     SFX.throwSfx();
-    const a0 = ctx.rng() * Math.PI * 2;
+    const near = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 520);
+    const a0 = near ? Math.atan2(near.y - ctx.player.y, near.x - ctx.player.x) : ctx.rng() * Math.PI * 2;
     for (let i = 0; i < n; i++) {
       this.beads.push(new Bead(ctx, a0 + (i / n) * Math.PI * 2, speed, life, dmg, this.evolved));
     }

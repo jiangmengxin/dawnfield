@@ -12,14 +12,14 @@ export class SparkWeapon extends Weapon {
 
   protected fire(): void {
     const ctx = this.ctx;
-    const first = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 340);
+    const first = ctx.enemies.nearest(ctx.player.x, ctx.player.y, W_SPARK.range);
     if (!first) {
       this.cdT = 0.3;
       return;
     }
     SFX.zap();
     const links = this.evolved ? W_SPARK.evoLinks : W_SPARK.links[this.level - 1];
-    const decay = this.evolved ? 0.92 : 0.85;
+    const decay = this.evolved ? 0.9 : 0.93;
     const baseDmg = W_SPARK.dmg[this.level - 1] * ctx.stats.dmg * (this.evolved ? W_SPARK.evoDmgMul : 1);
     const visited = new Set<Enemy>();
     const points: Array<[number, number]> = [[ctx.player.x, ctx.player.y]];
@@ -33,15 +33,13 @@ export class SparkWeapon extends Weapon {
       ctx.fx.burst(cur.x, cur.y, { tex: 'p_star', color: PAL.spark, count: 5, speed: 95, life: 0.32, scale: 1.05, spin: true });
       ctx.fx.burst(cur.x, cur.y, { tex: 'p_dot', color: 0xffffff, count: 2, speed: 50, life: 0.2, scale: 0.7 });
       if (this.evolved) {
-        // 链端小爆炸
-        ctx.grid.queryCircle(cur.x, cur.y, 44, queryOut);
+        ctx.grid.queryCircle(cur.x, cur.y, W_SPARK.evoBlastR, queryOut);
         for (const e of queryOut) {
-          if (e !== cur && !visited.has(e)) ctx.hitEnemy(e, dmg * 0.5, { kb: 20, kx: 0, ky: 0, pitch: 1.8 });
+          if (e !== cur && !visited.has(e)) ctx.hitEnemy(e, dmg * W_SPARK.evoBlastK, { kb: 20, kx: 0, ky: 0, pitch: 1.8 });
         }
       }
-      // 找下一个
       let next: Enemy | null = null;
-      let bd = 160 * 160;
+      let bd = W_SPARK.chainRange * W_SPARK.chainRange;
       for (const e of ctx.enemies.actives) {
         if (!e.active || e.dying || visited.has(e)) continue;
         const dx = e.x - cur.x;

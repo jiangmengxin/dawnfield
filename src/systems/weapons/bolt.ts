@@ -78,7 +78,12 @@ export class BoltWeapon extends Weapon {
     shakeCam(ctx.scene, 50, 0.0018);
     ctx.grid.queryCircle(x, y, r, queryOut);
     const dmg = this.dmg();
-    for (const e of queryOut) {
+    const maxHits = this.evolved ? W_BOLT.evoMaxHits : W_BOLT.maxHits;
+    const hits = queryOut
+      .slice()
+      .sort((a, b) => (a.x - x) * (a.x - x) + (a.y - y) * (a.y - y) - ((b.x - x) * (b.x - x) + (b.y - y) * (b.y - y)))
+      .slice(0, maxHits);
+    for (const e of hits) {
       const ea = Math.atan2(e.y - y, e.x - x);
       ctx.hitEnemy(e, dmg, { kb: W_BOLT.kb, kx: Math.cos(ea), ky: Math.sin(ea), pitch: 1.5 });
     }

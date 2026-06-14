@@ -30,7 +30,7 @@ export class AxeWeapon extends Weapon {
   protected fire(): void {
     const ctx = this.ctx;
     const n = this.evolved ? W_AXE.evoN : W_AXE.n[this.level - 1];
-    const near = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 360);
+    const near = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 620);
     // 横向偏向：朝最近敌人那侧抛，否则随机
     const sideBias = near ? Math.sign(near.x - ctx.player.x) || 1 : (Math.random() < 0.5 ? -1 : 1);
     SFX.swish();
@@ -38,9 +38,11 @@ export class AxeWeapon extends Weapon {
       // 进化：横速扇形对称铺开；未进化：紧贴抛向最近敌侧
       const vx = this.evolved
         ? ((i - (n - 1) / 2) / Math.max(1, (n - 1) / 2)) * W_AXE.spreadVx
-        : sideBias * (70 + Math.random() * W_AXE.spreadVx * 0.5);
+        : near
+          ? Phaser.Math.Clamp((near.x - ctx.player.x) / W_AXE.life, -W_AXE.spreadVx, W_AXE.spreadVx)
+          : sideBias * (70 + Math.random() * W_AXE.spreadVx * 0.5);
       const img = ctx.scene.add.image(ctx.player.x, ctx.player.y - 6, 'w_axe').setDepth(1e6 + 2).setScale(this.evolved ? 1.2 : 1);
-      this.axes.push({ img, vx, vy: -W_AXE.vy0, spin: (vx >= 0 ? 1 : -1) * 16, life: 1.7, hit: new Set() });
+      this.axes.push({ img, vx, vy: -W_AXE.vy0, spin: (vx >= 0 ? 1 : -1) * 16, life: W_AXE.life, hit: new Set() });
     }
   }
 

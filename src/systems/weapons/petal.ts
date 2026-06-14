@@ -67,18 +67,30 @@ export class PetalWeapon extends Weapon {
       });
     };
     ringDamage(this.petals, r, 1, 0);
+    ctx.grid.queryCircle(ctx.player.x, ctx.player.y, (this.evolved ? W_PETAL.evoCoreR : W_PETAL.coreR) * ctx.stats.area, queryOut);
+    for (const e of queryOut) {
+      const last = this.hitMap.get(e) ?? -9;
+      if (now - last > 0.5) {
+        this.hitMap.set(e, now);
+        const ea = Math.atan2(e.y - ctx.player.y, e.x - ctx.player.x);
+        ctx.hitEnemy(e, this.dmg() * W_PETAL.coreDmgMul, { kb: 150, kx: Math.cos(ea), ky: Math.sin(ea), pitch: 1.25 });
+        ctx.fx.burst(e.x, e.y, { tex: 'p_dot', color: 0xf1a7c4, count: 2, speed: 36, life: 0.22, scale: 0.55, alpha: 0.75 });
+      }
+    }
     if (this.evolved) {
       ringDamage(this.outer, r * 1.6, -1, 0.4);
-      // 周期性花瓣弹幕
-      this.burstT -= dt;
-      if (this.burstT <= 0) {
-        this.burstT = W_PETAL.burstCd;
-        SFX.throwSfx();
-        const n = this.outer.length;
-        for (let i = 0; i < n; i++) {
-          const a = -this.angle + 0.4 + (i / n) * Math.PI * 2;
-          this.shots.push(new PetalShot(ctx, ctx.player.x + Math.cos(a) * r * 1.6, ctx.player.y + Math.sin(a) * r * 1.6, a, this.dmg() * 1.2));
-        }
+    }
+    this.burstT -= dt;
+    if (this.burstT <= 0) {
+      this.burstT = W_PETAL.burstCd;
+      SFX.throwSfx();
+      const source = this.evolved ? this.outer : this.petals;
+      const shotR = this.evolved ? r * 1.6 : r;
+      const dmgMul = this.evolved ? W_PETAL.evoBurstDmgMul : W_PETAL.burstDmgMul;
+      const n = source.length;
+      for (let i = 0; i < n; i++) {
+        const a = (this.evolved ? -this.angle + 0.4 : this.angle) + (i / n) * Math.PI * 2;
+        this.shots.push(new PetalShot(ctx, ctx.player.x + Math.cos(a) * shotR, ctx.player.y + Math.sin(a) * shotR, a, this.dmg() * dmgMul));
       }
     }
     for (let i = this.shots.length - 1; i >= 0; i--) {

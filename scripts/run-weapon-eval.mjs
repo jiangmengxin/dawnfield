@@ -3,7 +3,7 @@
 // Requires Playwright to be resolvable by Node (Codex bundled runtime works via NODE_PATH).
 import { createRequire } from 'node:module';
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
@@ -27,10 +27,14 @@ const url = value('--url', 'http://127.0.0.1:5183');
 const timeoutMs = Number(value('--timeout-ms', String(12 * 60 * 1000)));
 const simSeconds = value('--sim-seconds', undefined);
 const rounds = value('--rounds', undefined);
+const ids = value('--ids', undefined);
+const outData = value('--out-data', 'docs/balance/weapon-evaluation-32-data.json');
+const outMarkdown = value('--out-markdown', 'docs/balance/weapon-evaluation-32-bench.generated.md');
 const runDps = has('--dps') || !has('--visual');
 const runVisual = has('--visual') || !has('--dps');
 
 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+const outputPath = (p) => (isAbsolute(p) ? p : join(root, p));
 
 async function waitForApp(page) {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -79,12 +83,13 @@ async function main() {
       preset: 'weaponEval32',
       ...(simSeconds ? { simSeconds: Number(simSeconds) } : {}),
       ...(rounds ? { rounds: Number(rounds) } : {}),
+      ...(ids ? { ids: ids.split(',').map((id) => id.trim()).filter(Boolean) } : {}),
     });
     await waitFor(page, () => Boolean(window.__benchJson), 'dps');
     const data = await page.evaluate(() => ({ json: window.__benchJson, markdown: window.__benchResult }));
-    writeFileSync(join(root, 'docs/balance/weapon-evaluation-32-data.json'), `${JSON.stringify(data.json, null, 2)}\n`);
-    writeFileSync(join(root, 'docs/balance/weapon-evaluation-32-bench.generated.md'), `${data.markdown}\n`);
-    console.log('wrote docs/balance/weapon-evaluation-32-data.json');
+    writeFileSync(outputPath(outData), `${JSON.stringify(data.json, null, 2)}\n`);
+    writeFileSync(outputPath(outMarkdown), `${data.markdown}\n`);
+    console.log(`wrote ${outData}`);
   }
 
   if (runVisual) {

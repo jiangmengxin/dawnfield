@@ -70,7 +70,7 @@ export class FrostWeapon extends Weapon {
   protected fire(): void {
     const ctx = this.ctx;
     const n = this.evolved ? W_FROST.evoN : W_FROST.n[this.level - 1];
-    const targets = nearestK(ctx, ctx.player.x, ctx.player.y, n, 420);
+    const targets = nearestK(ctx, ctx.player.x, ctx.player.y, n, W_FROST.range);
     const speed = W_FROST.speed * ctx.stats.projSpeed;
     const life = W_FROST.life * ctx.stats.area;
     SFX.swish();
@@ -91,8 +91,13 @@ export class FrostWeapon extends Weapon {
     ctx.fx.burst(x, y, { tex: 'p_star', color: FROST_COLOR, count: 7, speed: 160, life: 0.4, scale: 0.9, spin: true });
     const dmg = this.dmg();
     ctx.grid.queryCircle(x, y, r, queryOut);
-    for (let i = 0; i < queryOut.length; i++) {
-      const e = queryOut[i];
+    const maxHits = this.evolved ? W_FROST.evoMaxShatterHits : W_FROST.maxShatterHits;
+    const hits = queryOut
+      .slice()
+      .sort((a, b) => (a.x - x) * (a.x - x) + (a.y - y) * (a.y - y) - ((b.x - x) * (b.x - x) + (b.y - y) * (b.y - y)))
+      .slice(0, maxHits);
+    for (let i = 0; i < hits.length; i++) {
+      const e = hits[i];
       const ea = Math.atan2(e.y - y, e.x - x);
       // 直击目标全伤，溅射余敌折损
       const d = Math.hypot(e.x - x, e.y - y);

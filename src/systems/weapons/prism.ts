@@ -88,7 +88,7 @@ export class PrismWeapon extends Weapon {
     if (refract && this.evolved) {
       ctx.fx.burst(x1, y1, { tex: 'p_dot', color: 0xf8c8e0, count: 6, speed: 90, life: 0.4, alpha: 0.9 });
       for (const s of [-1, 1]) {
-        this.beam(x1, y1, a + s * 0.7, 280, dmg * 0.7, false);
+        this.beam(x1, y1, a + s * 0.7, 280, dmg * W_PRISM.evoRefractK, false);
       }
     }
   }

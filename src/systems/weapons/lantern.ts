@@ -30,9 +30,10 @@ export class LanternWeapon extends Weapon {
   protected fire(): void {
     const ctx = this.ctx;
     const r = this.radius();
-    const dmg = W_LANTERN.dmg[this.level - 1] * ctx.stats.dmg * (this.evolved ? W_LANTERN.evoDmgMul : 1);
     const kb = this.evolved ? W_LANTERN.evoKb : W_LANTERN.kb;
     ctx.grid.queryCircle(ctx.player.x, ctx.player.y, r, queryOut);
+    const sparseMul = queryOut.length > 0 && queryOut.length <= W_LANTERN.sparseCount ? W_LANTERN.sparseDmgMul : 1;
+    const dmg = W_LANTERN.dmg[this.level - 1] * ctx.stats.dmg * (this.evolved ? W_LANTERN.evoDmgMul : 1) * sparseMul;
     if (queryOut.length > 0) {
       ctx.fx.ring(ctx.player.x, ctx.player.y, this.evolved ? PAL.blade : 0xf8b868, r / 42, 0.25);
     }

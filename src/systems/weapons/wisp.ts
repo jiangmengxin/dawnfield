@@ -4,7 +4,7 @@ import { W_WISP } from '../../content/weapons';
 import { SFX } from '../../audio/sound';
 import type { CombatContext } from '../context';
 import type { Enemy } from '../EnemySystem';
-import { Weapon, queryOut } from './base';
+import { nearestK, Weapon, queryOut } from './base';
 
 const WISP_COLOR = 0x9adcc0;
 
@@ -106,11 +106,14 @@ export class WispWeapon extends Weapon {
     const turn = this.evolved ? W_WISP.evoTurn : W_WISP.turn;
     const pierce = this.evolved ? W_WISP.evoPierce : 1;
     SFX.throwSfx();
-    // 从身侧扇形飘出，随后各自转向追敌
-    const a0 = Math.random() * Math.PI * 2;
+    const targets = nearestK(ctx, ctx.player.x, ctx.player.y, n, W_WISP.seek);
+    const a0 = ctx.rng() * Math.PI * 2;
     for (let i = 0; i < n; i++) {
-      const a = a0 + (i / n) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-      this.motes.push(new Mote(ctx, a, speed * (0.9 + Math.random() * 0.2), life, dmg, turn, pierce));
+      const tgt = i < targets.length ? targets[i] : undefined;
+      const a = tgt
+        ? Math.atan2(tgt.y - ctx.player.y, tgt.x - ctx.player.x) + (ctx.rng() - 0.5) * 0.36
+        : a0 + (i / n) * Math.PI * 2 + (ctx.rng() - 0.5) * 0.4;
+      this.motes.push(new Mote(ctx, a, speed * (0.9 + ctx.rng() * 0.2), life, dmg, turn, pierce));
     }
   }
 

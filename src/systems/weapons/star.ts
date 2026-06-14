@@ -76,7 +76,7 @@ export class StarWeapon extends Weapon {
         ctx.scene.tweens.add({ targets: img, alpha: 0, duration: 200, onComplete: () => img.setVisible(false) });
         continue;
       }
-      ctx.grid.queryCircle(s.x, s.y, 15, queryOut);
+      ctx.grid.queryCircle(s.x, s.y, W_STAR.hitR, queryOut);
       for (const e of queryOut) {
         const last = this.hitMap.get(e) ?? -9;
         if (now - last > W_STAR.hitCd) {
