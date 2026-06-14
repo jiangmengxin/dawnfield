@@ -16,7 +16,7 @@ import { buildCardGrid, CardGridItem } from '../ui/widgets/CardGrid';
 import { showToast } from '../ui/widgets/Toast';
 import type { RunLaunchData, RunMode } from '../systems/context';
 
-const TARGET_MAPS = 8; // 1.0 目标量级
+const TARGET_MAPS = 12; // 1.0+ 扩展目标量级
 
 export class MapSelectScene extends UIScene {
   private charId = 'spark';

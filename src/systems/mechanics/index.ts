@@ -15,6 +15,10 @@ import { PollenMechanic } from './pollen';
 import { ThornwallMechanic } from './thornwall';
 import { NightfallMechanic } from './nightfall';
 import { BeaconMechanic } from './beacon';
+import { OrchardMechanic } from './orchard';
+import { FrostsealMechanic } from './frostseal';
+import { PrismfieldMechanic } from './prismfield';
+import { BellringMechanic } from './bellring';
 
 export function createMechanic(ctx: CombatContext, spec: MechanicSpec): Mechanic {
   switch (spec.kind) {
@@ -36,5 +40,10 @@ export function createMechanic(ctx: CombatContext, spec: MechanicSpec): Mechanic
     case 'thornwall': return new ThornwallMechanic(ctx, spec);
     case 'nightfall': return new NightfallMechanic(ctx, spec);
     case 'beacon': return new BeaconMechanic(ctx, spec);
+    // 1.0+ 四图扩展机制
+    case 'orchard': return new OrchardMechanic(ctx, spec);
+    case 'frostseal': return new FrostsealMechanic(ctx, spec);
+    case 'prismfield': return new PrismfieldMechanic(ctx, spec);
+    case 'bellring': return new BellringMechanic(ctx, spec);
   }
 }

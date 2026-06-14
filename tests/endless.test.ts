@@ -70,12 +70,12 @@ describe('地图时长三档与升级节奏（M12）', () => {
     }
   });
 
-  it('后 4 图各有一个 surge（中点），前 4 图没有', () => {
-    for (const m of MAPS) {
+  it('第 5 张及之后各有一个 surge（中点），前 4 图没有', () => {
+    for (const [i, m] of MAPS.entries()) {
       const surges = m.events.filter((e) => e.kind === 'surge');
-      const last4 = ['lavender', 'bramble', 'nocturne', 'summit'].includes(m.id);
-      expect(surges.length, m.id).toBe(last4 ? 1 : 0);
-      if (last4) expect(surges[0].t, m.id).toBe(m.minutes * 30);
+      const hasMidSurge = i >= 4;
+      expect(surges.length, m.id).toBe(hasMidSurge ? 1 : 0);
+      if (hasMidSurge) expect(surges[0].t, m.id).toBe(m.minutes * 30);
     }
   });
 });

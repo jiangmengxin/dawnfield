@@ -144,6 +144,52 @@ export const ENEMIES = defineTable<EnemyId, EnemySpec>({
   shadowmaw: { hp: 70,   speed: 38,  dmg: 11, xp: 3,  radius: 15, tex: 'e_shadowmaw', knockMul: 0.6,  behavior: 'summoner', summon: 'shade' }, // M15
   shadelord: { hp: 1250, speed: 42,  dmg: 20, xp: 30, radius: 42, tex: 'e_shadelord', knockMul: 0.05, behavior: 'chase', elite: true },
   nightowl:  { hp: 6200, speed: 60,  dmg: 27, xp: 0,  radius: 64, tex: 'e_nightowl',  knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 琥珀果园（丰收落果：诱导敌群进落点，混合飞行/炮台/护盾） ----------
+  pip:        { hp: 18,   speed: 86,  dmg: 8,  xp: 1,  radius: 10, tex: 'e_pip',        knockMul: 1.15, behavior: 'chase' },
+  ciderfly:   { hp: 16,   speed: 104, dmg: 9,  xp: 1,  radius: 11, tex: 'e_ciderfly',   knockMul: 0.9,  behavior: 'swoop' },
+  appleling:  { hp: 34,   speed: 58,  dmg: 10, xp: 2,  radius: 13, tex: 'e_appleling',  knockMul: 1,    behavior: 'drift', split: { id: 'pip', n: 2 } },
+  nutkin:     { hp: 76,   speed: 42,  dmg: 13, xp: 3,  radius: 15, tex: 'e_nutkin',     knockMul: 0.35, behavior: 'shielder' },
+  wormlet:    { hp: 28,   speed: 78,  dmg: 11, xp: 2,  radius: 12, tex: 'e_wormlet',    knockMul: 1.1,  behavior: 'zigzag' },
+  scareseed:  { hp: 38,   speed: 48,  dmg: 9,  xp: 2,  radius: 13, tex: 'e_scareseed',  knockMul: 0.8,  behavior: 'turret',
+                shoot: { range: 270, cd: 2.9, speed: 180, dmg: 11, tex: 'oz_seed' } },
+  harvestorb: { hp: 1350, speed: 44,  dmg: 20, xp: 30, radius: 42, tex: 'e_harvestorb', knockMul: 0.05, behavior: 'chase', elite: true },
+  ciderwyrm:  { hp: 6600, speed: 58,  dmg: 28, xp: 0,  radius: 66, tex: 'e_ciderwyrm',  knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 雪铃庭院（寒印碎裂：触发控场，跳扑/相位/冲刺并存） ----------
+  snowdrop:   { hp: 14,   speed: 78,  dmg: 8,  xp: 1,  radius: 10, tex: 'e_snowdrop',   knockMul: 1.2,  behavior: 'chase' },
+  flakebunny: { hp: 24,   speed: 72,  dmg: 10, xp: 2,  radius: 12, tex: 'e_flakebunny', knockMul: 0.9,  behavior: 'hop' },
+  sleetwing:  { hp: 18,   speed: 96,  dmg: 9,  xp: 1,  radius: 11, tex: 'e_sleetwing',  knockMul: 0.95, behavior: 'swoop' },
+  frostcap:   { hp: 40,   speed: 50,  dmg: 9,  xp: 2,  radius: 13, tex: 'e_frostcap',   knockMul: 0.8,  behavior: 'turret',
+                shoot: { range: 265, cd: 3.0, speed: 165, dmg: 11, tex: 'wz_shard' } },
+  crystalmite:{ hp: 38,   speed: 62,  dmg: 12, xp: 2,  radius: 12, tex: 'e_crystalmite',knockMul: 0.8,  behavior: 'phase' },
+  bellfox:    { hp: 46,   speed: 66,  dmg: 14, xp: 2,  radius: 14, tex: 'e_bellfox',    knockMul: 0.7,  behavior: 'dash',
+                dash: { triggerDist: 285, telegraph: 0.55, dashSpeed: 390, dashTime: 0.5, recover: 1.0 } },
+  snowwarden: { hp: 1400, speed: 42,  dmg: 20, xp: 30, radius: 42, tex: 'e_snowwarden', knockMul: 0.05, behavior: 'shielder', elite: true },
+  frosthare:  { hp: 7000, speed: 62,  dmg: 28, xp: 0,  radius: 64, tex: 'e_frosthare',  knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 彩镜沙洲（折光充能：玻璃系游击、闪现和远程压制） ----------
+  prismite:   { hp: 10,   speed: 104, dmg: 6,  xp: 1,  radius: 9,  tex: 'e_prismite',   knockMul: 1.3,  behavior: 'wobble' },
+  glassfin:   { hp: 22,   speed: 70,  dmg: 10, xp: 1,  radius: 11, tex: 'e_glassfin',   knockMul: 1.1,  behavior: 'zigzag' },
+  mirrormoth: { hp: 20,   speed: 84,  dmg: 9,  xp: 1,  radius: 12, tex: 'e_mirrormoth', knockMul: 1,    behavior: 'spiral' },
+  quartzbud:  { hp: 52,   speed: 40,  dmg: 9,  xp: 2,  radius: 14, tex: 'e_quartzbud',  knockMul: 0.65, behavior: 'turret',
+                shoot: { range: 285, cd: 3.0, speed: 185, dmg: 11, tex: 'mg_glass' } },
+  lensbeetle: { hp: 42,   speed: 56,  dmg: 13, xp: 2,  radius: 13, tex: 'e_lensbeetle', knockMul: 0.55, behavior: 'orbit' },
+  sandsprite: { hp: 28,   speed: 92,  dmg: 12, xp: 2,  radius: 12, tex: 'e_sandsprite', knockMul: 1,    behavior: 'blink' },
+  prismguard: { hp: 1480, speed: 42,  dmg: 21, xp: 30, radius: 42, tex: 'e_prismguard', knockMul: 0.05, behavior: 'phase', elite: true },
+  miragewhale:{ hp: 7500, speed: 54,  dmg: 29, xp: 0,  radius: 68, tex: 'e_miragewhale',knockMul: 0,    behavior: 'chase', boss: true },
+
+  // ---------- 晨钟庭（节拍钟阵：召唤/护盾/冲刺逼迫踩拍） ----------
+  gearling:   { hp: 20,   speed: 74,  dmg: 9,  xp: 1,  radius: 11, tex: 'e_gearling',   knockMul: 1.1,  behavior: 'chase' },
+  ticktock:   { hp: 12,   speed: 108, dmg: 6,  xp: 1,  radius: 9,  tex: 'e_ticktock',   knockMul: 1.3,  behavior: 'wobble' },
+  cuckoobud:  { hp: 34,   speed: 50,  dmg: 10, xp: 2,  radius: 13, tex: 'e_cuckoobud',  knockMul: 0.75, behavior: 'summoner', summon: 'gearling' },
+  pendulum:   { hp: 44,   speed: 64,  dmg: 15, xp: 2,  radius: 13, tex: 'e_pendulum',   knockMul: 0.75, behavior: 'dash',
+                dash: { triggerDist: 300, telegraph: 0.6, dashSpeed: 410, dashTime: 0.48, recover: 1.05 } },
+  brassbug:   { hp: 72,   speed: 44,  dmg: 13, xp: 3,  radius: 15, tex: 'e_brassbug',   knockMul: 0.35, behavior: 'shielder' },
+  chimewisp:  { hp: 30,   speed: 78,  dmg: 10, xp: 2,  radius: 12, tex: 'e_chimewisp',  knockMul: 1.05, behavior: 'strafeShoot',
+                shoot: { range: 280, cd: 2.8, speed: 190, dmg: 11, tex: 'ck_note' } },
+  gearwarden: { hp: 1550, speed: 42,  dmg: 22, xp: 30, radius: 44, tex: 'e_gearwarden', knockMul: 0.05, behavior: 'chase', elite: true },
+  clockrooster:{ hp: 8200, speed: 60, dmg: 30, xp: 0,  radius: 68, tex: 'e_clockrooster', knockMul: 0,   behavior: 'chase', boss: true },
 });
 
 // 随时间成长（min 为「有效分钟」：elapsed/60 × MapSpec.timeK，长图成长更慢）

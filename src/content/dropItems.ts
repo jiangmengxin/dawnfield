@@ -80,6 +80,22 @@ export const DROP_ITEMS: Record<DropItemId, DropItemSpec> = {
   // ---------- summit 破晓之巅（beacon） ----------
   beaconsurge: { id: 'beaconsurge', icon: 'drop_beaconsurge', color: 0xf0d878, glyph: 'beacon', scope: 'map', weight: 1, kind: 'instant', dmg: 80, radius: 600 },
   dawnnova:    { id: 'dawnnova',    icon: 'drop_dawnnova',    color: 0xfff2c0, glyph: 'flame',  scope: 'map', weight: 1, kind: 'instant', dmg: 200, radius: 640 },
+
+  // ---------- orchard 琥珀果园（orchard） ----------
+  goldapple: { id: 'goldapple', icon: 'drop_goldapple', color: 0xf0b860, glyph: 'heart', scope: 'map', weight: 1, kind: 'instant', heal: 50, gemN: 6, gemV: 5 },
+  seedwhirl: { id: 'seedwhirl', icon: 'drop_seedwhirl', color: 0xc8b86a, glyph: 'swirl', scope: 'map', weight: 1, kind: 'timed', dur: 8, dmg: 28, radius: 260, cdMul: 0.85 },
+
+  // ---------- snowbell 雪铃庭院（frostseal） ----------
+  snowglobe: { id: 'snowglobe', icon: 'drop_snowglobe', color: 0xb8d8f0, glyph: 'shield', scope: 'map', weight: 1, kind: 'timed', dur: 4 },
+  frostbell: { id: 'frostbell', icon: 'drop_frostbell', color: 0xc8e8f0, glyph: 'wave', scope: 'map', weight: 1, kind: 'instant', dmg: 120, radius: 460, kb: 260 },
+
+  // ---------- mirage 彩镜沙洲（prismfield） ----------
+  prismshard:  { id: 'prismshard',  icon: 'drop_prismshard',  color: 0xd8c8f0, glyph: 'star',  scope: 'map', weight: 1, kind: 'instant', dmg: 70, radius: 520, gemN: 4, gemV: 6 },
+  mirrorbloom: { id: 'mirrorbloom', icon: 'drop_mirrorbloom', color: 0xf0d8f8, glyph: 'burst', scope: 'map', weight: 1, kind: 'timed', dur: 8, dmgMul: 1.35, areaMul: 1.18 },
+
+  // ---------- clockwork 晨钟庭（bellring） ----------
+  clockkey: { id: 'clockkey', icon: 'drop_clockkey', color: 0xe0c070, glyph: 'clock',  scope: 'map', weight: 1, kind: 'timed', dur: 8, cdMul: 0.65, moveMul: 1.15 },
+  bellnova: { id: 'bellnova', icon: 'drop_bellnova', color: 0xf0cc78, glyph: 'beacon', scope: 'map', weight: 1, kind: 'instant', dmg: 170, radius: 560, kb: 340 },
 };
 
 /** 通用道具池（击杀/场景物/精英来源按 weight 加权抽取） */

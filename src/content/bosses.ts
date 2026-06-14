@@ -114,4 +114,35 @@ export const BOSSES: Record<MapId, BossSpec> = {
     summon: { firstCd: 9, cd: 10, id: 'shade', n: 5, radius: 100 },
     dash: { firstCd: 6, cd: 6.5, cdP2: 4.8, speed: 500, minDist: 140 },
   },
+  // 苹果酒龙：落果压迫型 — 种子扇射 + 果核环 + 二阶段召唤果核群
+  orchard: {
+    phase2HpK: 0.5,
+    spread: { firstCd: 2.6, cd: 4.0, cdP2: 2.8, n: 6, arc: 0.75, speed: 245, dmg: 11, tex: 'oz_seed' },
+    ring: { firstCd: 6.5, cd: 6.8, cdP2: 4.8, n: 13, nP2: 18, speed: 170, dmg: 11, tex: 'oz_seed' },
+    summon: { firstCd: 12, cd: 12, id: 'pip', n: 7, radius: 105, p2Only: true },
+    dash: { firstCd: 5, cd: 7, cdP2: 5.2, speed: 470, minDist: 135 },
+  },
+  // 霜兔长母：控场型 — 冰晶环 + 瞄准冰片 + 跃冲逼走位
+  snowbell: {
+    phase2HpK: 0.5,
+    ring: { firstCd: 3, cd: 5.4, cdP2: 3.7, n: 14, nP2: 20, speed: 135, dmg: 11, tex: 'wz_shard' },
+    spread: { firstCd: 5, cd: 5.8, cdP2: 4.0, n: 5, arc: 0.62, speed: 230, dmg: 12, tex: 'wz_shard' },
+    summon: { firstCd: 11, cd: 12, id: 'snowdrop', n: 6, radius: 100, p2Only: true },
+    dash: { firstCd: 6, cd: 7, cdP2: 4.8, speed: 500, minDist: 130 },
+  },
+  // 蜃镜鲸：折光弹幕型 — 大范围玻璃环 + 多线扇射，不常冲刺但频繁召唤
+  mirage: {
+    phase2HpK: 0.5,
+    ring: { firstCd: 2.8, cd: 5.0, cdP2: 3.3, n: 15, nP2: 22, speed: 155, dmg: 11, tex: 'mg_glass' },
+    spread: { firstCd: 4.6, cd: 4.8, cdP2: 3.4, n: 7, arc: 0.95, speed: 255, dmg: 11, tex: 'mg_glass' },
+    summon: { firstCd: 9, cd: 10, id: 'prismite', n: 7, radius: 110 },
+  },
+  // 晨钟鸡王：节拍压迫型 — 高频音符扇射 + 钟波环 + 冲刺打断踩拍
+  clockwork: {
+    phase2HpK: 0.5,
+    spread: { firstCd: 2.4, cd: 3.4, cdP2: 2.4, n: 7, arc: 0.9, speed: 265, dmg: 11, tex: 'ck_note' },
+    ring: { firstCd: 6, cd: 5.5, cdP2: 4.0, n: 14, nP2: 20, speed: 180, dmg: 11, tex: 'ck_note' },
+    summon: { firstCd: 10, cd: 11, id: 'gearling', n: 6, radius: 105 },
+    dash: { firstCd: 5, cd: 6, cdP2: 4.3, speed: 520, minDist: 135 },
+  },
 };

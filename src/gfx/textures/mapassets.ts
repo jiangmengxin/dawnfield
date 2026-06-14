@@ -1,7 +1,9 @@
 // 地图资产管线（M5）：每图专属敌人换皮 + 装饰 + 弹体/地皮纹理，进图懒生成（ensureMapAssets 幂等）
 // 敌人换皮 = makeEnemy(形体 × 调色 × 表情)：保持「扁平粉彩圆团 + 小点眼、静态单帧」与角色拉开表现力
 // Boss 为每图门面，单独手绘（与草甸 e_boss 同待遇）
-import { BRAMBLE, GROVE, HILLS, LAVENDER, NOCTURNE, POND, PAL, SUMMIT, cssOf } from '../palette';
+import {
+  BRAMBLE, CLOCKWORK, GROVE, HILLS, LAVENDER, MIRAGE, NOCTURNE, ORCHARD, POND, PAL, SNOWBELL, SUMMIT, cssOf,
+} from '../palette';
 import type { MapId } from '../../content/ids';
 import { blobBody, Ctx, EyeStyle, eyes, makeBulletTex, makeTex, petalShape, softGlow, star } from './core';
 
@@ -2238,11 +2240,352 @@ function createSummitAssets(scene: Phaser.Scene): void {
   });
 }
 
+// ---------- 琥珀果园 ----------
+
+function createOrchardAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_pip',       { w: 26, h: 24, shape: 'round', r: 9,    body: ORCHARD.pip, edge: ORCHARD.pipEdge, eye: { gap: 3.2, r: 1.5 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_ciderfly',  { w: 36, h: 36, shape: 'bee', r: 10.5,   body: ORCHARD.ciderfly, edge: ORCHARD.ciderflyEdge, accent: ORCHARD.ciderWing, eye: { gap: 3.8, r: 1.6, dy: -4 } });
+  makeEnemy(scene, 'e_appleling', { w: 36, h: 36, shape: 'round', r: 13,   body: ORCHARD.appleling, edge: ORCHARD.applelingEdge, eye: { gap: 4.5, r: 1.8 }, mouth: 'open' });
+  makeEnemy(scene, 'e_nutkin',    { w: 42, h: 38, shape: 'shelled', r: 13, body: ORCHARD.nutkin, edge: ORCHARD.nutkinEdge, accent: ORCHARD.nutShell, mouth: 'pout' });
+  makeEnemy(scene, 'e_wormlet',   { w: 44, h: 26, shape: 'tailed', r: 9,   body: ORCHARD.wormlet, edge: ORCHARD.wormletEdge, eye: { gap: 3.5, r: 1.5 } });
+  makeEnemy(scene, 'e_scareseed', { w: 34, h: 42, shape: 'sprig', r: 11,   body: ORCHARD.scareseed, edge: ORCHARD.scareseedEdge, eye: { gap: 3.8, r: 1.6, dy: 8, style: 'surprised' }, mouth: 'open' });
+
+  makeTex(scene, 'e_harvestorb', 108, 108, (ctx) => {
+    softGlow(ctx, 54, 58, 48, rgba(ORCHARD.harvestorb, 0.32));
+    blobBody(ctx, 54, 58, 36, ORCHARD.harvestorb, ORCHARD.harvestorbEdge, 1, 1);
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      petalShape(ctx, 54 + Math.cos(a) * 30, 58 + Math.sin(a) * 30, 14, 4, a, cssOf(ORCHARD.leaf), cssOf(ORCHARD.leafEdge));
+    }
+    ctx.fillStyle = 'rgba(255,245,210,0.8)';
+    for (const [x, y] of [[42, 48], [62, 43], [72, 62], [48, 72]] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    eyes(ctx, 54, 54, 12, 4.2, 'angry');
+  });
+
+  makeTex(scene, 'e_ciderwyrm', 184, 142, (ctx) => {
+    softGlow(ctx, 92, 78, 72, rgba(ORCHARD.ciderwyrm, 0.28));
+    ctx.fillStyle = cssOf(ORCHARD.ciderwyrm);
+    ctx.strokeStyle = cssOf(ORCHARD.ciderwyrmEdge);
+    ctx.lineWidth = 4;
+    for (let i = 0; i < 5; i++) {
+      const x = 48 + i * 25;
+      const y = 88 - Math.sin(i * 0.9) * 20;
+      ctx.beginPath();
+      ctx.arc(x, y, 27 - i * 1.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = i % 2 === 0 ? cssOf(ORCHARD.appleGold) : cssOf(ORCHARD.ciderwyrm);
+    }
+    blobBody(ctx, 126, 68, 44, ORCHARD.ciderwyrm, ORCHARD.ciderwyrmEdge, 1.1, 0.95);
+    petalShape(ctx, 98, 30, 24, 8, -0.5, cssOf(ORCHARD.leaf), cssOf(ORCHARD.leafEdge));
+    petalShape(ctx, 126, 24, 26, 8, 0.2, cssOf(ORCHARD.leaf), cssOf(ORCHARD.leafEdge));
+    eyes(ctx, 126, 62, 16, 5.5, 'angry');
+    ctx.beginPath();
+    ctx.arc(126, 82, 10, 1.1 * Math.PI, 1.9 * Math.PI);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = cssOf(PAL.ink);
+    ctx.stroke();
+  });
+
+  makeBulletTex(scene, 'oz_seed', 18, 18, (ctx) => {
+    ctx.beginPath();
+    ctx.ellipse(9, 9, 5.5, 7.2, -0.4, 0, Math.PI * 2);
+    ctx.fillStyle = cssOf(ORCHARD.seedShot);
+    ctx.fill();
+    ctx.lineWidth = 1.7;
+    ctx.strokeStyle = cssOf(ORCHARD.seedShotDeep);
+    ctx.stroke();
+    hiSeed(ctx, 7.2, 6.8);
+  });
+  makeTex(scene, 'oz_fruitwarn', 96, 96, (ctx) => {
+    ctx.strokeStyle = rgba(ORCHARD.appleDeep, 0.9);
+    ctx.lineWidth = 3;
+    ctx.setLineDash([9, 6]);
+    ctx.beginPath();
+    ctx.arc(48, 48, 42, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(48, 42, 17, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(ORCHARD.apple, 0.35);
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = rgba(ORCHARD.appleDeep, 0.7);
+    ctx.stroke();
+  });
+
+  orchardDecor(scene);
+}
+
+function hiSeed(ctx: Ctx, x: number, y: number): void {
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.beginPath();
+  ctx.ellipse(x, y, 1.6, 1, -0.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function orchardDecor(scene: Phaser.Scene): void {
+  for (let v = 0; v < 2; v++) {
+    makeTex(scene, 'od_tree' + v, 48, 54, (ctx) => {
+      ctx.fillStyle = cssOf(ORCHARD.bark);
+      ctx.strokeStyle = cssOf(ORCHARD.barkEdge);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(21, 52); ctx.lineTo(27, 52); ctx.lineTo(29, 26); ctx.lineTo(19, 26); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      const puffs: Array<[number, number, number]> = v === 0 ? [[17, 24, 14], [29, 22, 15], [24, 12, 14]] : [[15, 22, 13], [31, 25, 14], [24, 14, 15]];
+      ctx.fillStyle = cssOf(ORCHARD.leaf);
+      ctx.strokeStyle = cssOf(ORCHARD.leafEdge);
+      for (const [x, y, r] of puffs) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.fillStyle = cssOf(ORCHARD.apple);
+      for (const [x, y] of [[16, 22], [31, 18], [26, 31]] as const) { ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill(); }
+    });
+  }
+  for (let v = 0; v < 2; v++) {
+    makeTex(scene, 'od_grass' + v, 30, 22, (ctx) => {
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 4 + v; i++) {
+        const x = 5 + i * 5;
+        ctx.strokeStyle = i % 2 ? cssOf(ORCHARD.grass) : cssOf(ORCHARD.grassEdge);
+        ctx.lineWidth = 2.1;
+        ctx.beginPath(); ctx.moveTo(x, 20); ctx.quadraticCurveTo(x + (i % 3 - 1) * 5, 11, x + (i % 2 ? 4 : -3), 4); ctx.stroke();
+      }
+    });
+  }
+  makeTex(scene, 'od_apple', 24, 24, (ctx) => {
+    ctx.beginPath(); ctx.arc(12, 13, 8, 0, Math.PI * 2); ctx.fillStyle = cssOf(ORCHARD.apple); ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = cssOf(ORCHARD.appleDeep); ctx.stroke();
+    petalShape(ctx, 15, 5, 8, 2.4, 0.6, cssOf(ORCHARD.leaf), cssOf(ORCHARD.leafEdge));
+    hiSeed(ctx, 9, 10);
+  });
+  makeTex(scene, 'od_leaf', 20, 16, (ctx) => {
+    petalShape(ctx, 10, 8, 16, 5, -0.4, cssOf(ORCHARD.leaf), cssOf(ORCHARD.leafEdge));
+  });
+  makeTex(scene, 'od_crate', 24, 18, (ctx) => {
+    ctx.fillStyle = cssOf(ORCHARD.crate); ctx.strokeStyle = cssOf(ORCHARD.crateEdge); ctx.lineWidth = 1.6;
+    ctx.fillRect(3, 5, 18, 11); ctx.strokeRect(3, 5, 18, 11);
+    ctx.beginPath(); ctx.moveTo(3, 9); ctx.lineTo(21, 9); ctx.moveTo(9, 5); ctx.lineTo(9, 16); ctx.stroke();
+  });
+}
+
+// ---------- 雪铃庭院 ----------
+
+function createSnowbellAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_snowdrop',   { w: 28, h: 28, shape: 'round', r: 10,   body: SNOWBELL.snowdrop, edge: SNOWBELL.snowdropEdge, eye: { gap: 3.5, r: 1.5 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_flakebunny', { w: 40, h: 42, shape: 'eared', r: 12.5, body: SNOWBELL.flakebunny, edge: SNOWBELL.flakebunnyEdge, accent: SNOWBELL.bunnyEar, eye: { gap: 4.2, r: 1.7 } });
+  makeEnemy(scene, 'e_sleetwing',  { w: 42, h: 32, shape: 'winged', r: 10.5, body: SNOWBELL.sleetwing, edge: SNOWBELL.sleetwingEdge, accent: SNOWBELL.sleetWing, eye: { gap: 4, r: 1.7 } });
+  makeEnemy(scene, 'e_frostcap',   { w: 40, h: 42, shape: 'cap', r: 13,     body: SNOWBELL.frostcap, edge: SNOWBELL.frostcapEdge, accent: SNOWBELL.frostCap, eye: { gap: 4.2, r: 1.7, dy: 5 }, mouth: 'open' });
+  makeEnemy(scene, 'e_crystalmite',{ w: 36, h: 36, shape: 'crescent', r: 12, body: SNOWBELL.crystalmite, edge: SNOWBELL.crystalmiteEdge, accent: 0xffffff, eye: { gap: 4, r: 1.6 } });
+  makeEnemy(scene, 'e_bellfox',    { w: 44, h: 40, shape: 'eared', r: 13,   body: SNOWBELL.bellfox, edge: SNOWBELL.bellfoxEdge, accent: SNOWBELL.bellfoxTail, eye: { gap: 4.5, r: 1.8, style: 'angry' } });
+
+  makeTex(scene, 'e_snowwarden', 108, 108, (ctx) => {
+    softGlow(ctx, 54, 58, 48, rgba(SNOWBELL.snowwarden, 0.32));
+    blobBody(ctx, 54, 58, 36, SNOWBELL.snowwarden, SNOWBELL.snowwardenEdge);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      petalShape(ctx, 54 + Math.cos(a) * 35, 58 + Math.sin(a) * 35, 18, 4, a, cssOf(SNOWBELL.crystal), cssOf(SNOWBELL.crystalEdge));
+    }
+    eyes(ctx, 54, 54, 12, 4.2, 'angry');
+  });
+  makeTex(scene, 'e_frosthare', 176, 150, (ctx) => {
+    softGlow(ctx, 88, 86, 70, rgba(SNOWBELL.frosthare, 0.32));
+    for (const s of [-1, 1]) petalShape(ctx, 88 + s * 28, 38, 46, 13, s * 0.25, cssOf(SNOWBELL.frosthare), cssOf(SNOWBELL.frosthareEdge));
+    blobBody(ctx, 88, 88, 52, SNOWBELL.frosthare, SNOWBELL.frosthareEdge, 1.04, 1);
+    ctx.beginPath(); ctx.ellipse(88, 102, 22, 14, 0, 0, Math.PI * 2); ctx.fillStyle = cssOf(SNOWBELL.flakebunny); ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = cssOf(SNOWBELL.frosthareEdge); ctx.stroke();
+    star(ctx, 88, 55, 6, 12, 5, cssOf(SNOWBELL.crystal), cssOf(SNOWBELL.crystalEdge));
+    eyes(ctx, 88, 78, 18, 5.5, 'angry');
+  });
+
+  makeBulletTex(scene, 'wz_shard', 18, 24, (ctx) => {
+    ctx.beginPath(); ctx.moveTo(9, 2); ctx.lineTo(15, 11); ctx.lineTo(9, 22); ctx.lineTo(3, 11); ctx.closePath();
+    ctx.fillStyle = cssOf(SNOWBELL.shard); ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = cssOf(SNOWBELL.shardDeep); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)'; ctx.beginPath(); ctx.moveTo(9, 4); ctx.lineTo(9, 20); ctx.stroke();
+  });
+  makeTex(scene, 'wz_seal', 108, 108, (ctx) => {
+    ctx.strokeStyle = rgba(SNOWBELL.shardDeep, 0.8); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(54, 54, 43, 0, Math.PI * 2); ctx.stroke();
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2;
+      ctx.beginPath(); ctx.moveTo(54, 54); ctx.lineTo(54 + Math.cos(a) * 36, 54 + Math.sin(a) * 36); ctx.stroke();
+    }
+    star(ctx, 54, 54, 6, 16, 6, rgba(SNOWBELL.shard, 0.75), rgba(SNOWBELL.shardDeep, 0.7));
+  });
+  makeTex(scene, 'wz_frost', 120, 66, (ctx, w, h) => {
+    ctx.save(); ctx.translate(w / 2, h / 2); ctx.scale(1, h / w);
+    const g = ctx.createRadialGradient(0, 0, 8, 0, 0, w / 2 - 2);
+    g.addColorStop(0, rgba(SNOWBELL.shard, 0.42)); g.addColorStop(1, rgba(SNOWBELL.shardDeep, 0.44));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, w / 2 - 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5;
+    for (const y of [24, 34, 44]) { ctx.beginPath(); ctx.moveTo(24, y); ctx.lineTo(96, y - 10); ctx.stroke(); }
+  });
+  snowbellDecor(scene);
+}
+
+function snowbellDecor(scene: Phaser.Scene): void {
+  for (let v = 0; v < 2; v++) makeTex(scene, 'wd_snow' + v, 30, 20, (ctx) => {
+    ctx.fillStyle = rgba(SNOWBELL.snow, 0.85); ctx.strokeStyle = rgba(SNOWBELL.snowEdge, 0.5); ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.ellipse(15, 12, 12 - v * 2, 5 + v, 0.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  });
+  makeTex(scene, 'wd_bell', 24, 34, (ctx) => {
+    ctx.beginPath(); ctx.moveTo(6, 20); ctx.quadraticCurveTo(7, 8, 12, 5); ctx.quadraticCurveTo(17, 8, 18, 20); ctx.lineTo(20, 24); ctx.lineTo(4, 24); ctx.closePath();
+    ctx.fillStyle = cssOf(SNOWBELL.bell); ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = cssOf(SNOWBELL.bellDeep); ctx.stroke();
+    ctx.beginPath(); ctx.arc(12, 26, 2.4, 0, Math.PI * 2); ctx.fillStyle = cssOf(SNOWBELL.bellCore); ctx.fill();
+  });
+  makeTex(scene, 'wd_crystal', 22, 26, (ctx) => {
+    for (const [x, h, w] of [[9, 19, 6], [15, 14, 4]] as const) {
+      ctx.beginPath(); ctx.moveTo(x, 3); ctx.lineTo(x + w / 2, h); ctx.lineTo(x, 24); ctx.lineTo(x - w / 2, h); ctx.closePath();
+      ctx.fillStyle = rgba(SNOWBELL.crystal, 0.9); ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = cssOf(SNOWBELL.crystalEdge); ctx.stroke();
+    }
+  });
+  makeTex(scene, 'wd_sprig', 22, 22, (ctx) => {
+    ctx.strokeStyle = cssOf(SNOWBELL.sprigEdge); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(11, 20); ctx.lineTo(11, 7); ctx.stroke();
+    petalShape(ctx, 7, 13, 8, 2.5, -0.8, cssOf(SNOWBELL.sprig), cssOf(SNOWBELL.sprigEdge));
+    petalShape(ctx, 15, 10, 8, 2.5, 0.8, cssOf(SNOWBELL.sprig), cssOf(SNOWBELL.sprigEdge));
+  });
+  makeTex(scene, 'wd_pebble', 18, 13, (ctx) => {
+    ctx.beginPath(); ctx.ellipse(9, 7.5, 6.5, 4, 0.2, 0, Math.PI * 2); ctx.fillStyle = cssOf(SNOWBELL.pebble); ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(90,120,140,0.2)'; ctx.stroke();
+  });
+}
+
+// ---------- 彩镜沙洲 ----------
+
+function createMirageAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_prismite',   { w: 30, h: 30, shape: 'starlet', r: 9,  body: MIRAGE.prismite, edge: MIRAGE.prismiteEdge, eye: { gap: 3.4, r: 1.5 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_glassfin',   { w: 42, h: 26, shape: 'tailed', r: 9,   body: MIRAGE.glassfin, edge: MIRAGE.glassfinEdge, eye: { gap: 3.5, r: 1.5 } });
+  makeEnemy(scene, 'e_mirrormoth', { w: 46, h: 36, shape: 'moth', r: 11,   body: MIRAGE.mirrormoth, edge: MIRAGE.mirrormothEdge, accent: MIRAGE.mirrorSpot, eye: { gap: 3.5, r: 1.6, dy: -3 } });
+  makeEnemy(scene, 'e_quartzbud',  { w: 40, h: 42, shape: 'cap', r: 13,    body: MIRAGE.quartzbud, edge: MIRAGE.quartzbudEdge, accent: MIRAGE.prism, eye: { gap: 4.2, r: 1.7, dy: 5 }, mouth: 'open' });
+  makeEnemy(scene, 'e_lensbeetle', { w: 40, h: 38, shape: 'shelled', r: 12, body: MIRAGE.lensbeetle, edge: MIRAGE.lensbeetleEdge, accent: MIRAGE.prismCore, mouth: 'pout' });
+  makeEnemy(scene, 'e_sandsprite', { w: 42, h: 34, shape: 'wisp', r: 11,   body: MIRAGE.sandsprite, edge: MIRAGE.sandspriteEdge, eye: { gap: 4, r: 1.7 }, mouth: 'open' });
+  makeTex(scene, 'e_prismguard', 108, 108, (ctx) => {
+    softGlow(ctx, 54, 58, 48, rgba(MIRAGE.prismguard, 0.32));
+    star(ctx, 54, 58, 6, 42, 22, cssOf(MIRAGE.prismguard), cssOf(MIRAGE.prismguardEdge));
+    ctx.fillStyle = rgba(MIRAGE.prismCore, 0.55); ctx.beginPath(); ctx.arc(54, 58, 18, 0, Math.PI * 2); ctx.fill();
+    eyes(ctx, 54, 56, 12, 4.2, 'angry');
+  });
+  makeTex(scene, 'e_miragewhale', 190, 142, (ctx) => {
+    softGlow(ctx, 96, 78, 72, rgba(MIRAGE.miragewhale, 0.3));
+    ctx.beginPath(); ctx.ellipse(95, 78, 62, 40, 0, 0, Math.PI * 2); ctx.fillStyle = cssOf(MIRAGE.miragewhale); ctx.fill(); ctx.lineWidth = 5; ctx.strokeStyle = cssOf(MIRAGE.miragewhaleEdge); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(35, 78); ctx.lineTo(10, 54); ctx.lineTo(15, 88); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(132, 60); ctx.quadraticCurveTo(162, 26, 174, 58); ctx.quadraticCurveTo(154, 62, 132, 60); ctx.fillStyle = rgba(MIRAGE.prism, 0.9); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = rgba(MIRAGE.prismCore, 0.5); ctx.beginPath(); ctx.ellipse(76, 62, 18, 8, -0.35, 0, Math.PI * 2); ctx.fill();
+    eyes(ctx, 112, 72, 18, 5.5, 'angry');
+  });
+  makeBulletTex(scene, 'mg_glass', 18, 22, (ctx) => {
+    ctx.beginPath(); ctx.moveTo(9, 2); ctx.lineTo(16, 10); ctx.lineTo(12, 21); ctx.lineTo(4, 16); ctx.lineTo(3, 7); ctx.closePath();
+    ctx.fillStyle = rgba(MIRAGE.glassShot, 0.85); ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = cssOf(MIRAGE.glassShotDeep); ctx.stroke();
+  });
+  makeTex(scene, 'mg_prismfield', 108, 108, (ctx) => {
+    softGlow(ctx, 54, 54, 46, rgba(MIRAGE.prism, 0.35));
+    ctx.strokeStyle = rgba(MIRAGE.prismEdge, 0.82); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(54, 54, 43, 0, Math.PI * 2); ctx.stroke();
+    star(ctx, 54, 54, 5, 25, 10, rgba(MIRAGE.prismCore, 0.85), rgba(MIRAGE.prismEdge, 0.8));
+  });
+  mirageDecor(scene);
+}
+
+function mirageDecor(scene: Phaser.Scene): void {
+  for (let v = 0; v < 2; v++) makeTex(scene, 'mg_reed' + v, 26, 42, (ctx) => {
+    ctx.strokeStyle = cssOf(v ? MIRAGE.reed : MIRAGE.reedEdge); ctx.lineWidth = 2; ctx.lineCap = 'round';
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(7 + i * 6, 40); ctx.quadraticCurveTo(8 + i * 6 + v * 3, 24, 10 + i * 4, 6 + i * 3); ctx.stroke(); }
+  });
+  makeTex(scene, 'mg_prism', 24, 26, (ctx) => {
+    ctx.beginPath(); ctx.moveTo(12, 2); ctx.lineTo(22, 11); ctx.lineTo(17, 24); ctx.lineTo(7, 24); ctx.lineTo(2, 11); ctx.closePath();
+    ctx.fillStyle = rgba(MIRAGE.prism, 0.9); ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = cssOf(MIRAGE.prismEdge); ctx.stroke();
+    ctx.fillStyle = rgba(MIRAGE.prismCore, 0.5); ctx.beginPath(); ctx.moveTo(12, 2); ctx.lineTo(17, 24); ctx.lineTo(12, 18); ctx.closePath(); ctx.fill();
+  });
+  makeTex(scene, 'mg_shell', 20, 16, (ctx) => {
+    ctx.beginPath(); ctx.arc(10, 11, 7, Math.PI, 0); ctx.closePath(); ctx.fillStyle = cssOf(MIRAGE.shell); ctx.fill(); ctx.lineWidth = 1.3; ctx.strokeStyle = cssOf(MIRAGE.shellEdge); ctx.stroke();
+  });
+  makeTex(scene, 'mg_glint', 20, 20, (ctx) => { softGlow(ctx, 10, 10, 8, rgba(MIRAGE.glint, 0.45)); star(ctx, 10, 10, 4, 5.5, 2, rgba(MIRAGE.glint, 0.95)); });
+  makeTex(scene, 'mg_pebble', 18, 13, (ctx) => {
+    ctx.beginPath(); ctx.ellipse(9, 7.5, 6.5, 4, 0.2, 0, Math.PI * 2); ctx.fillStyle = cssOf(MIRAGE.pebble); ctx.fill(); ctx.lineWidth = 1.2; ctx.strokeStyle = 'rgba(120,100,150,0.22)'; ctx.stroke();
+  });
+}
+
+// ---------- 晨钟庭 ----------
+
+function createClockworkAssets(scene: Phaser.Scene): void {
+  makeEnemy(scene, 'e_gearling',  { w: 34, h: 34, shape: 'spiky', r: 10.5, body: CLOCKWORK.gearling, edge: CLOCKWORK.gearlingEdge, eye: { gap: 4, r: 1.6 } });
+  makeEnemy(scene, 'e_ticktock',  { w: 24, h: 24, shape: 'round', r: 8.5,  body: CLOCKWORK.ticktock, edge: CLOCKWORK.ticktockEdge, eye: { gap: 3.2, r: 1.4 }, mouth: 'smile' });
+  makeEnemy(scene, 'e_cuckoobud', { w: 36, h: 42, shape: 'sprig', r: 11,   body: CLOCKWORK.cuckoobud, edge: CLOCKWORK.cuckoobudEdge, eye: { gap: 3.8, r: 1.6, dy: 8 }, mouth: 'open' });
+  makeEnemy(scene, 'e_pendulum',  { w: 36, h: 42, shape: 'crescent', r: 13, body: CLOCKWORK.pendulum, edge: CLOCKWORK.pendulumEdge, accent: CLOCKWORK.gold, eye: { gap: 4.4, r: 1.7, style: 'angry' } });
+  makeEnemy(scene, 'e_brassbug',  { w: 44, h: 40, shape: 'shelled', r: 13, body: CLOCKWORK.brassbug, edge: CLOCKWORK.brassbugEdge, accent: CLOCKWORK.brassShell, mouth: 'pout' });
+  makeEnemy(scene, 'e_chimewisp', { w: 42, h: 34, shape: 'wisp', r: 11,   body: CLOCKWORK.chimewisp, edge: CLOCKWORK.chimewispEdge, eye: { gap: 4, r: 1.7 }, mouth: 'open' });
+  makeTex(scene, 'e_gearwarden', 112, 112, (ctx) => {
+    softGlow(ctx, 56, 58, 48, rgba(CLOCKWORK.gearwarden, 0.3));
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      ctx.beginPath(); ctx.moveTo(56 + Math.cos(a - 0.1) * 36, 58 + Math.sin(a - 0.1) * 36); ctx.lineTo(56 + Math.cos(a) * 50, 58 + Math.sin(a) * 50); ctx.lineTo(56 + Math.cos(a + 0.1) * 36, 58 + Math.sin(a + 0.1) * 36); ctx.closePath();
+      ctx.fillStyle = cssOf(CLOCKWORK.gearwarden); ctx.fill(); ctx.strokeStyle = cssOf(CLOCKWORK.gearwardenEdge); ctx.stroke();
+    }
+    blobBody(ctx, 56, 58, 34, CLOCKWORK.gearwarden, CLOCKWORK.gearwardenEdge);
+    eyes(ctx, 56, 54, 12, 4.2, 'angry');
+  });
+  makeTex(scene, 'e_clockrooster', 180, 154, (ctx) => {
+    softGlow(ctx, 90, 84, 72, rgba(CLOCKWORK.clockrooster, 0.3));
+    for (const s of [-1, 1]) {
+      ctx.beginPath(); ctx.moveTo(90 + s * 20, 72); ctx.quadraticCurveTo(90 + s * 78, 40, 90 + s * 78, 76); ctx.quadraticCurveTo(90 + s * 54, 88, 90 + s * 24, 92); ctx.closePath();
+      ctx.fillStyle = cssOf(CLOCKWORK.clockrooster); ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = cssOf(CLOCKWORK.clockroosterEdge); ctx.stroke();
+    }
+    blobBody(ctx, 90, 88, 48, CLOCKWORK.clockrooster, CLOCKWORK.clockroosterEdge, 1, 1.05);
+    for (const [x, y, r] of [[78, 34, 8], [90, 27, 10], [102, 34, 8]] as const) {
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = cssOf(CLOCKWORK.roosterComb); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = cssOf(CLOCKWORK.clockroosterEdge); ctx.stroke();
+    }
+    ctx.beginPath(); ctx.moveTo(84, 92); ctx.lineTo(90, 104); ctx.lineTo(96, 92); ctx.closePath(); ctx.fillStyle = cssOf(CLOCKWORK.gold); ctx.fill(); ctx.stroke();
+    eyes(ctx, 90, 74, 17, 5.5, 'angry');
+  });
+  makeBulletTex(scene, 'ck_note', 18, 22, (ctx) => {
+    ctx.strokeStyle = cssOf(CLOCKWORK.noteShotDeep); ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(11, 4); ctx.lineTo(11, 15); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(8, 16, 4.5, 3.2, -0.4, 0, Math.PI * 2); ctx.fillStyle = cssOf(CLOCKWORK.noteShot); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(11, 4); ctx.quadraticCurveTo(15, 6, 15, 10); ctx.stroke();
+  });
+  makeTex(scene, 'ck_clock', 104, 104, (ctx) => {
+    ctx.strokeStyle = rgba(CLOCKWORK.goldEdge, 0.9); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(52, 52, 42, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = rgba(CLOCKWORK.gold, 0.75); ctx.lineWidth = 2;
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; ctx.beginPath(); ctx.moveTo(52 + Math.cos(a) * 34, 52 + Math.sin(a) * 34); ctx.lineTo(52 + Math.cos(a) * 40, 52 + Math.sin(a) * 40); ctx.stroke(); }
+    ctx.beginPath(); ctx.moveTo(52, 52); ctx.lineTo(52, 26); ctx.moveTo(52, 52); ctx.lineTo(70, 60); ctx.stroke();
+  });
+  clockworkDecor(scene);
+}
+
+function clockworkDecor(scene: Phaser.Scene): void {
+  for (let v = 0; v < 2; v++) makeTex(scene, 'ck_tile' + v, 30, 20, (ctx) => {
+    ctx.fillStyle = cssOf(CLOCKWORK.tile); ctx.strokeStyle = rgba(CLOCKWORK.tileEdge, 0.45); ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.ellipse(15, 11, 12 - v, 5, 0.1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  });
+  makeTex(scene, 'ck_bell', 24, 34, (ctx) => {
+    ctx.beginPath(); ctx.moveTo(6, 21); ctx.quadraticCurveTo(7, 8, 12, 5); ctx.quadraticCurveTo(17, 8, 18, 21); ctx.lineTo(20, 25); ctx.lineTo(4, 25); ctx.closePath();
+    ctx.fillStyle = cssOf(CLOCKWORK.gold); ctx.fill(); ctx.lineWidth = 1.6; ctx.strokeStyle = cssOf(CLOCKWORK.goldEdge); ctx.stroke();
+    ctx.beginPath(); ctx.arc(12, 27, 2.5, 0, Math.PI * 2); ctx.fillStyle = cssOf(CLOCKWORK.brass); ctx.fill();
+  });
+  makeTex(scene, 'ck_gear', 24, 24, (ctx) => {
+    ctx.fillStyle = cssOf(CLOCKWORK.brass); ctx.strokeStyle = cssOf(CLOCKWORK.brassEdge); ctx.lineWidth = 1.3;
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2; ctx.beginPath(); ctx.arc(12 + Math.cos(a) * 8, 12 + Math.sin(a) * 8, 2.5, 0, Math.PI * 2); ctx.fill(); }
+    ctx.beginPath(); ctx.arc(12, 12, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(12, 12, 3, 0, Math.PI * 2); ctx.fillStyle = cssOf(CLOCKWORK.tile); ctx.fill(); ctx.stroke();
+  });
+  makeTex(scene, 'ck_sprig', 22, 20, (ctx) => {
+    ctx.strokeStyle = cssOf(CLOCKWORK.sprigEdge); ctx.lineWidth = 1.7; ctx.beginPath(); ctx.moveTo(11, 19); ctx.lineTo(11, 6); ctx.stroke();
+    petalShape(ctx, 7, 12, 8, 2.5, -0.8, cssOf(CLOCKWORK.sprig), cssOf(CLOCKWORK.sprigEdge));
+    petalShape(ctx, 15, 10, 8, 2.5, 0.8, cssOf(CLOCKWORK.sprig), cssOf(CLOCKWORK.sprigEdge));
+  });
+  makeTex(scene, 'ck_key', 24, 14, (ctx) => {
+    ctx.strokeStyle = cssOf(CLOCKWORK.keyEdge); ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.arc(6, 7, 4, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(10, 7); ctx.lineTo(22, 7); ctx.moveTo(18, 7); ctx.lineTo(18, 11); ctx.moveTo(21, 7); ctx.lineTo(21, 10); ctx.stroke();
+  });
+}
+
 // ---------- 入口：进图/进 UI 页懒生成（幂等） ----------
 
 const MARKERS: Record<MapId, string> = {
   meadow: 'e_blob', pond: 'e_tad', hills: 'e_leafy', grove: 'e_shroom', lavender: 'e_budling',
   bramble: 'e_berryling', nocturne: 'e_moonmote', summit: 'e_shade',
+  orchard: 'e_pip', snowbell: 'e_snowdrop', mirage: 'e_prismite', clockwork: 'e_gearling',
 };
 
 /** 各图懒生成纹理键登记（M8 纹理生命周期：离图释放用；草甸 Boot 常驻不在册） */
@@ -2259,6 +2602,10 @@ export function ensureMapAssets(scene: Phaser.Scene, mapId: MapId): void {
   else if (mapId === 'bramble') createBrambleAssets(scene);
   else if (mapId === 'nocturne') createNocturneAssets(scene);
   else if (mapId === 'summit') createSummitAssets(scene);
+  else if (mapId === 'orchard') createOrchardAssets(scene);
+  else if (mapId === 'snowbell') createSnowbellAssets(scene);
+  else if (mapId === 'mirage') createMirageAssets(scene);
+  else if (mapId === 'clockwork') createClockworkAssets(scene);
   else return;
   CREATED[mapId] = scene.textures.getTextureKeys().filter((k) => !before.has(k));
 }

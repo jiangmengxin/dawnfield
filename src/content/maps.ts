@@ -62,7 +62,15 @@ export type MechanicSpec =
   // nocturne 夜幕与光界：全场罩暗、玩家光圈内正常，拾星屑临时照亮全场（光圈即资源）
   | { kind: 'nightfall'; darkAlpha: number; starEvery: number; litT: number }
   // summit 破晓烽台：晨光柱累计停留点燃→永久据点网（上限 maxLit），每点燃 1 座敌人生成 HP 衰减（推进点灯 vs 苟刷）
-  | { kind: 'beacon'; first: number; interval: number; count: number; r: number; igniteT: number; maxLit: number; hps: number; dps: number; enemyHpPer: number };
+  | { kind: 'beacon'; first: number; interval: number; count: number; r: number; igniteT: number; maxLit: number; hps: number; dps: number; enemyHpPer: number }
+  // orchard 丰收落果：果实预警后坠落，伤敌并产出经验/金币（引怪进落点）
+  | { kind: 'orchard'; first: number; interval: number; count: number; r: number; warnT: number; dmg: number; xp: number; coin: number; dropHits: number }
+  // snowbell 雪铃寒印：玩家踩入寒印充能，碎裂后减速地皮 + 冰爆控场（选择何时引爆）
+  | { kind: 'frostseal'; first: number; interval: number; count: number; r: number; dur: number; chargeT: number; dmg: number; slowMul: number }
+  // mirage 彩镜折光：镜场内蓄能，满能折射多段光束（站位贪能量 vs 安全）
+  | { kind: 'prismfield'; first: number; interval: number; count: number; r: number; dur: number; chargeT: number; dmg: number; beams: number }
+  // clockwork 晨钟节拍：钟印倒计时，踩中节拍则友方钟波清场，否则小额惩罚（读拍与走位）
+  | { kind: 'bellring'; first: number; interval: number; count: number; r: number; warnT: number; dmg: number; missDmg: number };
 
 // ---------- BGM 主题（WebAudio 生成式，audio/sound.ts 消费） ----------
 
@@ -211,6 +219,62 @@ const SUMMIT_BGM: BgmSpec = {
   densityK: 0.34,
   perc: 'shaker',
   echo: 0.4,
+};
+
+// G 大调五声中快：果园丰收，木质拨弦 + 轻沙锤
+const ORCHARD_BGM: BgmSpec = {
+  bpm: 104,
+  scale: [196.0, 246.9, 293.7, 392.0, 493.9, 587.3, 784.0],
+  bass: [98.0, 130.8, 110.0, 146.8],
+  chords: [[196.0, 246.9, 293.7], [261.6, 329.6, 392.0], [220.0, 293.7, 349.2], [196.0, 293.7, 392.0]],
+  pluckType: 'triangle',
+  pluckVol: 0.05,
+  density: 0.38,
+  densityK: 0.32,
+  perc: 'shaker',
+  echo: 0.28,
+};
+
+// F 大调五声慢中板：雪铃清亮，正弦拨弦 + 高回声
+const SNOWBELL_BGM: BgmSpec = {
+  bpm: 82,
+  scale: [349.2, 392.0, 440.0, 523.3, 587.3, 698.5, 880.0],
+  bass: [87.3, 116.5, 98.0, 130.8],
+  chords: [[174.6, 220.0, 261.6], [196.0, 246.9, 293.7], [146.8, 196.0, 246.9], [174.6, 261.6, 349.2]],
+  pluckType: 'sine',
+  pluckVol: 0.054,
+  density: 0.24,
+  densityK: 0.26,
+  perc: 'drip',
+  echo: 0.6,
+};
+
+// C 利底亚色彩：玻璃折光，明亮三角波 + 水滴点
+const MIRAGE_BGM: BgmSpec = {
+  bpm: 112,
+  scale: [261.6, 329.6, 370.0, 392.0, 523.3, 659.3, 740.0, 784.0],
+  bass: [65.4, 98.0, 92.5, 110.0],
+  chords: [[261.6, 329.6, 392.0], [293.7, 370.0, 440.0], [246.9, 329.6, 392.0], [220.0, 293.7, 370.0]],
+  pluckType: 'triangle',
+  pluckVol: 0.046,
+  density: 0.42,
+  densityK: 0.34,
+  perc: 'drip',
+  echo: 0.42,
+};
+
+// D 大调五声快板：晨钟节拍，干净拨弦 + tick 打点
+const CLOCKWORK_BGM: BgmSpec = {
+  bpm: 120,
+  scale: [293.7, 329.6, 370.0, 440.0, 493.9, 587.3, 659.3, 880.0],
+  bass: [73.4, 110.0, 98.0, 146.8],
+  chords: [[293.7, 370.0, 440.0], [246.9, 329.6, 392.0], [220.0, 293.7, 370.0], [293.7, 440.0, 587.3]],
+  pluckType: 'triangle',
+  pluckVol: 0.048,
+  density: 0.5,
+  densityK: 0.36,
+  perc: 'tick',
+  echo: 0.22,
 };
 
 export const MAPS: MapSpec[] = [
@@ -687,6 +751,232 @@ export const MAPS: MapSpec[] = [
     mechanics: [{ kind: 'beacon', first: 25, interval: 18, count: 1, r: 70, igniteT: 4, maxLit: 3, hps: 7, dps: 30, enemyHpPer: 0.05 }],
     bgm: SUMMIT_BGM,
     unlockAch: 'nocturneClear',
+  },
+
+  // ---------- 9. 琥珀果园：落果诱导 + 果核压制，20 分钟（1.0+ 扩展 + 中点 surge） ----------
+  // 果实落点可借力清群，但炮台与护盾怪会逼迫玩家主动引怪换位
+  {
+    id: 'orchard',
+    drops: ['goldapple', 'seedwhirl'],
+    minutes: 20,
+    timeK: 12 / 20,
+    xpK: 1.08,
+    icon: 'od_apple',
+    iconScale: 2.25,
+    color: 0xd8a058,
+    paperCss: '#F8F0DE',
+    bossId: 'ciderwyrm',
+    eliteId: 'harvestorb',
+    waves: [
+      { from: 0,    interval: 0.95, burst: 2, maxAlive: 34,  types: [['pip', 1]] },
+      { from: 40,   interval: 0.86, burst: 2, maxAlive: 56,  types: [['pip', 3], ['ciderfly', 1.5]] },
+      { from: 90,   interval: 0.8,  burst: 3, maxAlive: 82,  types: [['pip', 3], ['ciderfly', 2], ['wormlet', 1.2]] },
+      { from: 150,  interval: 0.74, burst: 3, maxAlive: 106, types: [['pip', 2.5], ['ciderfly', 2], ['wormlet', 1.5], ['appleling', 1.2]] },
+      { from: 220,  interval: 0.68, burst: 4, maxAlive: 132, types: [['ciderfly', 2], ['wormlet', 1.7], ['appleling', 1.5], ['scareseed', 1.1], ['pip', 1.7]] },
+      { from: 310,  interval: 0.62, burst: 4, maxAlive: 158, types: [['wormlet', 1.9], ['appleling', 1.8], ['scareseed', 1.3], ['ciderfly', 2.1]] },
+      { from: 420,  interval: 0.56, burst: 5, maxAlive: 184, types: [['appleling', 2], ['scareseed', 1.5], ['wormlet', 2.1], ['pip', 2]] },
+      { from: 560,  interval: 0.52, burst: 5, maxAlive: 210, types: [['scareseed', 1.7], ['appleling', 2.2], ['ciderfly', 2.3], ['wormlet', 2.2]] },
+      { from: 700,  interval: 0.48, burst: 6, maxAlive: 238, types: [['appleling', 2.4], ['scareseed', 1.9], ['nutkin', 0.8], ['wormlet', 2.4], ['pip', 2.2]] },
+      { from: 840,  interval: 0.45, burst: 6, maxAlive: 264, types: [['scareseed', 2.1], ['appleling', 2.6], ['nutkin', 1], ['ciderfly', 2.6], ['wormlet', 2.5]] },
+      { from: 1010, interval: 0.42, burst: 7, maxAlive: 292, types: [['appleling', 2.8], ['scareseed', 2.3], ['nutkin', 1.1], ['wormlet', 2.8], ['pip', 2.4]] },
+      { from: 1200, interval: 0.9,  burst: 3, maxAlive: 90,  types: [['pip', 2], ['ciderfly', 1.5], ['wormlet', 1]] },
+    ],
+    events: [
+      { t: 110,  kind: 'ring', enemy: 'pip', n: 22 },
+      { t: 190,  kind: 'elite' },
+      { t: 280,  kind: 'ring', enemy: 'ciderfly', n: 22 },
+      { t: 375,  kind: 'ring', enemy: 'wormlet', n: 18 },
+      { t: 470,  kind: 'elite' },
+      { t: 585,  kind: 'ring', enemy: 'appleling', n: 16 },
+      { t: 600,  kind: 'surge', n: 2 },
+      { t: 700,  kind: 'elite' },
+      { t: 800,  kind: 'ring', enemy: 'scareseed', n: 12 },
+      { t: 900,  kind: 'elite' },
+      { t: 1010, kind: 'ring', enemy: 'nutkin', n: 10 },
+      { t: 1110, kind: 'ring', enemy: 'pip', n: 34 },
+      { t: 1200, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['od_tree0', 'od_tree1'], nMin: 1, nMax: 2, chance: 0.8 },
+      { keys: ['od_grass0', 'od_grass1'], nMin: 3, nMax: 6, chance: 1 },
+      { keys: ['od_apple'], nMin: 1, nMax: 3, chance: 0.7 },
+      { keys: ['od_leaf'], nMin: 1, nMax: 3, chance: 0.55 },
+      { keys: ['od_crate'], nMin: 1, nMax: 1, chance: 0.3 },
+    ],
+    mechanics: [{ kind: 'orchard', first: 28, interval: 15, count: 2, r: 82, warnT: 1.3, dmg: 92, xp: 8, coin: 2, dropHits: 4 }],
+    bgm: ORCHARD_BGM,
+    unlockAch: 'summitClear',
+  },
+
+  // ---------- 10. 雪铃庭院：寒印手动引爆，20 分钟（1.0+ 扩展 + 中点 surge） ----------
+  // 敌人机动性高，玩家需要把追兵带进寒印后踩碎控场
+  {
+    id: 'snowbell',
+    drops: ['snowglobe', 'frostbell'],
+    minutes: 20,
+    timeK: 12 / 20,
+    xpK: 1.02,
+    icon: 'wd_bell',
+    iconScale: 2.15,
+    color: 0x98c8dc,
+    paperCss: '#EEF6F4',
+    bossId: 'frosthare',
+    eliteId: 'snowwarden',
+    waves: [
+      { from: 0,    interval: 1.0,  burst: 2, maxAlive: 32,  types: [['snowdrop', 1]] },
+      { from: 45,   interval: 0.9,  burst: 2, maxAlive: 54,  types: [['snowdrop', 3], ['flakebunny', 1.4]] },
+      { from: 95,   interval: 0.84, burst: 3, maxAlive: 78,  types: [['snowdrop', 3], ['flakebunny', 1.8], ['sleetwing', 1.2]] },
+      { from: 155,  interval: 0.78, burst: 3, maxAlive: 102, types: [['snowdrop', 2.4], ['flakebunny', 2], ['sleetwing', 1.5], ['frostcap', 1.1]] },
+      { from: 230,  interval: 0.72, burst: 4, maxAlive: 128, types: [['flakebunny', 2.1], ['sleetwing', 1.7], ['frostcap', 1.3], ['crystalmite', 1.2]] },
+      { from: 320,  interval: 0.66, burst: 4, maxAlive: 154, types: [['sleetwing', 2], ['frostcap', 1.5], ['crystalmite', 1.5], ['snowdrop', 1.8]] },
+      { from: 430,  interval: 0.6,  burst: 5, maxAlive: 182, types: [['frostcap', 1.8], ['crystalmite', 1.7], ['sleetwing', 2.2], ['flakebunny', 2.2]] },
+      { from: 560,  interval: 0.55, burst: 5, maxAlive: 208, types: [['crystalmite', 1.9], ['bellfox', 1], ['frostcap', 2], ['sleetwing', 2.4]] },
+      { from: 700,  interval: 0.5,  burst: 6, maxAlive: 236, types: [['bellfox', 1.1], ['crystalmite', 2.1], ['flakebunny', 2.5], ['frostcap', 2.2], ['snowdrop', 2]] },
+      { from: 850,  interval: 0.47, burst: 6, maxAlive: 264, types: [['bellfox', 1.2], ['crystalmite', 2.3], ['sleetwing', 2.7], ['frostcap', 2.4]] },
+      { from: 1020, interval: 0.44, burst: 7, maxAlive: 292, types: [['bellfox', 1.3], ['crystalmite', 2.5], ['flakebunny', 2.8], ['frostcap', 2.6], ['snowdrop', 2.3]] },
+      { from: 1200, interval: 0.92, burst: 3, maxAlive: 92,  types: [['snowdrop', 2], ['flakebunny', 1.5], ['sleetwing', 1]] },
+    ],
+    events: [
+      { t: 120,  kind: 'ring', enemy: 'snowdrop', n: 22 },
+      { t: 205,  kind: 'elite' },
+      { t: 300,  kind: 'ring', enemy: 'flakebunny', n: 18 },
+      { t: 395,  kind: 'ring', enemy: 'sleetwing', n: 22 },
+      { t: 490,  kind: 'elite' },
+      { t: 585,  kind: 'ring', enemy: 'frostcap', n: 12 },
+      { t: 600,  kind: 'surge', n: 2 },
+      { t: 715,  kind: 'elite' },
+      { t: 820,  kind: 'ring', enemy: 'crystalmite', n: 14 },
+      { t: 930,  kind: 'elite' },
+      { t: 1040, kind: 'ring', enemy: 'bellfox', n: 12 },
+      { t: 1135, kind: 'ring', enemy: 'snowdrop', n: 34 },
+      { t: 1200, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['wd_snow0', 'wd_snow1'], nMin: 3, nMax: 6, chance: 1 },
+      { keys: ['wd_bell'], nMin: 1, nMax: 2, chance: 0.55 },
+      { keys: ['wd_crystal'], nMin: 1, nMax: 2, chance: 0.55 },
+      { keys: ['wd_sprig'], nMin: 1, nMax: 2, chance: 0.45 },
+      { keys: ['wd_pebble'], nMin: 1, nMax: 1, chance: 0.35 },
+    ],
+    mechanics: [{ kind: 'frostseal', first: 24, interval: 17, count: 1, r: 92, dur: 18, chargeT: 1.4, dmg: 115, slowMul: 0.5 }],
+    bgm: SNOWBELL_BGM,
+    unlockAch: 'orchardClear',
+  },
+
+  // ---------- 11. 彩镜沙洲：折光蓄能，30 分钟（1.0+ 扩展 + 中点 surge） ----------
+  // 镜场奖励高，但玻璃敌人擅长闪现、绕飞、远程压制
+  {
+    id: 'mirage',
+    drops: ['prismshard', 'mirrorbloom'],
+    minutes: 30,
+    timeK: 12 / 30,
+    xpK: 0.92,
+    icon: 'mg_prism',
+    iconScale: 2.15,
+    color: 0xb8a8dc,
+    paperCss: '#F1EDF7',
+    bossId: 'miragewhale',
+    eliteId: 'prismguard',
+    waves: [
+      { from: 0,    interval: 0.95, burst: 2, maxAlive: 34,  types: [['prismite', 1]] },
+      { from: 55,   interval: 0.85, burst: 2, maxAlive: 56,  types: [['prismite', 3], ['glassfin', 1.5]] },
+      { from: 125,  interval: 0.8,  burst: 3, maxAlive: 82,  types: [['prismite', 3], ['glassfin', 2], ['mirrormoth', 1.2]] },
+      { from: 205,  interval: 0.74, burst: 3, maxAlive: 106, types: [['prismite', 2.5], ['glassfin', 2], ['mirrormoth', 1.5], ['lensbeetle', 1.2]] },
+      { from: 300,  interval: 0.68, burst: 4, maxAlive: 132, types: [['glassfin', 2], ['mirrormoth', 1.7], ['lensbeetle', 1.4], ['quartzbud', 1.1]] },
+      { from: 410,  interval: 0.62, burst: 4, maxAlive: 158, types: [['mirrormoth', 2], ['lensbeetle', 1.6], ['quartzbud', 1.3], ['prismite', 1.8]] },
+      { from: 540,  interval: 0.58, burst: 4, maxAlive: 184, types: [['lensbeetle', 1.8], ['quartzbud', 1.5], ['sandsprite', 1], ['mirrormoth', 2.2]] },
+      { from: 690,  interval: 0.54, burst: 5, maxAlive: 210, types: [['quartzbud', 1.7], ['sandsprite', 1.1], ['lensbeetle', 2], ['glassfin', 2.2]] },
+      { from: 860,  interval: 0.5,  burst: 5, maxAlive: 238, types: [['sandsprite', 1.2], ['quartzbud', 1.9], ['mirrormoth', 2.5], ['lensbeetle', 2.2], ['prismite', 2]] },
+      { from: 1040, interval: 0.47, burst: 6, maxAlive: 266, types: [['sandsprite', 1.3], ['quartzbud', 2.1], ['glassfin', 2.6], ['lensbeetle', 2.4]] },
+      { from: 1240, interval: 0.44, burst: 6, maxAlive: 292, types: [['sandsprite', 1.4], ['quartzbud', 2.3], ['mirrormoth', 2.8], ['lensbeetle', 2.6], ['prismite', 2.3]] },
+      { from: 1460, interval: 0.41, burst: 7, maxAlive: 318, types: [['sandsprite', 1.5], ['quartzbud', 2.5], ['glassfin', 3], ['lensbeetle', 2.8]] },
+      { from: 1800, interval: 0.88, burst: 3, maxAlive: 96,  types: [['prismite', 2], ['glassfin', 1.5], ['mirrormoth', 1]] },
+    ],
+    events: [
+      { t: 150,  kind: 'ring', enemy: 'prismite', n: 24 },
+      { t: 260,  kind: 'elite' },
+      { t: 370,  kind: 'ring', enemy: 'glassfin', n: 22 },
+      { t: 500,  kind: 'ring', enemy: 'mirrormoth', n: 22 },
+      { t: 625,  kind: 'elite' },
+      { t: 760,  kind: 'ring', enemy: 'lensbeetle', n: 14 },
+      { t: 900,  kind: 'surge', n: 3 },
+      { t: 930,  kind: 'elite' },
+      { t: 1060, kind: 'ring', enemy: 'quartzbud', n: 12 },
+      { t: 1200, kind: 'elite' },
+      { t: 1340, kind: 'ring', enemy: 'sandsprite', n: 14 },
+      { t: 1490, kind: 'elite' },
+      { t: 1625, kind: 'ring', enemy: 'mirrormoth', n: 30 },
+      { t: 1720, kind: 'ring', enemy: 'prismite', n: 36 },
+      { t: 1800, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['mg_reed0', 'mg_reed1'], nMin: 2, nMax: 5, chance: 1 },
+      { keys: ['mg_prism'], nMin: 1, nMax: 2, chance: 0.6 },
+      { keys: ['mg_shell'], nMin: 1, nMax: 2, chance: 0.5 },
+      { keys: ['mg_glint'], nMin: 1, nMax: 3, chance: 0.5 },
+      { keys: ['mg_pebble'], nMin: 1, nMax: 1, chance: 0.35 },
+    ],
+    mechanics: [{ kind: 'prismfield', first: 32, interval: 18, count: 1, r: 98, dur: 16, chargeT: 3.2, dmg: 92, beams: 7 }],
+    bgm: MIRAGE_BGM,
+    unlockAch: 'snowbellClear',
+  },
+
+  // ---------- 12. 晨钟庭：节拍钟阵，30 分钟（1.0+ 扩展 + 中点 surge） ----------
+  // 读拍踩钟印会释放大钟波；错过节拍会吃小伤，召唤/护盾怪放大压力
+  {
+    id: 'clockwork',
+    drops: ['clockkey', 'bellnova'],
+    minutes: 30,
+    timeK: 12 / 30,
+    xpK: 0.9,
+    icon: 'ck_bell',
+    iconScale: 2.2,
+    color: 0xd0a860,
+    paperCss: '#F7F0E3',
+    bossId: 'clockrooster',
+    eliteId: 'gearwarden',
+    waves: [
+      { from: 0,    interval: 0.9,  burst: 2, maxAlive: 36,  types: [['gearling', 1]] },
+      { from: 50,   interval: 0.8,  burst: 2, maxAlive: 60,  types: [['gearling', 3], ['ticktock', 1.5]] },
+      { from: 115,  interval: 0.75, burst: 3, maxAlive: 86,  types: [['gearling', 3], ['ticktock', 2], ['pendulum', 1.2]] },
+      { from: 190,  interval: 0.7,  burst: 3, maxAlive: 112, types: [['gearling', 2.5], ['ticktock', 2], ['pendulum', 1.5], ['chimewisp', 1.2]] },
+      { from: 280,  interval: 0.65, burst: 4, maxAlive: 138, types: [['ticktock', 2.2], ['pendulum', 1.7], ['chimewisp', 1.4], ['gearling', 2]] },
+      { from: 390,  interval: 0.6,  burst: 4, maxAlive: 166, types: [['pendulum', 1.9], ['chimewisp', 1.6], ['cuckoobud', 0.9], ['ticktock', 2.4]] },
+      { from: 520,  interval: 0.55, burst: 5, maxAlive: 194, types: [['chimewisp', 1.8], ['cuckoobud', 1], ['pendulum', 2.1], ['gearling', 2.2]] },
+      { from: 670,  interval: 0.5,  burst: 5, maxAlive: 222, types: [['cuckoobud', 1.1], ['chimewisp', 2], ['brassbug', 0.7], ['pendulum', 2.3], ['ticktock', 2.5]] },
+      { from: 850,  interval: 0.47, burst: 6, maxAlive: 250, types: [['brassbug', 0.8], ['cuckoobud', 1.2], ['pendulum', 2.5], ['chimewisp', 2.2], ['gearling', 2.4]] },
+      { from: 1050, interval: 0.44, burst: 6, maxAlive: 280, types: [['brassbug', 0.9], ['cuckoobud', 1.3], ['ticktock', 2.9], ['chimewisp', 2.4], ['pendulum', 2.7]] },
+      { from: 1270, interval: 0.41, burst: 7, maxAlive: 306, types: [['brassbug', 1], ['cuckoobud', 1.4], ['pendulum', 2.9], ['chimewisp', 2.6], ['gearling', 2.7]] },
+      { from: 1500, interval: 0.39, burst: 7, maxAlive: 330, types: [['brassbug', 1.1], ['cuckoobud', 1.5], ['ticktock', 3.1], ['chimewisp', 2.8], ['pendulum', 3]] },
+      { from: 1800, interval: 0.84, burst: 3, maxAlive: 100, types: [['gearling', 2], ['ticktock', 1.5], ['pendulum', 1]] },
+    ],
+    events: [
+      { t: 140,  kind: 'ring', enemy: 'gearling', n: 24 },
+      { t: 240,  kind: 'elite' },
+      { t: 360,  kind: 'ring', enemy: 'ticktock', n: 30 },
+      { t: 500,  kind: 'ring', enemy: 'pendulum', n: 16 },
+      { t: 635,  kind: 'elite' },
+      { t: 780,  kind: 'ring', enemy: 'chimewisp', n: 14 },
+      { t: 900,  kind: 'surge', n: 3 },
+      { t: 955,  kind: 'elite' },
+      { t: 1080, kind: 'ring', enemy: 'cuckoobud', n: 12 },
+      { t: 1220, kind: 'elite' },
+      { t: 1370, kind: 'ring', enemy: 'brassbug', n: 10 },
+      { t: 1510, kind: 'elite' },
+      { t: 1640, kind: 'ring', enemy: 'ticktock', n: 38 },
+      { t: 1730, kind: 'ring', enemy: 'gearling', n: 36 },
+      { t: 1800, kind: 'boss' },
+    ],
+    decor: [
+      { keys: ['ck_tile0', 'ck_tile1'], nMin: 3, nMax: 5, chance: 1 },
+      { keys: ['ck_bell'], nMin: 1, nMax: 2, chance: 0.55 },
+      { keys: ['ck_gear'], nMin: 1, nMax: 3, chance: 0.65 },
+      { keys: ['ck_sprig'], nMin: 1, nMax: 2, chance: 0.45 },
+      { keys: ['ck_key'], nMin: 1, nMax: 1, chance: 0.3 },
+    ],
+    mechanics: [{ kind: 'bellring', first: 20, interval: 12, count: 1, r: 86, warnT: 2.2, dmg: 130, missDmg: 8 }],
+    bgm: CLOCKWORK_BGM,
+    unlockAch: 'mirageClear',
   },
 ];
 

@@ -220,6 +220,86 @@ export const SUMMIT = {
   petalShot: 0xa890c0, petalShotDeep: 0x786098,
 } as const;
 
+// ---------- 琥珀果园（图 9）：金橙果香，暖绿叶影 ----------
+export const ORCHARD = {
+  paper: 0xf8f0de, paperCss: '#F8F0DE',
+  grass: 0xc8d89a, grassEdge: 0x91aa62,
+  leaf: 0xb6c878, leafEdge: 0x7f9a4e,
+  apple: 0xe8a05c, appleDeep: 0xb86a42, appleGold: 0xf2c46a,
+  bark: 0xb88a5c, barkEdge: 0x7c5c3a,
+  crate: 0xd0a66a, crateEdge: 0x987044,
+
+  pip: 0xf0c878, pipEdge: 0xc09042,
+  ciderfly: 0xe8b870, ciderflyEdge: 0xa87838, ciderWing: 0xf5e2a8,
+  appleling: 0xd88668, applelingEdge: 0xa85842,
+  nutkin: 0xc8a26a, nutkinEdge: 0x85623a, nutShell: 0xe0c08a,
+  wormlet: 0xb8d080, wormletEdge: 0x7c9a4e,
+  scareseed: 0xd0b06a, scareseedEdge: 0x927046,
+  harvestorb: 0xd8a858, harvestorbEdge: 0x9a6a32,
+  ciderwyrm: 0xc88a58, ciderwyrmEdge: 0x804a34,
+  seedShot: 0xe0b860, seedShotDeep: 0xa87838,
+} as const;
+
+// ---------- 雪铃庭院（图 10）：纸白雪蓝，铃花浅金 ----------
+export const SNOWBELL = {
+  paper: 0xeef6f4, paperCss: '#EEF6F4',
+  snow: 0xd8e8ec, snowEdge: 0xa8c6d0,
+  bell: 0xd8eef0, bellDeep: 0x8cb8c8, bellCore: 0xf4d88a,
+  crystal: 0xb8d8f0, crystalEdge: 0x7aa6c8,
+  sprig: 0xb8caa0, sprigEdge: 0x879a70,
+  pebble: 0xdfe8ea,
+
+  snowdrop: 0xdcecf0, snowdropEdge: 0x9abac6,
+  flakebunny: 0xf0f4f0, flakebunnyEdge: 0xabc4c8, bunnyEar: 0xf2c8d8,
+  sleetwing: 0xa8c8e0, sleetwingEdge: 0x7098b8, sleetWing: 0xd8eef8,
+  frostcap: 0xc8dce8, frostcapEdge: 0x88a8bc, frostCap: 0xa8c8e8,
+  crystalmite: 0xb6d4ee, crystalmiteEdge: 0x789ec0,
+  bellfox: 0xd8c8b0, bellfoxEdge: 0x9a8060, bellfoxTail: 0xf0f4f0,
+  snowwarden: 0xb8d4e8, snowwardenEdge: 0x6f98b8,
+  frosthare: 0xc8deec, frosthareEdge: 0x7a9eb8, frosthareEar: 0xf0d8e2,
+  shard: 0xc8e8f0, shardDeep: 0x78a8c8,
+} as const;
+
+// ---------- 彩镜沙洲（图 11）：淡紫玻璃，浅青折光 ----------
+export const MIRAGE = {
+  paper: 0xf1edf7, paperCss: '#F1EDF7',
+  reed: 0xb8c8a8, reedEdge: 0x849870,
+  prism: 0xd0c0f0, prismEdge: 0x9a7cc8, prismCore: 0xf8f0ff,
+  shell: 0xe4d8ee, shellEdge: 0xb09cc8,
+  glint: 0xf6e8b8,
+  pebble: 0xe0ddea,
+
+  prismite: 0xd8c8f0, prismiteEdge: 0x9a7fd0,
+  glassfin: 0xa8d8e8, glassfinEdge: 0x6aa8c0,
+  mirrormoth: 0xc8b8e8, mirrormothEdge: 0x9478c0, mirrorSpot: 0xf8edb8,
+  quartzbud: 0xe2d8f0, quartzbudEdge: 0xa890c8,
+  lensbeetle: 0xb8d0d8, lensbeetleEdge: 0x7a9ca8,
+  sandsprite: 0xf0dca8, sandspriteEdge: 0xb89058,
+  prismguard: 0xb8a8dc, prismguardEdge: 0x8068b0,
+  miragewhale: 0x9ec8d8, miragewhaleEdge: 0x5e8ea8,
+  glassShot: 0xd8f0f0, glassShotDeep: 0x80a8c8,
+} as const;
+
+// ---------- 晨钟庭（图 12）：暖金钟铜，纸白石庭 ----------
+export const CLOCKWORK = {
+  paper: 0xf7f0e3, paperCss: '#F7F0E3',
+  tile: 0xe8dcc8, tileEdge: 0xc2ae8a,
+  gold: 0xe0b860, goldEdge: 0xa87838,
+  brass: 0xc8a060, brassEdge: 0x8a6438,
+  sprig: 0xb8c890, sprigEdge: 0x80945e,
+  key: 0xe8c878, keyEdge: 0xa87838,
+
+  gearling: 0xc8b070, gearlingEdge: 0x8c6e3e,
+  ticktock: 0xf0d888, ticktockEdge: 0xb88a3e,
+  cuckoobud: 0xb8d0a0, cuckoobudEdge: 0x7c9a62,
+  pendulum: 0xc8a870, pendulumEdge: 0x8a6840,
+  brassbug: 0xd0b078, brassbugEdge: 0x7c5c32, brassShell: 0xb89058,
+  chimewisp: 0xd8c8f0, chimewispEdge: 0x9880c0,
+  gearwarden: 0xb89058, gearwardenEdge: 0x76502e,
+  clockrooster: 0xc89858, clockroosterEdge: 0x7c4e30, roosterComb: 0xd87868,
+  noteShot: 0xf0cc78, noteShotDeep: 0xa87838,
+} as const;
+
 // 敌人死亡纸屑颜色（与本体同色）
 import type { EnemyId } from '../content/ids';
 export const DEATH_COLOR: Record<EnemyId, number> = {
@@ -244,6 +324,15 @@ export const DEATH_COLOR: Record<EnemyId, number> = {
   // M15 新行为敌人
   bombcap: GROVE.bombcap, hivebud: LAVENDER.hivebud, husker: BRAMBLE.husker,
   novamote: NOCTURNE.novamote, duskward: SUMMIT.duskward, shadowmaw: SUMMIT.shadowmaw,
+  // 1.0+ 四图扩展
+  pip: ORCHARD.pip, ciderfly: ORCHARD.ciderfly, appleling: ORCHARD.appleling, nutkin: ORCHARD.nutkin,
+  wormlet: ORCHARD.wormlet, scareseed: ORCHARD.scareseed, harvestorb: ORCHARD.harvestorb, ciderwyrm: ORCHARD.ciderwyrm,
+  snowdrop: SNOWBELL.snowdrop, flakebunny: SNOWBELL.flakebunny, sleetwing: SNOWBELL.sleetwing, frostcap: SNOWBELL.frostcap,
+  crystalmite: SNOWBELL.crystalmite, bellfox: SNOWBELL.bellfox, snowwarden: SNOWBELL.snowwarden, frosthare: SNOWBELL.frosthare,
+  prismite: MIRAGE.prismite, glassfin: MIRAGE.glassfin, mirrormoth: MIRAGE.mirrormoth, quartzbud: MIRAGE.quartzbud,
+  lensbeetle: MIRAGE.lensbeetle, sandsprite: MIRAGE.sandsprite, prismguard: MIRAGE.prismguard, miragewhale: MIRAGE.miragewhale,
+  gearling: CLOCKWORK.gearling, ticktock: CLOCKWORK.ticktock, cuckoobud: CLOCKWORK.cuckoobud, pendulum: CLOCKWORK.pendulum,
+  brassbug: CLOCKWORK.brassbug, chimewisp: CLOCKWORK.chimewisp, gearwarden: CLOCKWORK.gearwarden, clockrooster: CLOCKWORK.clockrooster,
 };
 
 // 角色配色（makeCharacter 配方用；body 主体 / edge 描边）

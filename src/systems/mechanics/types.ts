@@ -32,3 +32,10 @@ export function aroundPlayer(ctx: CombatContext, min: number, max: number): [num
   const d = min + Math.random() * (max - min);
   return [ctx.player.x + Math.cos(a) * d, ctx.player.y + Math.sin(a) * d];
 }
+
+/** 玩家四周随机点（走构筑随机入口，供新机制遵循 M17 随机契约） */
+export function aroundPlayerRng(ctx: CombatContext, min: number, max: number): [number, number] {
+  const a = ctx.rng() * Math.PI * 2;
+  const d = min + ctx.rng() * (max - min);
+  return [ctx.player.x + Math.cos(a) * d, ctx.player.y + Math.sin(a) * d];
+}

@@ -113,8 +113,17 @@ export const ACHIEVEMENTS: AchievementSpec[] = [
     check: (v) => v.run?.win === true && v.run.mapId === 'bramble' },
   { id: 'nocturneClear', icon: 'e_starelk',     unlockMap: 'summit', unlockArcana: 'starfall', // M21 夜系点题
     check: (v) => v.run?.win === true && v.run.mapId === 'nocturne' },
-  { id: 'summitClear',   icon: 'e_nightowl', rewardCoins: 300,
+  { id: 'summitClear',   icon: 'e_nightowl', unlockMap: 'orchard', rewardCoins: 300,
     check: (v) => v.run?.win === true && v.run.mapId === 'summit' },
+  // ---------- 1.0+ 四图扩展 ----------
+  { id: 'orchardClear',   icon: 'e_ciderwyrm',   unlockMap: 'snowbell', rewardCoins: 300,
+    check: (v) => v.run?.win === true && v.run.mapId === 'orchard' },
+  { id: 'snowbellClear',  icon: 'e_frosthare',   unlockMap: 'mirage', rewardCoins: 300,
+    check: (v) => v.run?.win === true && v.run.mapId === 'snowbell' },
+  { id: 'mirageClear',    icon: 'e_miragewhale', unlockMap: 'clockwork', rewardCoins: 350,
+    check: (v) => v.run?.win === true && v.run.mapId === 'mirage' },
+  { id: 'clockworkClear', icon: 'e_clockrooster', rewardCoins: 500,
+    check: (v) => v.run?.win === true && v.run.mapId === 'clockwork' },
   { id: 'survive20',   icon: 'icon_vine',    unlockChar: 'ivy', unlockArcana: 'daynight', // M21 久战见昼夜
     check: (v) => (v.run?.time ?? 0) >= 1200 },
   { id: 'kills500',    icon: 'e_leafy',      unlockChar: 'toot',

@@ -234,6 +234,59 @@ const DROP_ICONS: Record<DropItemId, (c: Ctx2D) => void> = {
     c.strokeStyle = '#D89A2E'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(x - 9, y); c.lineTo(x + 9, y); c.stroke();
     hi(c, x - 2.5, y - 3.5, 2.4, 1.3, -0.3, 0.6);
   },
+
+  // ===== orchard =====
+  goldapple: (c) => {
+    c.beginPath(); c.arc(14, 15, 8.5, 0, Math.PI * 2); c.fillStyle = rad(c, 14, 14, 10, '#FFD88A', '#D98A48'); c.fill(); c.lineWidth = 1.7; c.strokeStyle = '#A85E34'; c.stroke();
+    c.strokeStyle = '#7C6A38'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(14, 7); c.quadraticCurveTo(15, 4, 18, 3); c.stroke();
+    c.fillStyle = '#8FBC62'; c.beginPath(); c.ellipse(18, 6, 4, 2.2, 0.5, 0, Math.PI * 2); c.fill(); c.strokeStyle = '#5F8A40'; c.stroke();
+    hi(c, 11, 11, 2.2, 1.4, -0.5, 0.7);
+  },
+  seedwhirl: (c) => {
+    c.strokeStyle = '#8A6A34'; c.lineWidth = 2; c.lineCap = 'round';
+    c.beginPath(); c.arc(14, 14, 8.5, 0.2, Math.PI * 1.65); c.stroke();
+    c.beginPath(); c.arc(14, 14, 5, Math.PI * 1.2, Math.PI * 2.65); c.stroke();
+    for (const [x, y, r] of [[21, 8, 2.4], [7, 17, 2], [15, 13, 1.8]] as const) { c.fillStyle = rad(c, x, y, r + 1, '#F5D48A', '#B98842'); c.beginPath(); c.ellipse(x, y, r, r + 1, -0.3, 0, Math.PI * 2); c.fill(); }
+  },
+
+  // ===== snowbell =====
+  snowglobe: (c) => {
+    c.beginPath(); c.arc(14, 13, 9, 0, Math.PI * 2); c.fillStyle = rad(c, 14, 12, 10, '#FFFFFF', '#8EC8E0'); c.fill(); c.lineWidth = 1.7; c.strokeStyle = '#5F9FC0'; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.7)'; c.beginPath(); c.ellipse(10, 9, 2.5, 1.5, -0.5, 0, Math.PI * 2); c.fill();
+    rrPath(c, 8, 21, 12, 3.5, 1.2); c.fillStyle = '#B88A58'; c.fill(); c.strokeStyle = '#8A6038'; c.stroke();
+  },
+  frostbell: (c) => {
+    c.beginPath(); c.moveTo(7, 19); c.quadraticCurveTo(8, 7, 14, 4); c.quadraticCurveTo(20, 7, 21, 19); c.lineTo(23, 22); c.lineTo(5, 22); c.closePath();
+    c.fillStyle = rad(c, 14, 12, 11, '#E8FCFF', '#86C6DA'); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#5A9EB8'; c.stroke();
+    star(c, 14, 13, 6, 4.6, 1.9, '#FFFFFF');
+  },
+
+  // ===== mirage =====
+  prismshard: (c) => {
+    c.beginPath(); c.moveTo(14, 3); c.lineTo(24, 12); c.lineTo(18, 25); c.lineTo(8, 25); c.lineTo(4, 12); c.closePath();
+    c.fillStyle = rad(c, 14, 12, 13, '#FFFFFF', '#B99BE8'); c.fill(); c.lineWidth = 1.6; c.strokeStyle = '#8A66C0'; c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.moveTo(14, 3); c.lineTo(18, 25); c.lineTo(14, 18); c.closePath(); c.fill();
+  },
+  mirrorbloom: (c) => {
+    const x = 14, y = 14;
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; c.beginPath(); c.ellipse(x + Math.cos(a) * 5, y + Math.sin(a) * 5, 4, 2.6, a, 0, Math.PI * 2); c.fillStyle = rad(c, x, y, 12, '#FCEBFF', '#C79BE8'); c.fill(); c.lineWidth = 1.2; c.strokeStyle = '#9A66C0'; c.stroke(); }
+    star(c, x, y, 5, 4.4, 1.8, '#FFFFFF');
+  },
+
+  // ===== clockwork =====
+  clockkey: (c) => {
+    c.strokeStyle = '#A87838'; c.lineWidth = 2.4; c.lineCap = 'round';
+    c.beginPath(); c.arc(8, 14, 4.8, 0, Math.PI * 2); c.stroke();
+    c.beginPath(); c.moveTo(13, 14); c.lineTo(25, 14); c.moveTo(20, 14); c.lineTo(20, 19); c.moveTo(23, 14); c.lineTo(23, 17); c.stroke();
+    c.strokeStyle = '#F2D078'; c.lineWidth = 1.2; c.beginPath(); c.arc(8, 14, 2.2, 0, Math.PI * 2); c.stroke();
+  },
+  bellnova: (c) => {
+    const x = 14, y = 15;
+    c.strokeStyle = '#E0B850'; c.lineWidth = 1.8; c.lineCap = 'round';
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; c.beginPath(); c.moveTo(x + Math.cos(a) * 9, y + Math.sin(a) * 9); c.lineTo(x + Math.cos(a) * 12, y + Math.sin(a) * 12); c.stroke(); }
+    c.beginPath(); c.moveTo(x - 6, y + 4); c.quadraticCurveTo(x - 5, y - 7, x, y - 10); c.quadraticCurveTo(x + 5, y - 7, x + 6, y + 4); c.lineTo(x + 8, y + 7); c.lineTo(x - 8, y + 7); c.closePath();
+    c.fillStyle = rad(c, x, y, 10, '#FFE28A', '#D89838'); c.fill(); c.lineWidth = 1.5; c.strokeStyle = '#A86E2E'; c.stroke();
+  },
 };
 
 export function createMiscTextures(scene: Phaser.Scene): void {

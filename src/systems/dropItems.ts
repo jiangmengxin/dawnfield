@@ -271,6 +271,92 @@ export const DROP_EFFECTS: Record<DropItemId, DropEffect> = {
       SFX.boom(true);
     },
   },
+
+  // ===== orchard 琥珀果园 =====
+  goldapple: {
+    apply: (ctx, s) => {
+      ctx.run.heal(s.heal ?? 50);
+      scatterGems(ctx, ctx.player.x, ctx.player.y, s.gemN ?? 6, s.gemV ?? 5, 90);
+      for (let i = 0; i < 5; i++) ctx.spawnCoin(ctx.player.x + (ctx.rng() - 0.5) * 80, ctx.player.y + (ctx.rng() - 0.5) * 80, 2);
+      ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_dot', color: s.color, count: 14, speed: 130, life: 0.6, grav: -70 });
+      SFX.heal();
+    },
+  },
+  seedwhirl: {
+    apply: (ctx, s) => { ringFx(ctx, ctx.player.x, ctx.player.y, s.color, 160, 0.5); SFX.chime(); },
+    tick: (ctx, s, dt) => {
+      if (ctx.rng() >= dt * 7) return;
+      const target = ctx.enemies.nearest(ctx.player.x, ctx.player.y, s.radius ?? 260);
+      if (!target) return;
+      ctx.hitEnemy(target, (s.dmg ?? 28) * ctx.stats.dmg, { noHook: true });
+      ctx.fx.burst(target.x, target.y, { tex: 'p_dot', color: s.color, count: 4, speed: 100, life: 0.35, scale: 0.65 });
+    },
+  },
+
+  // ===== snowbell 雪铃庭院 =====
+  snowglobe: {
+    freeze: true,
+    invuln: true,
+    apply: (ctx, s) => {
+      ringFx(ctx, ctx.player.x, ctx.player.y, s.color, 280, 0.65);
+      ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_star', color: s.color, count: 14, speed: 110, life: 0.6, scale: 0.8 });
+      SFX.chime();
+    },
+    end: (ctx, s) => ringFx(ctx, ctx.player.x, ctx.player.y, s.color, 150, 0.35),
+  },
+  frostbell: {
+    apply: (ctx, s) => {
+      aoeDamage(ctx, ctx.player.x, ctx.player.y, s.radius ?? 460, s.dmg ?? 120, s.kb ?? 260);
+      ctx.addZone({ x: ctx.player.x, y: ctx.player.y, r: 220, dur: 4, effect: 'slow', mul: 0.5, affectsPlayer: false, tex: 'wz_frost' });
+      ringFx(ctx, ctx.player.x, ctx.player.y, s.color, s.radius ?? 460, 0.7);
+      shakeCam(ctx.scene, 180, 0.006);
+      SFX.boom(false);
+    },
+  },
+
+  // ===== mirage 彩镜沙洲 =====
+  prismshard: {
+    apply: (ctx, s) => {
+      aoeDamage(ctx, ctx.player.x, ctx.player.y, s.radius ?? 520, s.dmg ?? 70, 90);
+      scatterGems(ctx, ctx.player.x, ctx.player.y, s.gemN ?? 4, s.gemV ?? 6, 120);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const x = ctx.player.x + Math.cos(a) * 120;
+        const y = ctx.player.y + Math.sin(a) * 120;
+        ctx.fx.burst(x, y, { tex: 'p_star', color: s.color, count: 2, speed: 80, life: 0.4, scale: 0.65 });
+      }
+      ringFx(ctx, ctx.player.x, ctx.player.y, s.color, s.radius ?? 520, 0.6);
+      SFX.chime();
+    },
+  },
+  mirrorbloom: {
+    apply: (ctx, s) => { ringFx(ctx, ctx.player.x, ctx.player.y, s.color, 150, 0.5); SFX.chime(); },
+    tick: (ctx, s, dt) => {
+      if (ctx.rng() >= dt * 4) return;
+      const target = ctx.enemies.nearest(ctx.player.x, ctx.player.y, 360);
+      if (!target) return;
+      ctx.hitEnemy(target, 34 * ctx.stats.dmg, { noHook: true });
+      ctx.fx.burst(target.x, target.y, { tex: 'p_star', color: s.color, count: 3, speed: 90, life: 0.35, scale: 0.7 });
+    },
+  },
+
+  // ===== clockwork 晨钟庭 =====
+  clockkey: {
+    apply: (ctx, s) => { ringFx(ctx, ctx.player.x, ctx.player.y, s.color, 130, 0.5); SFX.chime(); },
+    tick: (ctx, s) => {
+      if (ctx.rng() < 0.35) ctx.fx.burst(ctx.player.x + (ctx.rng() - 0.5) * 70, ctx.player.y + (ctx.rng() - 0.5) * 45, { tex: 'p_star', color: s.color, count: 1, speed: 40, life: 0.45, scale: 0.65 });
+    },
+  },
+  bellnova: {
+    apply: (ctx, s) => {
+      aoeDamage(ctx, ctx.player.x, ctx.player.y, s.radius ?? 560, s.dmg ?? 170, s.kb ?? 340);
+      ringFx(ctx, ctx.player.x, ctx.player.y, s.color, (s.radius ?? 560) * 0.65, 0.45);
+      ringFx(ctx, ctx.player.x, ctx.player.y, s.color, s.radius ?? 560, 0.75);
+      ctx.fx.burst(ctx.player.x, ctx.player.y, { tex: 'p_star', color: s.color, count: 18, speed: 260, life: 0.65, scale: 0.9, spin: true });
+      shakeCam(ctx.scene, 220, 0.007);
+      SFX.boom(true);
+    },
+  },
 };
 
 export class DropItemSystem implements RunSystem {

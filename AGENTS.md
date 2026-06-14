@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-晨露之野 Dawnfield 是 Phaser 4.1 + Vite 7 + TypeScript 5.8 的吸血鬼幸存者类网页游戏。当前为 1.0+ 扩展态：18 角色 / 8 地图 / 32 武器 + 32 超武 / 16 被动 / 73 敌 / 8 Boss / 24 规则卡 / 23 掉落道具 / 16 商店强化 / 55 成就 ID（48 当前成就 + 7 legacy）。
+晨露之野 Dawnfield 是 Phaser 4.1 + Vite 7 + TypeScript 5.8 的吸血鬼幸存者类网页游戏。当前为 1.0+ 扩展态：18 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 31 掉落道具 / 16 商店强化 / 59 成就 ID（52 当前成就 + 7 legacy）。
 
 旧规划已归档到 `docs/archive/2026-06-14/`。新任务以当前代码、`docs/当前项目状态.md`、`docs/handbook/*` 和 `docs/reference/*` 为准。
 

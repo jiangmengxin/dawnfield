@@ -3,7 +3,7 @@
 > 更新日期：2026-06-14  
 > 校验：本文件由 `npm run check:docs` 机械检查 ID 覆盖。表格只记录核心信息，不复制完整数值数组；完整数值以 `src/content/*` 为准。
 
-当前规模：18 角色 / 8 地图 / 32 武器 + 32 超武 / 16 被动 / 73 敌 / 8 Boss / 24 规则卡 / 23 掉落道具 / 16 商店强化 / 55 成就 ID（48 当前成就 + 7 legacy）。
+当前规模：18 角色 / 12 地图 / 32 武器 + 32 超武 / 16 被动 / 105 敌 / 12 Boss / 24 规则卡 / 31 掉落道具 / 16 商店强化 / 59 成就 ID（52 当前成就 + 7 legacy）。
 
 ## 角色
 
@@ -44,6 +44,10 @@
 | `bramble` | 莓果灌丛 | 20 | `thornwall` | `bramblebear` | `thornnova`, `berryfeast` |
 | `nocturne` | 星语夜原 | 30 | `nightfall` | `starelk` | `fullmoon`, `meteor` |
 | `summit` | 破晓之巅 | 30 | `beacon` | `nightowl` | `beaconsurge`, `dawnnova` |
+| `orchard` | 琥珀果园 | 20 | `orchard` | `ciderwyrm` | `goldapple`, `seedwhirl` |
+| `snowbell` | 雪铃庭院 | 20 | `frostseal` | `frosthare` | `snowglobe`, `frostbell` |
+| `mirage` | 彩镜沙洲 | 30 | `prismfield` | `miragewhale` | `prismshard`, `mirrorbloom` |
+| `clockwork` | 晨钟庭 | 30 | `bellring` | `clockrooster` | `clockkey`, `bellnova` |
 
 ## 武器与超武
 
@@ -108,12 +112,16 @@
 - bramble：`berryling`, `bristle`, `mole`, `magpie`, `cubby`, `gourd`, `bigberry`, `bramblebear`, `husker`
 - nocturne：`moonmote`, `twinkle`, `nightmoth`, `lunaling`, `owlet`, `sparkler`, `cometlord`, `starelk`, `novamote`
 - summit：`shade`, `gloom`, `umbra`, `glint`, `nightbloom`, `eclipse`, `lurker`, `shadelord`, `nightowl`, `duskward`, `shadowmaw`
+- orchard：`pip`, `ciderfly`, `appleling`, `nutkin`, `wormlet`, `scareseed`, `harvestorb`, `ciderwyrm`
+- snowbell：`snowdrop`, `flakebunny`, `sleetwing`, `frostcap`, `crystalmite`, `bellfox`, `snowwarden`, `frosthare`
+- mirage：`prismite`, `glassfin`, `mirrormoth`, `quartzbud`, `lensbeetle`, `sandsprite`, `prismguard`, `miragewhale`
+- clockwork：`gearling`, `ticktock`, `cuckoobud`, `pendulum`, `brassbug`, `chimewisp`, `gearwarden`, `clockrooster`
 
 ## Boss
 
 源文件：`src/content/bosses.ts`。Boss 以地图为 key 配装，敌人体格仍来自 `EnemyId`。
 
-`boss`, `bubbleking`, `galecrow`, `sporeking`, `flutterqueen`, `bramblebear`, `starelk`, `nightowl`。
+`boss`, `bubbleking`, `galecrow`, `sporeking`, `flutterqueen`, `bramblebear`, `starelk`, `nightowl`, `ciderwyrm`, `frosthare`, `miragewhale`, `clockrooster`。
 
 ## Arcana
 
@@ -129,7 +137,7 @@ mechanic：`splinter`, `thorncore`, `vow`, `allin`, `slowburn`, `dawnfield`, `st
 
 通用：`magnet`, `nuke`, `timestop`, `heal`, `frenzy`, `aegis`, `xpburst`。
 
-地图专属：`bloomburst`, `verdant`, `ebbaegis`, `ripple`, `tailwind`, `whirlwind`, `sporebloom`, `fireflies`, `pollenfrenzy`, `beeswarm`, `thornnova`, `berryfeast`, `fullmoon`, `meteor`, `beaconsurge`, `dawnnova`。
+地图专属：`bloomburst`, `verdant`, `ebbaegis`, `ripple`, `tailwind`, `whirlwind`, `sporebloom`, `fireflies`, `pollenfrenzy`, `beeswarm`, `thornnova`, `berryfeast`, `fullmoon`, `meteor`, `beaconsurge`, `dawnnova`, `goldapple`, `seedwhirl`, `snowglobe`, `frostbell`, `prismshard`, `mirrorbloom`, `clockkey`, `bellnova`。
 
 ## 商店强化
 
@@ -141,6 +149,6 @@ mechanic：`splinter`, `thorncore`, `vow`, `allin`, `slowburn`, `dawnfield`, `st
 
 源文件：`src/content/achievements.ts`。
 
-当前成就：`swarm100`, `survive5`, `level20`, `eliteSlayer`, `firstEvolve`, `maxWeapon`, `fullArsenal`, `fullCharms`, `meadowClear`, `kills1000`, `coins500`, `firstBuy`, `pondClear`, `hillsClear`, `groveClear`, `lavenderClear`, `survive15`, `level30`, `kills300`, `evolve3`, `eliteHunter`, `coins2000`, `wins5`, `fullHouse`, `maxPassive`, `brambleClear`, `nocturneClear`, `summitClear`, `survive20`, `kills500`, `level40`, `evolve6`, `wins10`, `hyperClear1`, `hyperAll`, `endless3`, `endless6`, `flawlessBoss`, `fiveCharWins`, `noPassiveClear`, `untouchable10`, `evolveRush`, `soloWeaponClear`, `arcanaTrio`, `affixSlayer`, `graviticEscape`, `secretBloom`, `stargazer`。
+当前成就：`swarm100`, `survive5`, `level20`, `eliteSlayer`, `firstEvolve`, `maxWeapon`, `fullArsenal`, `fullCharms`, `meadowClear`, `kills1000`, `coins500`, `firstBuy`, `pondClear`, `hillsClear`, `groveClear`, `lavenderClear`, `survive15`, `level30`, `kills300`, `evolve3`, `eliteHunter`, `coins2000`, `wins5`, `fullHouse`, `maxPassive`, `brambleClear`, `nocturneClear`, `summitClear`, `orchardClear`, `snowbellClear`, `mirageClear`, `clockworkClear`, `survive20`, `kills500`, `level40`, `evolve6`, `wins10`, `hyperClear1`, `hyperAll`, `endless3`, `endless6`, `flawlessBoss`, `fiveCharWins`, `noPassiveClear`, `untouchable10`, `evolveRush`, `soloWeaponClear`, `arcanaTrio`, `affixSlayer`, `graviticEscape`, `secretBloom`, `stargazer`。
 
 legacy 成就：`kills5000`, `kills10000`, `coins5000`, `runs20`, `runs50`, `buy10`, `buy25`。

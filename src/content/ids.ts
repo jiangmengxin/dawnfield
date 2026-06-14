@@ -33,6 +33,14 @@ export type EnemyId =
   | 'moonmote' | 'twinkle' | 'nightmoth' | 'lunaling' | 'owlet' | 'sparkler' | 'cometlord' | 'starelk'
   // 破晓之巅（M7）
   | 'shade' | 'gloom' | 'umbra' | 'glint' | 'nightbloom' | 'eclipse' | 'lurker' | 'shadelord' | 'nightowl'
+  // 琥珀果园（1.0+ 扩展）
+  | 'pip' | 'ciderfly' | 'appleling' | 'nutkin' | 'wormlet' | 'scareseed' | 'harvestorb' | 'ciderwyrm'
+  // 雪铃庭院（1.0+ 扩展）
+  | 'snowdrop' | 'flakebunny' | 'sleetwing' | 'frostcap' | 'crystalmite' | 'bellfox' | 'snowwarden' | 'frosthare'
+  // 彩镜沙洲（1.0+ 扩展）
+  | 'prismite' | 'glassfin' | 'mirrormoth' | 'quartzbud' | 'lensbeetle' | 'sandsprite' | 'prismguard' | 'miragewhale'
+  // 晨钟庭（1.0+ 扩展）
+  | 'gearling' | 'ticktock' | 'cuckoobud' | 'pendulum' | 'brassbug' | 'chimewisp' | 'gearwarden' | 'clockrooster'
   // M15 新行为敌人（图 4–8 后段波次插入：自爆 / 护盾光环 / 召唤）
   | 'bombcap' | 'hivebud' | 'husker' | 'novamote' | 'duskward' | 'shadowmaw';
 
@@ -44,8 +52,10 @@ export type CharacterId =
   // M16 隐藏角色（secret：未解锁不占位不显示，彩蛋链解锁）
   | 'blobby' | 'nova';
 
-/** 地图（M7：8 张全量） */
-export type MapId = 'meadow' | 'pond' | 'hills' | 'grove' | 'lavender' | 'bramble' | 'nocturne' | 'summit';
+/** 地图（1.0+：12 张扩展） */
+export type MapId =
+  | 'meadow' | 'pond' | 'hills' | 'grove' | 'lavender' | 'bramble' | 'nocturne' | 'summit'
+  | 'orchard' | 'snowbell' | 'mirage' | 'clockwork';
 
 /** 敌人移动行为模板（M7 起 16 种；M15 起 19 种） */
 export type BehaviorId =
@@ -81,7 +91,7 @@ export type PowerUpId =
   // M19 掉落道具掉率（提升随机掉落来源出现概率：击杀/场景物/地图机制）
   | 'fortune';
 
-/** 一次性掉落道具（M19；VS 式踩到即触发）：7 通用 + 8 图×2 专属。
+/** 一次性掉落道具（M19；VS 式踩到即触发）：7 通用 + 12 图×2 专属。
  *  i18n 键公约 drop_<id>(_d)；图鉴并入「物品」页（与被动同 codex.passives）。
  *  通用池 COMMON_DROPS 走击杀/场景物/精英；地图专属由 MapSpec.drops 经机制产物掉落 */
 export type DropItemId =
@@ -102,7 +112,15 @@ export type DropItemId =
   // nocturne 星语夜原
   | 'fullmoon' | 'meteor'
   // summit 破晓之巅
-  | 'beaconsurge' | 'dawnnova';
+  | 'beaconsurge' | 'dawnnova'
+  // orchard 琥珀果园
+  | 'goldapple' | 'seedwhirl'
+  // snowbell 雪铃庭院
+  | 'snowglobe' | 'frostbell'
+  // mirage 彩镜沙洲
+  | 'prismshard' | 'mirrorbloom'
+  // clockwork 晨钟庭
+  | 'clockkey' | 'bellnova';
 
 /** 成就（M7：40 个全量；M13：7 个纯计数移入 LEGACY，7 个结构性挑战顶替，总量不变）
  *  legacy id（kills5000/kills10000/coins5000/runs20/runs50/buy10/buy25）保留在联合类型：
@@ -126,4 +144,6 @@ export type AchievementId =
   // M15（精英词缀）
   | 'affixSlayer' | 'graviticEscape'
   // M16（隐藏成就：未达成时成就页显示 ？？？，达成解锁隐藏角色）
-  | 'secretBloom' | 'stargazer';
+  | 'secretBloom' | 'stargazer'
+  // 1.0+ 四图扩展通关链
+  | 'orchardClear' | 'snowbellClear' | 'mirageClear' | 'clockworkClear';
