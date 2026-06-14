@@ -45,6 +45,7 @@
 - `docs/balance/dps-M22-32-weapons.md`：32 武器多场景 DPS 基准。
 - `docs/balance/weapon-evaluation-32.md`：32 武器严格评估报告，覆盖数值、表现、相似性和调参建议。
 - `docs/vfx-audit/weapon-vfx-evaluation-32.md`：32 武器 VFX、表现力与相似性审计，含三场景视觉证据。
+- `docs/icon-audit/icon-audit-report.md`：武器、超武目标、被动、Arcana、掉落与基础拾取图标审查基线，含全量 sheet 和逐项整改表。
 
 ## 文档校验
 

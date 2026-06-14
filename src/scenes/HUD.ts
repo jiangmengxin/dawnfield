@@ -8,7 +8,7 @@ import { ACHIEVEMENTS } from '../content/achievements';
 import { ARCANA_META } from '../content/arcana';
 import { MAX_PASSIVES, MAX_WEAPONS } from '../content/player';
 import { PASSIVE_MAX_LEVEL, PASSIVE_META } from '../content/passives';
-import { WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
+import { WEAPON_MAX_LEVEL, WEAPON_META, weaponIcon } from '../content/weapons';
 import type { ArcanaId } from '../content/ids';
 import { makeButton, setButtonLabel, UIButton } from '../ui/widgets';
 import { Viewport } from '../ui/Viewport';
@@ -500,7 +500,7 @@ export class HUDScene extends Phaser.Scene {
     const out: Array<{ icon: string; label: string; gold: boolean } | null> = [];
     for (const wpn of this.gs.weapons.list) {
       const meta = WEAPON_META.find((m) => m.id === wpn.id)!;
-      out.push({ icon: meta.icon, label: wpn.evolved ? '★' : String(wpn.level), gold: wpn.evolved });
+      out.push({ icon: weaponIcon(meta, wpn.evolved), label: wpn.evolved ? '★' : String(wpn.level), gold: wpn.evolved });
     }
     while (out.length < this.gs.run.stats.maxWeapons) out.push(null);
     return out;
@@ -1259,7 +1259,7 @@ export class HUDScene extends Phaser.Scene {
       if (offer.breakthrough) {
         // 突破模式（M20）：已进化超武继续升级——展示超武形态名 + 「突破 LvN」金标
         return {
-          icon: meta.icon,
+          icon: weaponIcon(meta, true),
           name: t('w_' + offer.id + '_e'),
           desc: t('w_' + offer.id + '_e_d'),
           color: meta.color,
@@ -1581,7 +1581,8 @@ export class HUDScene extends Phaser.Scene {
     };
     const itemInfo = (it: ChestItem): { icon: string; tint?: number; label: string } => {
       if (it.kind === 'evolve') {
-        return { icon: WEAPON_META.find((m) => m.id === it.weapon)!.icon, label: t('evolveTag') + '！ ' + t('w_' + it.weapon + '_e') };
+        const meta = WEAPON_META.find((m) => m.id === it.weapon)!;
+        return { icon: weaponIcon(meta, true), label: t('evolveTag') + '！ ' + t('w_' + it.weapon + '_e') };
       }
       if (it.kind === 'arcana') {
         return auto
@@ -1591,7 +1592,7 @@ export class HUDScene extends Phaser.Scene {
       if (it.kind === 'upgrade') {
         const o = it.offer;
         const icon = o.kind === 'weapon'
-          ? WEAPON_META.find((m) => m.id === o.id)!.icon
+          ? weaponIcon(WEAPON_META.find((m) => m.id === o.id)!, !!o.breakthrough)
           : PASSIVE_META.find((m) => m.id === o.id)!.icon;
         if (o.kind === 'weapon' && o.breakthrough) {
           return { icon, label: t('w_' + o.id + '_e') + ' ' + t('breakthroughTag').replace('{n}', String(o.breakthrough)) };

@@ -34,6 +34,7 @@ npm run build
 - `docs/balance/dps-M22-32-weapons.md`：32 武器多场景 DPS 基准。
 - `docs/balance/weapon-evaluation-32.md`：32 武器严格评估报告。
 - `docs/vfx-audit/weapon-vfx-evaluation-32.md`：32 武器 VFX、表现力与相似性审计。
+- `docs/icon-audit/icon-audit-report.md`：武器、超武目标、被动、Arcana、掉落与基础拾取图标审查基线。
 - `docs/reference/content-catalog.md`：当前内容目录，覆盖全部核心 ID。
 - `docs/reference/extension-playbooks.md`：新增内容与系统扩展步骤。
 - `docs/reference/glossary.md`：术语表。

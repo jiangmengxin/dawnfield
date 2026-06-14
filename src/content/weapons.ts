@@ -12,46 +12,55 @@ export interface WeaponMeta {
   id: WeaponId;
   color: number;
   icon: string; // 纹理 key
+  evolvedIcon: string; // 超武独立纹理 key
   evolvesWith: PassiveId | null; // null = 任意被动满级
 }
 
 export const WEAPON_META: WeaponMeta[] = [
-  { id: 'blade',     color: 0xf0c860, icon: 'icon_blade',     evolvesWith: 'power' },
-  { id: 'petal',     color: 0xf8a8c0, icon: 'icon_petal',     evolvesWith: 'bloom' },
-  { id: 'prism',     color: 0xa0d8f0, icon: 'icon_prism',     evolvesWith: 'lens' },
-  { id: 'rain',      color: 0x90c8f0, icon: 'icon_rain',      evolvesWith: 'cloud' },
-  { id: 'spark',     color: 0xffe070, icon: 'icon_spark',     evolvesWith: 'battery' },
-  { id: 'boomerang', color: 0x88d8b0, icon: 'icon_boomerang', evolvesWith: 'wind' },
-  { id: 'mine',      color: 0xc0a0e8, icon: 'icon_mine',      evolvesWith: null },
-  { id: 'puff',      color: 0xd8c8a0, icon: 'icon_puff',      evolvesWith: 'ladybug' },
+  { id: 'blade',     color: 0xf0c860, icon: 'icon_blade',     evolvedIcon: 'icon_blade_e',     evolvesWith: 'power' },
+  { id: 'petal',     color: 0xf8a8c0, icon: 'icon_petal',     evolvedIcon: 'icon_petal_e',     evolvesWith: 'bloom' },
+  { id: 'prism',     color: 0xa0d8f0, icon: 'icon_prism',     evolvedIcon: 'icon_prism_e',     evolvesWith: 'lens' },
+  { id: 'rain',      color: 0x90c8f0, icon: 'icon_rain',      evolvedIcon: 'icon_rain_e',      evolvesWith: 'cloud' },
+  { id: 'spark',     color: 0xffe070, icon: 'icon_spark',     evolvedIcon: 'icon_spark_e',     evolvesWith: 'battery' },
+  { id: 'boomerang', color: 0x88d8b0, icon: 'icon_boomerang', evolvedIcon: 'icon_boomerang_e', evolvesWith: 'wind' },
+  { id: 'mine',      color: 0xc0a0e8, icon: 'icon_mine',      evolvedIcon: 'icon_mine_e',      evolvesWith: null },
+  { id: 'puff',      color: 0xd8c8a0, icon: 'icon_puff',      evolvedIcon: 'icon_puff_e',      evolvesWith: 'ladybug' },
   // M6 批次 B：zone / orbit / melee / burst
-  { id: 'lantern',   color: 0xf8b868, icon: 'icon_lantern',   evolvesWith: 'honey' },
-  { id: 'star',      color: 0xb0bce8, icon: 'icon_star',      evolvesWith: 'stardust' },
-  { id: 'mallet',    color: 0xc89058, icon: 'icon_mallet',    evolvesWith: 'acorn' },
-  { id: 'chime',     color: 0x90ccc0, icon: 'icon_chime',     evolvesWith: 'sprout' },
+  { id: 'lantern',   color: 0xf8b868, icon: 'icon_lantern',   evolvedIcon: 'icon_lantern_e',   evolvesWith: 'honey' },
+  { id: 'star',      color: 0xb0bce8, icon: 'icon_star',      evolvedIcon: 'icon_star_e',      evolvesWith: 'stardust' },
+  { id: 'mallet',    color: 0xc89058, icon: 'icon_mallet',    evolvedIcon: 'icon_mallet_e',    evolvesWith: 'acorn' },
+  { id: 'chime',     color: 0x90ccc0, icon: 'icon_chime',     evolvedIcon: 'icon_chime_e',     evolvesWith: 'sprout' },
   // M7 批次 C：whip / 炮射 / 追踪 / 哨塔
-  { id: 'vine',      color: 0x88b868, icon: 'icon_vine',      evolvesWith: 'trellis' },
-  { id: 'sling',     color: 0xd87888, icon: 'icon_sling',     evolvesWith: 'snack' },
-  { id: 'wisp',      color: 0x88ccaa, icon: 'icon_wisp',      evolvesWith: 'feather' },
-  { id: 'bugle',     color: 0x8898d8, icon: 'icon_bugle',     evolvesWith: 'whistle' },
+  { id: 'vine',      color: 0x88b868, icon: 'icon_vine',      evolvedIcon: 'icon_vine_e',      evolvesWith: 'trellis' },
+  { id: 'sling',     color: 0xd87888, icon: 'icon_sling',     evolvedIcon: 'icon_sling_e',     evolvesWith: 'snack' },
+  { id: 'wisp',      color: 0x88ccaa, icon: 'icon_wisp',      evolvedIcon: 'icon_wisp_e',      evolvesWith: 'feather' },
+  { id: 'bugle',     color: 0x8898d8, icon: 'icon_bugle',     evolvedIcon: 'icon_bugle_e',     evolvesWith: 'whistle' },
   // M22 批次 D/E/F（参考吸血鬼幸存者，机制/特效全互异；配色统一柔和粉彩贴合主题）
-  { id: 'dagger',    color: 0x9cc878, icon: 'icon_dagger',    evolvesWith: 'wind' },
-  { id: 'axe',       color: 0xc0a860, icon: 'icon_axe',       evolvesWith: 'power' },
-  { id: 'fireball',  color: 0xf8c060, icon: 'icon_fireball',  evolvesWith: 'ladybug' },
-  { id: 'flask',     color: 0x88d0c8, icon: 'icon_flask',     evolvesWith: 'cloud' },
-  { id: 'bolt',      color: 0xf8e0a0, icon: 'icon_bolt',      evolvesWith: 'battery' },
-  { id: 'bird',      color: 0xb8c8ec, icon: 'icon_bird',      evolvesWith: 'feather' },
-  { id: 'ricochet',  color: 0xe87cc0, icon: 'icon_ricochet',  evolvesWith: 'stardust' },
-  { id: 'wand',      color: 0xffe0a0, icon: 'icon_wand',      evolvesWith: 'lens' },
-  { id: 'breath',    color: 0xf0d878, icon: 'icon_breath',    evolvesWith: 'snack' },
-  { id: 'bomb',      color: 0xa8d8ec, icon: 'icon_bomb',      evolvesWith: 'power' },
-  { id: 'gravity',   color: 0x9878d0, icon: 'icon_gravity',   evolvesWith: 'trellis' },
-  { id: 'sword',     color: 0xf8eec0, icon: 'icon_sword',     evolvesWith: 'power' },
-  { id: 'swarm',     color: 0xf0c850, icon: 'icon_swarm',     evolvesWith: 'honey' },
-  { id: 'meteor',    color: 0xc0c8ec, icon: 'icon_meteor',    evolvesWith: 'stardust' },
-  { id: 'frost',     color: 0xa8e0f0, icon: 'icon_frost',     evolvesWith: 'whistle' },
-  { id: 'tornado',   color: 0xa8c4a0, icon: 'icon_tornado',   evolvesWith: 'acorn' },
+  { id: 'dagger',    color: 0x9cc878, icon: 'icon_dagger',    evolvedIcon: 'icon_dagger_e',    evolvesWith: 'wind' },
+  { id: 'axe',       color: 0xc0a860, icon: 'icon_axe',       evolvedIcon: 'icon_axe_e',       evolvesWith: 'power' },
+  { id: 'fireball',  color: 0xf8c060, icon: 'icon_fireball',  evolvedIcon: 'icon_fireball_e',  evolvesWith: 'ladybug' },
+  { id: 'flask',     color: 0x88d0c8, icon: 'icon_flask',     evolvedIcon: 'icon_flask_e',     evolvesWith: 'cloud' },
+  { id: 'bolt',      color: 0xf8e0a0, icon: 'icon_bolt',      evolvedIcon: 'icon_bolt_e',      evolvesWith: 'battery' },
+  { id: 'bird',      color: 0xb8c8ec, icon: 'icon_bird',      evolvedIcon: 'icon_bird_e',      evolvesWith: 'feather' },
+  { id: 'ricochet',  color: 0xe87cc0, icon: 'icon_ricochet',  evolvedIcon: 'icon_ricochet_e',  evolvesWith: 'stardust' },
+  { id: 'wand',      color: 0xffe0a0, icon: 'icon_wand',      evolvedIcon: 'icon_wand_e',      evolvesWith: 'lens' },
+  { id: 'breath',    color: 0xf0d878, icon: 'icon_breath',    evolvedIcon: 'icon_breath_e',    evolvesWith: 'snack' },
+  { id: 'bomb',      color: 0xa8d8ec, icon: 'icon_bomb',      evolvedIcon: 'icon_bomb_e',      evolvesWith: 'power' },
+  { id: 'gravity',   color: 0x9878d0, icon: 'icon_gravity',   evolvedIcon: 'icon_gravity_e',   evolvesWith: 'trellis' },
+  { id: 'sword',     color: 0xf8eec0, icon: 'icon_sword',     evolvedIcon: 'icon_sword_e',     evolvesWith: 'power' },
+  { id: 'swarm',     color: 0xf0c850, icon: 'icon_swarm',     evolvedIcon: 'icon_swarm_e',     evolvesWith: 'honey' },
+  { id: 'meteor',    color: 0xc0c8ec, icon: 'icon_meteor',    evolvedIcon: 'icon_meteor_e',    evolvesWith: 'stardust' },
+  { id: 'frost',     color: 0xa8e0f0, icon: 'icon_frost',     evolvedIcon: 'icon_frost_e',     evolvesWith: 'whistle' },
+  { id: 'tornado',   color: 0xa8c4a0, icon: 'icon_tornado',   evolvedIcon: 'icon_tornado_e',   evolvesWith: 'acorn' },
 ];
+
+export function weaponIcon(meta: WeaponMeta, evolved: boolean): string {
+  return evolved ? meta.evolvedIcon : meta.icon;
+}
+
+export function evolvedWeaponCodexId(id: WeaponId): string {
+  return id + ':evo';
+}
 
 // ---------- 平衡数值（每武器一表） ----------
 

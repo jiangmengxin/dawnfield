@@ -1,7 +1,7 @@
 // 武器系统：32 种机制完全不同的武器 + 各自的进化形态
 // 行为代码按武器分文件；平衡数值在 content/weapons.ts
 import { PASSIVE_MAX_LEVEL } from '../../content/passives';
-import { BREAKTHROUGH, WEAPON_MAX_LEVEL, WEAPON_META } from '../../content/weapons';
+import { BREAKTHROUGH, evolvedWeaponCodexId, WEAPON_MAX_LEVEL, WEAPON_META } from '../../content/weapons';
 import type { WeaponId } from '../../content/ids';
 import { Meta } from '../../core/MetaState';
 import type { CombatContext, RunSystem } from '../context';
@@ -152,6 +152,7 @@ export class WeaponManager implements RunSystem {
     const w = this.get(id);
     if (!w) return;
     w.onEvolve();
+    Meta.codexLight('weapons', evolvedWeaponCodexId(id));
     this.ctx.notifyEvolve(id); // M13：onEvolve 钩子 + firstEvolveAt 埋点（进化唯一入口）
   }
 

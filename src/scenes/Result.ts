@@ -2,7 +2,7 @@
 import Phaser from 'phaser';
 import { FONT, t } from '../i18n';
 import { PAL } from '../gfx/palette';
-import { WEAPON_MAX_LEVEL, WEAPON_META } from '../content/weapons';
+import { WEAPON_MAX_LEVEL, WEAPON_META, weaponIcon } from '../content/weapons';
 import { getCharacter } from '../content/characters';
 import { Meta } from '../core/MetaState';
 import { evalAchievements } from '../systems/AchievementTracker';
@@ -200,7 +200,7 @@ export class ResultScene extends Phaser.Scene {
     r.build.forEach((b, i) => {
       const x = dataCx - bw / 2 + 23 + i * 46;
       const meta = WEAPON_META.find((m) => m.id === b.id)!;
-      this.add.image(x, iconY, meta.icon).setDepth(2);
+      this.add.image(x, iconY, weaponIcon(meta, b.evolved)).setDepth(2);
       this.add.text(x + 11, iconY + 11, b.evolved ? '★' : String(b.level), {
         fontFamily: FONT, fontSize: '12px', fontStyle: 'bold',
         color: b.evolved ? '#C8902A' : PAL.inkCss, stroke: '#FFFFFF', strokeThickness: 3,

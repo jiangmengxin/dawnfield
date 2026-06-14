@@ -2,6 +2,7 @@
 // 浏览某分类即清除该类 New 角标；锁定占位补齐到 1.0 目标量级
 import { t } from '../i18n';
 import { ARCANA_META, PASSIVE_META, WEAPON_META, ENEMIES, EnemyId, CHARACTERS, MAPS } from '../content';
+import { evolvedWeaponCodexId } from '../content/weapons';
 import { ALL_DROPS, DROP_ITEMS } from '../content/dropItems';
 import { ACHIEVEMENTS } from '../content/achievements';
 import { ensureMapAssets } from '../gfx/textures';
@@ -15,7 +16,7 @@ import { THEME } from '../ui/theme';
 
 // 1.0 目标量级（锁定占位补齐到这些数字；敌人按实装量展示，未遇见即 ???）
 // M13：规则卡 10→16（6 张机制卡）
-const TARGET = { weapons: 32, passives: 16, chars: 30, maps: 12, arcana: 24 } as const;
+const TARGET = { weapons: 64, passives: 16, chars: 30, maps: 12, arcana: 24 } as const;
 
 export class CodexScene extends UIScene {
   private tab: CodexCat = 'weapons';
@@ -85,8 +86,16 @@ export class CodexScene extends UIScene {
           subDesc: '⇐ ' + recipe,
           subColor: '#A89F8E',
         }));
+        items.push(this.entry(tab, evolvedWeaponCodexId(m.id), {
+          icon: m.evolvedIcon, title: t('w_' + m.id + '_e'), color: m.color, fontScale,
+          desc: t('w_' + m.id + '_e_d'),
+          tag: t('evolveTag'),
+          tagColor: '#C8902A',
+          subDesc: '⇐ ' + t('w_' + m.id),
+          subColor: '#A89F8E',
+        }));
       }
-      pushLocked(TARGET.weapons - WEAPON_META.length);
+      pushLocked(TARGET.weapons - WEAPON_META.length * 2);
     } else if (tab === 'passives') {
       // M19「物品」页：被动护符 + 一次性掉落道具同处一页（角标区分两组）
       for (const m of PASSIVE_META) {

@@ -1,6 +1,7 @@
 // 武器/被动/商店图标（40×40 圆形令牌：白底圆 + 描边，铺满槽位即完整令牌）
 import { PAL, RAINBOW, cssOf } from '../palette';
 import { Ctx, makeTex, petalShape, softGlow, star } from './core';
+import { createEvolvedWeaponIcons } from './evolvedIcons';
 
 export function createIcons(scene: Phaser.Scene): void {
   const bg = (ctx: Ctx) => {
@@ -2212,4 +2213,6 @@ export function createIcons(scene: Phaser.Scene): void {
     petalShape(ctx, 12, 12, 7, 2.6, -0.6, '#A8D088', '#74A858');
     petalShape(ctx, 29, 15, 6, 2.2, 0.8, '#A8D088', '#74A858');
   });
+
+  createEvolvedWeaponIcons(scene);
 }
